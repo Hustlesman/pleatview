@@ -39,7 +39,7 @@ each later milestone gets its issues when it starts.
 **Want to help?** Tell us about a device that works or doesn't, report a bug, or join the
 Google TV beta ([#9](https://github.com/Hustlesman/pleatview/issues/9)).
 
-Done so far: v1.0.2 is published as a signed release with build attestations (versions are
+Done so far: v1.0.3 is published as a signed release with build attestations (versions are
 1.x from 29 Oct; each milestone ends with the next minor release). One command
 (`tools/e2e/run.py`) tests the Android TV app and the Home Assistant integration together in
 18 checks, on an Android TV 16 emulator or a real TV: pairing, automatic sign-in, kiosk mode,
@@ -195,7 +195,10 @@ Home Assistant instead of the other way round.
       stalls.
 - [ ] Checked in Chrome, Firefox, Safari and a Raspberry Pi kiosk, plus a first run in
       the LG and Samsung TV browsers. Set the minimum webOS and Tizen versions (2021+
-      models expected).
+      models expected). A first look on 1 Nov, on a 2024 Samsung (Tizen 9, Chrome 120
+      engine): Home Assistant dashboards work in its browser (connected in 2 s, all cards
+      within 20 s, no errors), and it plays H.264, HEVC, VP9 and AV1. Home Assistant
+      serves it the older ES5 build, because the browser calls itself "SamsungBrowser/8.0"
 - [ ] The Android app stays on protocol v1 (moving it is in the parking lot)
 
 **Exit:** the web player passes the test plan, minus native-only items, in a Chromium
