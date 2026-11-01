@@ -89,6 +89,9 @@ class WebOverlay(
             javaScriptEnabled = true
             domStorageEnabled = true
             mediaPlaybackRequiresUserGesture = false
+            // Pages never need the TV's files or other apps' content.
+            allowFileAccess = false
+            allowContentAccess = false
             mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
             useWideViewPort = true
             loadWithOverviewMode = true

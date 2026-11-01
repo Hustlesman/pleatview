@@ -23,15 +23,30 @@ def auto_enable_custom_integrations(enable_custom_integrations):
     return
 
 
-@pytest.fixture
-async def fake_tv(socket_enabled) -> AsyncGenerator[FakeTV]:
-    """A fake TV listening on localhost."""
-    tv = FakeTV()
+async def _serve(tv: FakeTV) -> web.AppRunner:
     runner = web.AppRunner(tv.app())
     await runner.setup()
     site = web.TCPSite(runner, "127.0.0.1", 0)
     await site.start()
     tv.port = runner.addresses[0][1]
+    return runner
+
+
+@pytest.fixture
+async def fake_tv(socket_enabled) -> AsyncGenerator[FakeTV]:
+    """A fake TV listening on localhost."""
+    tv = FakeTV()
+    runner = await _serve(tv)
+    yield tv
+    tv.close_streams()
+    await runner.cleanup()
+
+
+@pytest.fixture
+async def impostor(socket_enabled) -> AsyncGenerator[FakeTV]:
+    """Another device on the network announcing the fake TV's id, which isn't secret."""
+    tv = FakeTV()
+    runner = await _serve(tv)
     yield tv
     tv.close_streams()
     await runner.cleanup()

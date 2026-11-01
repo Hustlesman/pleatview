@@ -230,7 +230,8 @@ data:
 
 PleatView also opens `pleatview://home`, `pleatview://reload` and
 `pleatview://dashboard/<path>` links, so anything that can launch Android app links can
-start it on a specific dashboard. That should include Home Assistant's Android TV
+start it on a specific dashboard. A link opens a Home Assistant path or one of the TV's
+dashboards, not any other website. That should include Home Assistant's Android TV
 Remote integration (untested).
 
 ## Settings

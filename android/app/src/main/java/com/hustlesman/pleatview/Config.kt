@@ -96,6 +96,9 @@ data class Config(
                 else -> if (strict) throw IllegalArgumentException("unknown config key: $key") else c
             }
         }
+        // The token only ever goes to the Home Assistant it was made for: whoever points the TV
+        // somewhere else has to bring a token for that place too.
+        if (c.haToken.isNotEmpty() && !update.has("ha_token") && originOf(c.haUrl) != haOrigin) c = c.copy(haToken = "")
         return if (update.has("rev")) c else c.copy(rev = "")
     }
 

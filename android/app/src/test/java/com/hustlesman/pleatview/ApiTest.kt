@@ -125,6 +125,16 @@ class ApiTest {
     }
 
     @Test
+    fun `verify is public and proves the pairing`() {
+        assertEquals(400, request("POST", "/api/verify", """{"nonce":"short"}""").status)
+        val nonce = "0123456789abcdef0123456789abcdef"
+        assertEquals(0, request("POST", "/api/verify", """{"nonce":"$nonce"}""").json.getJSONArray("proofs").length())
+        pair()
+        val proofs = request("POST", "/api/verify", """{"nonce":"$nonce"}""").json.getJSONArray("proofs")
+        assertEquals(pairing.prove(nonce), (0 until proofs.length()).map(proofs::getString))
+    }
+
+    @Test
     fun `commands are validated then dispatched`() {
         val token = pair()
         val ok = request("POST", "/api/command", """{"command":"show_dashboard","path":"/lovelace/1"}""", token)

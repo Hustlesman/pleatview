@@ -14,6 +14,7 @@ Each request uses its own connection (`Connection: close`). Request bodies need 
 | --- | --- | --- |
 | `GET /api/info` | none | Identity: `id`, `name`, `manufacturer`, `model`, `app_version`, `api_version`, `paired` |
 | `POST /api/pair` | none | `{"pin": "123456", "client": "Home Assistant"}` → `{"token": "…"}` |
+| `POST /api/verify` | none | `{"nonce": "<32–128 hex digits>"}` → `{"proofs": ["…"]}` (app 1.0.4 and later; see below) |
 | `POST /api/unpair` | bearer | Revokes the calling token |
 | `GET /` | none | Phone setup page (it pairs with the PIN itself) |
 | `POST /api/signin` | bearer or PIN | Username and password for the page waiting for one (see [Sign-ins](#sign-ins)) |
@@ -27,6 +28,14 @@ the PIN changes (`429 {"error": "too_many_attempts", "retry_after": 60}`).
 
 Every other endpoint needs `Authorization: Bearer <token>` and returns `401` without
 a valid one. The TV stores only SHA-256 hashes of tokens and keeps the newest 8.
+
+Anyone on the network can announce a TV's `id`, so before a client sends its token to a
+new address it asks that address to prove it issued the token. It sends a fresh random
+`nonce`; the TV answers with one proof per paired client:
+`hex(HMAC-SHA256(key = hex(SHA-256(token)), message = nonce))`, both as UTF-8 text. The
+client computes the same value from its own token and moves only if one of the proofs
+matches. Test vector: token `token-1` and nonce `00112233445566778899aabbccddeeff` give
+`cfd2cb0b0606646c50484f870216c1870afd7f225109845b6435fdfd40887c7e`.
 
 ## State
 
@@ -152,6 +161,9 @@ never sent to Home Assistant.
 | `keep_screen_on` | true | Stop the screensaver while a dashboard is shown |
 | `launch_on_boot` | true | Open after boot (needs `overlay_permission`) |
 | `rev` | — | Opaque revision set by Home Assistant; any update without `rev` clears it |
+
+`ha_token` belongs to the Home Assistant at `ha_url`: an update that moves `ha_url` to
+another origin (scheme, host or port) clears the stored token unless it brings a new one.
 
 When `ha_token` is set, the dashboard WebView answers the Home Assistant frontend's
 external-auth requests with it, so no login page is shown. Without it, sign in on

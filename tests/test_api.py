@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import asyncio
+import hashlib
+import hmac
 
 import aiohttp
 import pytest
@@ -30,6 +32,24 @@ async def test_pair_and_commands(fake_tv: FakeTV) -> None:
         assert fake_tv.commands == [{"command": "show_dashboard", "path": "/lovelace/1"}]
         with pytest.raises(RequestRejected, match="explode"):
             await client.command("explode")
+
+
+async def test_verify(fake_tv: FakeTV, impostor: FakeTV) -> None:
+    async with aiohttp.ClientSession() as session:
+        token = fake_tv.issue_token()
+        assert await PleatViewClient(session, "127.0.0.1", fake_tv.port, token).verify()
+        assert not await PleatViewClient(session, "127.0.0.1", impostor.port, token).verify()
+        assert not await PleatViewClient(session, "127.0.0.1", fake_tv.port, "forged").verify()
+        assert fake_tv.authorizations == []  # the token itself never goes out
+        fake_tv.verify_supported = False  # apps before 1.0.4
+        assert not await PleatViewClient(session, "127.0.0.1", fake_tv.port, token).verify()
+
+
+def test_verify_vector() -> None:
+    """The same vector is in the app's PairingTest and in docs/protocol.md."""
+    key = hashlib.sha256(b"token-1").hexdigest().encode()
+    proof = hmac.new(key, b"00112233445566778899aabbccddeeff", hashlib.sha256).hexdigest()
+    assert proof == "cfd2cb0b0606646c50484f870216c1870afd7f225109845b6435fdfd40887c7e"
 
 
 async def test_errors(fake_tv: FakeTV) -> None:

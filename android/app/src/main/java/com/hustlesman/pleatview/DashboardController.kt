@@ -268,6 +268,9 @@ class DashboardController(
             javaScriptEnabled = true
             domStorageEnabled = true
             mediaPlaybackRequiresUserGesture = false // camera cards autoplay
+            // Pages never need the TV's files or other apps' content.
+            allowFileAccess = false
+            allowContentAccess = false
             mixedContentMode = WebSettings.MIXED_CONTENT_COMPATIBILITY_MODE
             useWideViewPort = true
             loadWithOverviewMode = true
@@ -429,7 +432,7 @@ class DashboardController(
             main.post {
                 if (message != null && config.isHaUrl(webView?.url)) {
                     onBridgeMessage(message, isMainFrame = true) { reply ->
-                        webView?.evaluateJavascript("window.__pleatview&&window.__pleatview.receive($reply)", null)
+                        evaluateOnHa("window.__pleatview&&window.__pleatview.receive($reply)")
                     }
                 }
             }
@@ -448,7 +451,16 @@ class DashboardController(
         }
         val js = "(function(){var f=window[${JSONObject.quote(callback)}];" +
             "if(typeof f==='function')f(${reply.getBoolean("success")},${reply.opt("data")});})()"
-        webView?.evaluateJavascript(js, null)
+        evaluateOnHa(js)
+    }
+
+    /**
+     * Runs [js] in the page, but only if it's still Home Assistant's when the script gets there:
+     * replies can carry the token, and another site may have loaded since the URL check.
+     */
+    private fun evaluateOnHa(js: String) {
+        val origin = config.haOrigin ?: return
+        webView?.evaluateJavascript("if(location.origin===${JSONObject.quote(origin)}){$js}", null)
     }
 
     // ---- Health ---------------------------------------------------------------------

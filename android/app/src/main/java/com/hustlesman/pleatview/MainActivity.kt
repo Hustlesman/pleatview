@@ -399,7 +399,12 @@ class MainActivity : Activity(), Hub.Display, DashboardController.Callbacks, Med
             "reload" -> handle(Command.Reload)
             "dashboard" -> {
                 val path = data.getQueryParameter("path") ?: data.path
-                if (!path.isNullOrBlank() && path != "/") handle(Command.ShowDashboard(Config.normalizeTarget(path), null))
+                val target = if (path.isNullOrBlank() || path == "/") "" else Config.normalizeTarget(path)
+                // Any app or web page can open these links: they reach Home Assistant's pages and the
+                // configured dashboards, not any site someone would like the TV to show.
+                val allowed = !Config.isHttpUrl(target) || config.isHaUrl(target) ||
+                    target == config.homeDashboard || config.dashboards.any { it.path == target }
+                if (target.isNotEmpty() && allowed) handle(Command.ShowDashboard(target, null))
             }
         }
         setIntent(Intent(intent).setData(null))

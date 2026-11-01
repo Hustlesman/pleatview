@@ -118,6 +118,19 @@ async def test_zeroconf_updates_moved_tv(hass: HomeAssistant, fake_tv: FakeTV) -
     assert entry.data[CONF_HOST] == "127.0.0.1"
 
 
+async def test_zeroconf_ignores_an_impostor(hass: HomeAssistant, fake_tv: FakeTV, impostor: FakeTV) -> None:
+    entry = make_entry(fake_tv)
+    entry.add_to_hass(hass)
+    with patch(SETUP, return_value=True):
+        result = await hass.config_entries.flow.async_init(
+            DOMAIN, context={"source": SOURCE_ZEROCONF}, data=discovery(impostor)
+        )
+    assert result["type"] is FlowResultType.ABORT
+    assert result["reason"] == "already_configured"
+    assert entry.data[CONF_PORT] == fake_tv.port
+    assert impostor.authorizations == []
+
+
 async def test_zeroconf_keeps_tv_where_it_answers(hass: HomeAssistant, fake_tv: FakeTV) -> None:
     entry = make_entry(fake_tv)
     entry.add_to_hass(hass)
@@ -126,7 +139,7 @@ async def test_zeroconf_keeps_tv_where_it_answers(hass: HomeAssistant, fake_tv: 
     info.ip_addresses = [info.ip_address]
     with (
         patch(SETUP, return_value=True),
-        patch("custom_components.pleatview.api.PleatViewClient.get_info", side_effect=PleatViewError("unreachable")),
+        patch("custom_components.pleatview.api.PleatViewClient.verify", side_effect=PleatViewError("unreachable")),
     ):
         result = await hass.config_entries.flow.async_init(DOMAIN, context={"source": SOURCE_ZEROCONF}, data=info)
     assert result["type"] is FlowResultType.ABORT

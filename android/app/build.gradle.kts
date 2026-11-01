@@ -84,6 +84,9 @@ dependencies {
     implementation(libs.media3.exoplayer.rtsp)
     implementation(libs.media3.ui)
     implementation(libs.qrcodegen)
+    constraints {
+        implementation(libs.guava) { because("CVE-2026-102554, in the version Media3 asks for") }
+    }
 
     testImplementation(libs.junit)
     testImplementation(libs.json)
