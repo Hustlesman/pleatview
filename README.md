@@ -124,7 +124,7 @@ to 1 November 2026:
 
 | TV | Result |
 | --- | --- |
-| Google TV, Android TV 16 (emulator) | All 18 checks pass |
+| Google TV, Android TV 16 (emulator) | All 19 checks pass |
 | Fire TV Stick 3rd gen, Fire OS 7.7 (Android 9) | All checks pass (the restart check is skipped on a shared Home Assistant). Animated pictures show their first frame before Android 10. 42-hour soak test: no crashes, memory steady |
 | Chromecast with Google TV (HD), Android TV 14, 1.4 GB | All checks pass (the restart check is skipped on a shared Home Assistant). 42-hour soak test: no crashes, memory steady |
 
