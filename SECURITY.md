@@ -20,8 +20,9 @@ PleatView is built for a home network you trust. What it does, and what it can't
   *Reconfigure* it can be read-only. Anyone who can use the TV's remote can see the PIN and
   use the dashboards, as on any wall display.
 - **Sign-ins to other sites** are encrypted with a key that never leaves the TV's Android
-  keystore, and each one is offered only to the site it was made for. Nothing is backed up
-  or copied to another device.
+  keystore, and each one is offered only to the site it was made for (a password prompt's,
+  only on the dashboard that asked). The phone page shows the address a password goes to.
+  Nothing is backed up or copied to another device.
 - **Plain HTTP on the local network.** The TV, Home Assistant and the phone setup page talk
   over plain HTTP, like most local smart-home devices. Someone who can read your network's
   traffic could see the tokens and a sign-in typed on the phone. Use a network only your
@@ -31,3 +32,11 @@ PleatView is built for a home network you trust. What it does, and what it can't
 - **Releases** are built on GitHub from the tagged source, signed with the same key every
   time, and come with build provenance: `gh attestation verify pleatview.apk --repo
   Hustlesman/pleatview`.
+
+## Home Assistant's version
+
+Use Home Assistant 2026.7 or later. Older versions have published security bugs in
+dashboard cards, such as CVE-2026-91130 in the statistics graph card. A TV shows its
+dashboard all day, signed in, so a malicious card could act as the TV's user. PleatView
+still works with Home Assistant 2025.1 and later, but shows a repair under *Settings →
+Repairs* until Home Assistant is updated.

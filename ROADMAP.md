@@ -20,7 +20,7 @@ on their own.
 
 ## Status
 
-Last updated 30 October 2026. **Current milestone: M1** (M0 finished early).
+Last updated 2 November 2026. **Current milestone: M1** (M0 finished early).
 
 | Milestone | Target | Needs first | Status |
 | --- | --- | --- | --- |
@@ -46,7 +46,7 @@ Done so far: v1.0.4 is published as a signed release with build attestations (ve
 casting, cameras, notifications, sign-ins, standby, updates, and recovery from a Home Assistant
 restart and from a frozen page. A Fire TV Stick and a Chromecast HD pass the automated checks,
 and both ran a 42-hour soak test without a crash. A security review on 2 Nov fixed what it
-found, and no dependency has a known vulnerability. 51 app tests and 28 integration tests pass.
+found, and no dependency has a known vulnerability. 54 app tests and 29 integration tests pass.
 
 ## How we stay on track
 
@@ -178,6 +178,11 @@ store on Google TV and Fire TV.
 - [ ] Checked against Google's TV app quality guidelines
 - [ ] Public on Google Play once the beta has run its 14 days
 - [ ] Submitted to the Amazon Appstore for Fire TV (Fire OS devices only)
+- [ ] **Encrypted connections at home.** Today Home Assistant, the TV and the phone page talk
+      plain HTTP on the local network ([SECURITY.md](SECURITY.md)). The TV makes its own
+      certificate, and Home Assistant pins it when pairing, so the tokens travel encrypted.
+      The phone page gets the same protection without a browser warning, or a reason why it
+      can't. Home Assistant's token is also stored encrypted on the TV, like sign-ins
 
 **Exit:** PleatView installs from Google Play on Google TV and from the Amazon Appstore on
 Fire TV, and both links are on the website and in the README.

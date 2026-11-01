@@ -10,6 +10,7 @@ import voluptuous as vol
 from homeassistant.components import media_source
 from homeassistant.components.media_player import (
     ATTR_MEDIA_ANNOUNCE,
+    ATTR_MEDIA_CONTENT_ID,
     ATTR_MEDIA_EXTRA,
     BrowseError,
     BrowseMedia,
@@ -151,6 +152,8 @@ class PleatViewMediaPlayer(PleatViewEntity, MediaPlayerEntity):
     _attr_name = None
     _attr_device_class = MediaPlayerDeviceClass.TV
     _attr_supported_features = SUPPORTED_FEATURES
+    # Camera and media links are signed for a day: keep them out of the history.
+    _unrecorded_attributes = frozenset({ATTR_MEDIA_CONTENT_ID, "url"})
 
     def __init__(self, device: PleatViewDevice) -> None:
         """Initialize the media player."""

@@ -87,20 +87,31 @@ class SignInFlow(
     fun onPrompt(handler: HttpAuthHandler, host: String, realm: String) {
         val key = host.lowercase() to realm
         if (key in dismissedPrompts) return handler.cancel()
-        val saved = signIns.find(SignIn.Kind.PROMPT, host, realm)
+        val dashboard = dashboardOrigin()
+        val saved = signIns.find(SignIn.Kind.PROMPT, host, realm, dashboard)
         if (saved != null && key !in promptsTried && handler.useHttpAuthUsernamePassword()) {
             promptsTried += key
+            // A sign-in from before 1.0.5 belongs to this dashboard once it works here.
+            if (saved.dashboard.isEmpty() && dashboard.isNotEmpty()) {
+                trying = Attempt(saved.copy(dashboard = dashboard), save = true, saved = true, SystemClock.elapsedRealtime())
+            }
             handler.proceed(saved.username, saved.password)
             return
         }
         // A second prompt after a sign-in means the site rejected it.
         val attempt = trying
         val rejected = key in promptsTried ||
-            (attempt != null && attempt.signIn.kind == SignIn.Kind.PROMPT && attempt.signIn.matches(SignIn.Kind.PROMPT, host, realm))
+            (attempt != null && attempt.signIn.kind == SignIn.Kind.PROMPT && attempt.signIn.matches(SignIn.Kind.PROMPT, host, realm, dashboard))
         trying = null
         promptHandler?.cancel()
         promptHandler = handler
         show(SignInRequest(SignIn.Kind.PROMPT, host, realm, titleFor(host), failed = rejected))
+    }
+
+    /** The origin of the dashboard on screen, which a password-prompt sign-in is kept for. */
+    private fun dashboardOrigin(): String {
+        val target = target ?: return ""
+        return (if (Config.isHttpUrl(target)) Config.originOf(target) else config.haOrigin).orEmpty()
     }
 
     /** The main frame finished loading: a pending password sign-in worked. */
@@ -200,7 +211,8 @@ class SignInFlow(
     /** The user entered a username and password for the current request. */
     fun apply(username: String, password: String, remember: Boolean) {
         val current = request ?: return
-        val signIn = SignIn(current.kind, current.site, current.realm, username, password)
+        val dashboard = if (current.kind == SignIn.Kind.PROMPT) dashboardOrigin() else ""
+        val signIn = SignIn(current.kind, current.site, current.realm, username, password, dashboard)
         show(null)
         when (current.kind) {
             SignIn.Kind.PROMPT -> {

@@ -147,7 +147,8 @@ frames or need their own sign-in cookie still load, and the zoom applies to them
 
 **Sites that ask for a sign-in.** When a dashboard shows a login form or a password
 prompt, the TV says "Sign in to *dashboard name*" with a QR code. Scan it, sign in on your
-phone (your password manager works there), and the TV takes it from there. It saves the
+phone (your password manager works there; the page shows the address the password goes
+to), and the TV takes it from there. It saves the
 sign-in once the site accepts it, encrypted with the TV's keystore and only ever offered to
 that site, so it signs in again by itself after a restart or an expired session. Sign-ins
 stay on the TV; Home Assistant only sees `sign_in_needed` on the media player, for
