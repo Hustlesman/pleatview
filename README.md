@@ -119,13 +119,14 @@ casting and notifications need the integration.
 
 Every release runs `tools/e2e/run.py` on a TV against a real Home Assistant: pairing,
 dashboards, kiosk mode, notifications, video, cameras, Webpage dashboards, sign-ins,
-standby, a Home Assistant restart and an update in place. Results from 29 and 30 October 2026:
+standby, a Home Assistant restart, a frozen page and an update in place. Results from 29 October
+to 1 November 2026:
 
 | TV | Result |
 | --- | --- |
-| Google TV, Android TV 16 (emulator) | All 16 checks pass |
-| Fire TV Stick 3rd gen, Fire OS 7.7 (Android 9) | All checks pass (the restart check is skipped on a shared Home Assistant). Animated pictures show their first frame before Android 10. 23-hour soak test passed |
-| Chromecast with Google TV (HD), Android TV 14, 1.4 GB | All checks pass (the restart check is skipped on a shared Home Assistant) |
+| Google TV, Android TV 16 (emulator) | All 18 checks pass |
+| Fire TV Stick 3rd gen, Fire OS 7.7 (Android 9) | All checks pass (the restart check is skipped on a shared Home Assistant). Animated pictures show their first frame before Android 10. 42-hour soak test: no crashes, memory steady |
+| Chromecast with Google TV (HD), Android TV 14, 1.4 GB | All checks pass (the restart check is skipped on a shared Home Assistant). 42-hour soak test: no crashes, memory steady |
 
 | Home Assistant | Result |
 | --- | --- |

@@ -112,7 +112,8 @@ async def main(port, expression):
                     print(json.dumps(data["result"].get("result", {}).get("value")))
                     return
 
-asyncio.run(main(int(sys.argv[1]), sys.stdin.read()))
+# Gives up by itself (a frozen page never answers), so no container outlives its caller.
+asyncio.run(asyncio.wait_for(main(int(sys.argv[1]), sys.stdin.read()), float(sys.argv[2])))
 """
 
 # Sends one Home Assistant websocket command; reads the token and the command from stdin.
@@ -522,14 +523,14 @@ def ws_call(r: Run, message: dict) -> dict:
     return json.loads(output) if output.strip() else {}
 
 
-def devtools(r: Run, expression: str):
+def devtools(r: Run, expression: str, timeout: float = 90):
     pid = adb("shell", "pidof", PACKAGE).strip()
     if not pid:
         raise RuntimeError("PleatView isn't running")
     adb("forward", "--remove", f"tcp:{DEVTOOLS_PORT}", check=False)
     adb("forward", f"tcp:{DEVTOOLS_PORT}", f"localabstract:webview_devtools_remote_{pid}")
     output = run("docker", "run", "--rm", "-i", "--network", "host", "--entrypoint", "python3", r.tools_image,
-                 "-c", CDP_SCRIPT, str(DEVTOOLS_PORT), input=expression, timeout=90)
+                 "-c", CDP_SCRIPT, str(DEVTOOLS_PORT), str(timeout - 5), input=expression, timeout=timeout)
     return json.loads(output)
 
 
@@ -899,6 +900,26 @@ def checks(r: Run, report: Report, apk: Path) -> None:
         wait_for("Home Assistant to restart", lambda: http("GET", f"{ha.url}/api/")[0] in (200, 401), timeout=300)
         wait_for("the TV to reconnect", ready, timeout=180)
 
+    def frozen_page():
+        # 1 Nov soak: after a Wi-Fi drop a page froze the Fire TV's renderer, and every later
+        # load went into that same renderer. PleatView has to start a new one.
+        if not debuggable:
+            raise SkipCheck("needs a debug build")
+        wait_for("the dashboard", ready, timeout=60)
+        devtools(r, "window.__e2eFrozen = true; setTimeout(() => { for (;;) {} }, 100); 'frozen'")
+        started = time.monotonic()
+        time.sleep(2)
+        try:
+            devtools(r, "1", timeout=15)
+        except RuntimeError:
+            pass
+        else:
+            raise AssertionError("the page still answered after the endless loop")
+        wait_for("a new page", lambda: devtools(r, "window.__e2eFrozen ? 'old' : document.readyState", timeout=15)
+                 == "complete", timeout=180, interval=5)
+        wait_for("the dashboard to sign in again", ready, timeout=60)
+        return f"a new page {time.monotonic() - started:.0f} s after it froze"
+
     def back_after_sign_in():
         # Issue #31: Back after "Not now" went back into the password-protected site, and
         # its card came back over the home dashboard, titled "Home Assistant".
@@ -1042,6 +1063,7 @@ def checks(r: Run, report: Report, apk: Path) -> None:
         ("Sign-ins: entered from a phone, then saved", sign_ins),
         ("turn_off and turn_on", standby),
         ("Recovers after a Home Assistant restart", ha_restart),
+        ("Recovers from a frozen page", frozen_page),
         ("Update in place keeps the pairing", update_in_place),
         # After the update: it restarted the app, which forgets the test site's password
         # that the WebView kept for the session after the sign-in check.
