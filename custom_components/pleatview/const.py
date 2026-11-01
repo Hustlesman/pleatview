@@ -5,6 +5,11 @@ from typing import Final
 DOMAIN: Final = "pleatview"
 DEFAULT_PORT: Final = 8765
 
+# Older Home Assistant has published XSS bugs in dashboard cards, which on a TV would run
+# all day with the TV's token; the last of them was fixed in 2026.7.
+SAFE_HA_VERSION: Final = (2026, 7)
+ISSUE_OLD_HA: Final = "old_home_assistant"
+
 # Config entry data
 CONF_TOKEN: Final = "token"  # control-API token issued by the TV when pairing
 CONF_AUTH_MODE: Final = "auth_mode"  # how the TV signs in to Home Assistant

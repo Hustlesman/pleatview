@@ -56,6 +56,8 @@ async def test_state_follows_the_tv(hass: HomeAssistant, fake_tv: FakeTV) -> Non
     assert state.attributes["media_title"] == "Clip"
     assert state.attributes["media_duration"] == 10.0
     assert state.attributes["source"] == "Cameras"
+    # Signed camera and media links stay out of the history.
+    assert {"media_content_id", "url"} <= state.state_info["unrecorded_attributes"]
 
     await fake_tv.push(media=None, power="standby")
     await _wait_for(lambda: hass.states.get(ENTITY).state == "off")

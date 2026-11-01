@@ -42,6 +42,40 @@ class SignInsTest {
     }
 
     @Test
+    fun `a password prompt's sign-in is offered only on the dashboard it was saved on`() {
+        val signIns = signIns()
+        val nas = SignIn(SignIn.Kind.PROMPT, "nas.lan", "NAS", "admin", "pw", dashboard = "https://nas.lan")
+        signIns.save(nas)
+        assertEquals(nas, signIns.find(SignIn.Kind.PROMPT, "nas.lan", "NAS", "https://nas.lan"))
+        assertNull(signIns.find(SignIn.Kind.PROMPT, "nas.lan", "NAS", "http://nas.lan:9000"))
+        assertNull(signIns.find(SignIn.Kind.PROMPT, "nas.lan", "NAS", ""))
+        // Another dashboard on the same host keeps a sign-in of its own.
+        signIns.save(nas.copy(password = "other", dashboard = "http://nas.lan:9000"))
+        assertEquals(2, signIns.count)
+        assertEquals("pw", signIns().find(SignIn.Kind.PROMPT, "nas.lan", "NAS", "https://nas.lan")!!.password)
+    }
+
+    @Test
+    fun `a prompt sign-in from before 1_0_5 belongs to the first dashboard it's saved for`() {
+        val sealed = """[{"kind":"prompt","site":"nas.lan","realm":"NAS","username":"admin","password":"pw"}]"""
+        store.value = sealed.toByteArray().let(FlipVault::seal).joinToString("") { "%02x".format(it) }
+        val signIns = signIns()
+        val legacy = signIns.find(SignIn.Kind.PROMPT, "nas.lan", "NAS", "https://nas.lan")!!
+        assertEquals("", legacy.dashboard)
+        assertEquals(legacy, signIns.find(SignIn.Kind.PROMPT, "nas.lan", "NAS", "http://nas.lan:9000"))
+        signIns.save(legacy.copy(dashboard = "https://nas.lan"))
+        assertEquals(1, signIns.count)
+        assertNull(signIns().find(SignIn.Kind.PROMPT, "nas.lan", "NAS", "http://nas.lan:9000"))
+    }
+
+    @Test
+    fun `the phone page shows where the password goes`() {
+        assertEquals("pve.lan:8006", SignInRequest(SignIn.Kind.FORM, "https://pve.lan:8006", "", "Proxmox").address)
+        assertEquals("[fe80::1]:3000", SignInRequest(SignIn.Kind.FORM, "http://[fe80::1]:3000", "", "Grafana").address)
+        assertEquals("192.168.1.1", SignInRequest(SignIn.Kind.PROMPT, "192.168.1.1", "Router", "Router").address)
+    }
+
+    @Test
     fun `sign-ins survive a restart and are stored sealed`() {
         signIns().save(grafana)
         assertFalse(store.value!!.contains("s3cret"))

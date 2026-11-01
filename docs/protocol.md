@@ -124,9 +124,12 @@ whatever is playing, which is ducked meanwhile.
 Dashboards that aren't Home Assistant can ask for a username and password, as a
 browser password prompt (HTTP basic auth, identified by host and realm) or as a
 login form (identified by the page's origin). The TV answers with a sign-in saved
-for exactly that site. Without one, or when the site rejects it, it reports
+for exactly that site. A password prompt names only its host, so its sign-in is also
+kept for the origin of the dashboard that asked, and used only on that dashboard.
+Without one, or when the site rejects it, it reports
 `sign_in` in its state and shows a card with a QR code. The code opens the phone page
-at `#signin=<title>&pin=<PIN>`, and the phone sends:
+at `#signin=<title>&to=<address>&pin=<PIN>`, where `<address>` is where the password goes
+(`host[:port]`, or a password prompt's host), and the phone sends:
 
 ```json
 POST /api/signin

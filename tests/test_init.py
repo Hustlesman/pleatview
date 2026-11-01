@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+from unittest.mock import patch
 
 from custom_components.pleatview.const import (
     AUTH_MANAGED,
@@ -12,10 +13,12 @@ from custom_components.pleatview.const import (
     CONF_TOKEN,
     CONF_USER_ID,
     DOMAIN,
+    ISSUE_OLD_HA,
 )
 from homeassistant.auth.const import GROUP_ID_READ_ONLY
 from homeassistant.config_entries import SOURCE_REAUTH, ConfigEntryState
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers import issue_registry as ir
 from homeassistant.setup import async_setup_component
 
 from .conftest import HA_URL, make_entry, setup_entry
@@ -35,6 +38,20 @@ async def test_setup_pushes_config(hass: HomeAssistant, fake_tv: FakeTV) -> None
     assert fake_tv.config["rev"]
     assert hass.states.get("media_player.living_room_tv").state == "idle"
     assert hass.states.get("notify.living_room_tv") is not None
+    await hass.config_entries.async_unload(entry.entry_id)
+
+
+async def test_old_home_assistant_gets_a_repair(hass: HomeAssistant, fake_tv: FakeTV) -> None:
+    with patch("custom_components.pleatview.MAJOR_VERSION", 2025), patch("custom_components.pleatview.MINOR_VERSION", 1):
+        entry = await setup_entry(hass, make_entry(fake_tv))
+    issue = ir.async_get(hass).async_get_issue(DOMAIN, ISSUE_OLD_HA)
+    assert issue is not None
+    assert issue.severity is ir.IssueSeverity.WARNING
+    assert issue.translation_placeholders["safe_version"] == "2026.7"
+    # Up to date, the next setup takes it away again.
+    await hass.config_entries.async_reload(entry.entry_id)
+    await hass.async_block_till_done()
+    assert ir.async_get(hass).async_get_issue(DOMAIN, ISSUE_OLD_HA) is None
     await hass.config_entries.async_unload(entry.entry_id)
 
 

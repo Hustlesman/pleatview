@@ -9,9 +9,18 @@ import logging
 
 from homeassistant.auth.const import GROUP_ID_READ_ONLY, GROUP_ID_USER
 from homeassistant.auth.models import TOKEN_TYPE_LONG_LIVED_ACCESS_TOKEN
-from homeassistant.const import CONF_HOST, CONF_PORT, EVENT_PANELS_UPDATED, Platform
+from homeassistant.const import (
+    CONF_HOST,
+    CONF_PORT,
+    EVENT_PANELS_UPDATED,
+    MAJOR_VERSION,
+    MINOR_VERSION,
+    Platform,
+    __version__ as HA_VERSION,
+)
 from homeassistant.core import Event, HomeAssistant
 from homeassistant.exceptions import ConfigEntryAuthFailed, ConfigEntryNotReady
+from homeassistant.helpers import issue_registry as ir
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
 from .api import InvalidAuth, PleatViewClient, PleatViewError
@@ -23,6 +32,9 @@ from .const import (
     CONF_HA_TOKEN,
     CONF_TOKEN,
     CONF_USER_ID,
+    DOMAIN,
+    ISSUE_OLD_HA,
+    SAFE_HA_VERSION,
 )
 from .coordinator import PleatViewConfigEntry, PleatViewDevice
 
@@ -45,6 +57,7 @@ def _client(hass: HomeAssistant, entry: PleatViewConfigEntry) -> PleatViewClient
 
 async def async_setup_entry(hass: HomeAssistant, entry: PleatViewConfigEntry) -> bool:
     """Connect to the TV, hand it its configuration and start listening."""
+    _async_check_ha_version(hass)
     client = _client(hass, entry)
     try:
         info = await client.get_info()
@@ -81,6 +94,24 @@ async def async_setup_entry(hass: HomeAssistant, entry: PleatViewConfigEntry) ->
     entry.async_create_background_task(hass, device.async_run(), f"pleatview {entry.title}")
     entry.async_on_unload(entry.add_update_listener(_async_options_updated))
     return True
+
+
+def _async_check_ha_version(hass: HomeAssistant) -> None:
+    """Ask for a Home Assistant update when dashboard cards have known security bugs."""
+    if (MAJOR_VERSION, MINOR_VERSION) >= SAFE_HA_VERSION:
+        ir.async_delete_issue(hass, DOMAIN, ISSUE_OLD_HA)
+        return
+    ir.async_create_issue(
+        hass,
+        DOMAIN,
+        ISSUE_OLD_HA,
+        is_fixable=False,
+        is_persistent=False,
+        severity=ir.IssueSeverity.WARNING,
+        learn_more_url="https://github.com/Hustlesman/pleatview/blob/main/SECURITY.md#home-assistants-version",
+        translation_key=ISSUE_OLD_HA,
+        translation_placeholders={"version": HA_VERSION, "safe_version": ".".join(map(str, SAFE_HA_VERSION))},
+    )
 
 
 async def _async_options_updated(hass: HomeAssistant, entry: PleatViewConfigEntry) -> None:

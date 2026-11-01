@@ -14,9 +14,12 @@ import io.nayuki.qrcodegen.QrCode
 object SetupCode {
     fun url(ip: String, port: Int, pin: String): String = "http://$ip:$port/#pin=$pin"
 
-    /** The phone page's sign-in form for a dashboard; the PIN stands in for pairing. */
-    fun signInUrl(ip: String, port: Int, pin: String, title: String): String =
-        "http://$ip:$port/#signin=${Uri.encode(title)}&pin=$pin"
+    /**
+     * The phone page's sign-in form for a dashboard, which shows the [address] the password
+     * goes to. The PIN stands in for pairing.
+     */
+    fun signInUrl(ip: String, port: Int, pin: String, title: String, address: String): String =
+        "http://$ip:$port/#signin=${Uri.encode(title)}&to=${Uri.encode(address)}&pin=$pin"
 
     /** Dark modules of the code, with a quiet zone of [border] modules, row by row. */
     fun modules(text: String, border: Int = 2): Array<BooleanArray> {

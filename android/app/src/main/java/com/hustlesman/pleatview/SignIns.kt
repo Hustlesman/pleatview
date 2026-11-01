@@ -23,16 +23,32 @@ data class SignInRequest(
     /** The last sign-in for this page didn't work. */
     val failed: Boolean = false,
 ) {
+    /** Where the password goes, for the phone page: `nas.lan:5001`, or a password prompt's host. */
+    val address: String get() = site.substringAfter("://")
+
     fun toJson(): JSONObject = JSONObject()
         .put("kind", kind.wire).put("title", title).put("site", site).put("failed", failed)
 }
 
-/** A username and password remembered for one site. */
-data class SignIn(val kind: Kind, val site: String, val realm: String, val username: String, val password: String) {
+/**
+ * A username and password remembered for one site. A password prompt names only its host, so
+ * its sign-in also keeps the origin of the [dashboard] that asked, and is offered only there:
+ * another port or scheme on the same host has to ask again. Sign-ins saved before 1.0.5 have
+ * none; the first page they work on becomes theirs.
+ */
+data class SignIn(
+    val kind: Kind,
+    val site: String,
+    val realm: String,
+    val username: String,
+    val password: String,
+    val dashboard: String = "",
+) {
     enum class Kind(val wire: String) { PROMPT("prompt"), FORM("form") }
 
-    fun matches(kind: Kind, site: String, realm: String) =
-        this.kind == kind && this.site.equals(site, ignoreCase = true) && this.realm == realm
+    fun matches(kind: Kind, site: String, realm: String, dashboard: String = "") =
+        this.kind == kind && this.site.equals(site, ignoreCase = true) && this.realm == realm &&
+            (this.dashboard.isEmpty() || this.dashboard.equals(dashboard, ignoreCase = true))
 }
 
 /**
@@ -53,13 +69,14 @@ class SignIns(private val store: Store, private val vault: Vault) {
     private var loaded: MutableList<SignIn>? = null
 
     @Synchronized
-    fun find(kind: SignIn.Kind, site: String, realm: String = ""): SignIn? =
-        entries().firstOrNull { it.matches(kind, site, realm) }
+    fun find(kind: SignIn.Kind, site: String, realm: String = "", dashboard: String = ""): SignIn? =
+        entries().firstOrNull { it.matches(kind, site, realm, dashboard) }
 
+    /** Replaces the sign-in for the same place, and one from before 1.0.5 for its host. */
     @Synchronized
     fun save(signIn: SignIn) {
         val list = entries()
-        list.removeAll { it.matches(signIn.kind, signIn.site, signIn.realm) }
+        list.removeAll { it.matches(signIn.kind, signIn.site, signIn.realm, signIn.dashboard) }
         list += signIn
         persist(list)
     }
@@ -93,6 +110,7 @@ class SignIns(private val store: Store, private val vault: Vault) {
                 SignIn(
                     SignIn.Kind.entries.first { it.wire == o.getString("kind") },
                     o.getString("site"), o.optString("realm"), o.optString("username"), o.getString("password"),
+                    o.optString("dashboard"),
                 )
             }.toMutableList()
         }.getOrElse { mutableListOf() } // a lost keystore key: start over rather than fail
@@ -104,7 +122,7 @@ class SignIns(private val store: Store, private val vault: Vault) {
         list.forEach {
             array.put(
                 JSONObject().put("kind", it.kind.wire).put("site", it.site).put("realm", it.realm)
-                    .put("username", it.username).put("password", it.password),
+                    .put("username", it.username).put("password", it.password).put("dashboard", it.dashboard),
             )
         }
         store.saveSignIns(hex(vault.seal(array.toString().toByteArray())))

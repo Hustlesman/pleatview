@@ -952,6 +952,16 @@ def checks(r: Run, report: Report, apk: Path) -> None:
             ws_call(r, {"type": "lovelace/dashboards/delete", "dashboard_id": created["result"]["id"]})
             ha.call("pleatview", "home", {"entity_id": entity["id"]})
 
+    def ha_version_repair():
+        # Dashboard cards before 2026.7 have published XSS bugs: PleatView asks for an update.
+        version = ha.api("GET", "/api/config")[1]["version"]
+        older = tuple(int(part) for part in version.split(".")[:2]) < (2026, 7)
+        issues = ws_call(r, {"type": "repairs/list_issues"}).get("result", {}).get("issues", [])
+        shown = any(i["domain"] == "pleatview" and i["issue_id"] == "old_home_assistant" for i in issues)
+        if shown != older:
+            raise AssertionError(f"Home Assistant {version} {'shows' if shown else 'lacks'} the update repair")
+        return f"Home Assistant {version}: " + ("asks for an update" if shown else "no repair")
+
     def support_code():
         # The GitHub download (which this is) offers a donation QR code in its menu.
         ha.call("pleatview", "home", {"entity_id": entity["id"]})
@@ -1052,6 +1062,7 @@ def checks(r: Run, report: Report, apk: Path) -> None:
         report.check("Wrong PIN rejected, right PIN finishes setup", pairing)
     for name, fn in [
         ("Dashboard signs in automatically", signed_in),
+        ("Repair for Home Assistant older than 2026.7", ha_version_repair),
         ("Kiosk mode hides the sidebar and header", kiosk),
         ("Notification card appears", notification),
         ("Video plays and stops", video),

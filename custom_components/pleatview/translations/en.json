@@ -229,5 +229,11 @@
         }
       }
     }
+  },
+  "issues": {
+    "old_home_assistant": {
+      "title": "Update Home Assistant for your TV dashboards",
+      "description": "Home Assistant {version} has known security bugs in dashboard cards, fixed in {safe_version}. A TV shows its dashboard all day, signed in, so a malicious card could act as the TV's user. Update Home Assistant to {safe_version} or later."
+    }
   }
 }

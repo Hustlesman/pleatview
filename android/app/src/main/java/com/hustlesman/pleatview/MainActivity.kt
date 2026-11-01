@@ -245,7 +245,7 @@ class MainActivity : Activity(), Hub.Display, DashboardController.Callbacks, Med
         val qr = findViewById<ImageView>(R.id.signin_qr)
         val ip = NetUtil.localIpv4()
         if (ip != null) {
-            val url = SetupCode.signInUrl(ip, app.settings.port, app.pairing.pin, request.title)
+            val url = SetupCode.signInUrl(ip, app.settings.port, app.pairing.pin, request.title, request.address)
             if (qr.contentDescription != url) {
                 qr.setImageBitmap(SetupCode.bitmap(url, (220 * resources.displayMetrics.density).toInt()))
                 qr.contentDescription = url

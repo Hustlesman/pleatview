@@ -28,6 +28,7 @@
   .error { color: #e5484d; min-height: 1.4em; margin: 10px 0 0; }
   .ok { color: #30a46c; margin-left: 10px; }
   .note { color: var(--muted); font-size: 14px; }
+  .to { margin: -4px 0 12px; color: var(--muted); font-size: 14px; overflow-wrap: anywhere; }
   footer { margin-top: 28px; color: var(--muted); font-size: 14px; }
   footer a { color: var(--accent); }
   #pin { font-size: 28px; letter-spacing: .3em; text-align: center; font-family: ui-monospace, Menlo, monospace; }
@@ -48,6 +49,7 @@
 
   <section id="signin" hidden>
     <h2>Sign in to <span id="signin-title"></span></h2>
+    <p class="to" id="signin-to" hidden>Sent only to <strong id="signin-address"></strong></p>
     <p class="note">The TV asks for this dashboard's username and password. They stay on the TV, and only this dashboard gets them.</p>
     <form id="signin-form">
       <label>Username
@@ -154,11 +156,12 @@
 "use strict";
 const $ = (selector) => document.querySelector(selector);
 let token = sessionStorage.getItem("pleatview-token");
-// The TV's QR codes carry its PIN, and for a sign-in the dashboard's name, in the URL
-// fragment, which never leaves the phone.
+// The TV's QR codes carry its PIN, and for a sign-in the dashboard's name and the address the
+// password goes to, in the URL fragment, which never leaves the phone.
 const fragment = new URLSearchParams(location.hash.slice(1));
 let scannedPin = /^\d{6}$/.test(fragment.get("pin") || "") ? fragment.get("pin") : "";
 const signInTitle = fragment.get("signin");
+const signInAddress = fragment.get("to") || "";
 if (location.hash) history.replaceState(null, "", location.pathname + location.search);
 
 async function api(path, options = {}) {
@@ -191,6 +194,8 @@ function showPairing() {
 
 function showSignIn() {
   $("#signin-title").textContent = signInTitle;
+  $("#signin-address").textContent = signInAddress;
+  $("#signin-to").hidden = !signInAddress;
   for (const id of ["#start", "#pair", "#settings"]) $(id).hidden = true;
   $("#signin").hidden = false;
   $("#signin-username").focus();

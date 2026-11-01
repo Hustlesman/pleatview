@@ -124,7 +124,7 @@ to 1 November 2026:
 
 | TV | Result |
 | --- | --- |
-| Google TV, Android TV 16 (emulator) | All 18 checks pass |
+| Google TV, Android TV 16 (emulator) | All 19 checks pass |
 | Fire TV Stick 3rd gen, Fire OS 7.7 (Android 9) | All checks pass (the restart check is skipped on a shared Home Assistant). Animated pictures show their first frame before Android 10. 42-hour soak test: no crashes, memory steady |
 | Chromecast with Google TV (HD), Android TV 14, 1.4 GB | All checks pass (the restart check is skipped on a shared Home Assistant). 42-hour soak test: no crashes, memory steady |
 
@@ -147,7 +147,8 @@ frames or need their own sign-in cookie still load, and the zoom applies to them
 
 **Sites that ask for a sign-in.** When a dashboard shows a login form or a password
 prompt, the TV says "Sign in to *dashboard name*" with a QR code. Scan it, sign in on your
-phone (your password manager works there), and the TV takes it from there. It saves the
+phone (your password manager works there; the page shows the address the password goes
+to), and the TV takes it from there. It saves the
 sign-in once the site accepts it, encrypted with the TV's keystore and only ever offered to
 that site, so it signs in again by itself after a restart or an expired session. Sign-ins
 stay on the TV; Home Assistant only sees `sign_in_needed` on the media player, for
