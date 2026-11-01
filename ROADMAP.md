@@ -101,10 +101,17 @@ from GitHub Releases.
       Fire TV Stick (3rd Gen, Fire OS 7.7, 1 GB): every automated check passes
       (`tools/e2e/run.py --device`, 29 Oct), and it opens by itself after a reboot.
       Chromecast with Google TV (HD, Android TV 14, 1.4 GB): every automated check passes
-      (30 Oct). The other manual checks are still to do
-- [ ] Home Assistant versions: oldest supported (2025.1), current stable, beta. On 29 Oct
-      all 13 checks passed on 2025.1.4, 2026.10.4, the 2026.11 beta (2026.11.0b0) and the
-      2026.11 nightly. Still to run: the stable release again before v1.1.0
+      (30 Oct). By hand on 1 Nov with v1.0.3: an update in place keeps the pairing and
+      settings; a notification shows over YouTube; `show_dashboard` brings PleatView back
+      in front of another app; after Home the entity turns `off`; the menu's *Display over
+      other apps* button leads to the permission. On the Fire TV, clearing PleatView's data
+      makes Home Assistant ask for the new PIN and the settings come back, and removing
+      the integration returns the TV to its setup screen and deletes its Home Assistant
+      user. Still to do: installing with Downloader on the Chromecast, the "My Home
+      Assistant" buttons, a sign-in on a real site
+- [ ] Home Assistant versions: oldest supported (2025.1), current stable, beta. On 1 Nov
+      all 18 checks passed on 2025.1.4, 2026.10.4, the 2026.11 beta (2026.11.0b2) and the
+      nightly. Still to run: the 2026.11 release (due 4 Nov) before v1.1.0
 - [x] Soak on the Chromecast HD and the Fire TV Stick with `tools/soak/run.py`: a busy
       household, a live camera and rotation on. 42 hours on both (30 Oct to 1 Nov), stopped
       before the planned 7 days; the 30-day soak in M6 is the long run. No crashes, and
