@@ -1,11 +1,15 @@
 [versions]
-agp = "9.4.1"
+agp = "9.5.0"
+# AGP brings Kotlin 2.2.10; 2.4.20 fixes CVE-2026-53914 (build cache deserialization).
+kotlin = "2.4.21"
 core = "1.19.1"
 webkit = "1.18.0"
 media3 = "1.11.1"
 qrcodegen = "1.8.0"
 junit = "4.13.2"
 json = "20260814"
+# Media3 brings Guava 33.3.1, before the fix for CVE-2026-102554.
+guava = "33.7.2-android"
 
 [libraries]
 androidx-core = { module = "androidx.core:core-ktx", version.ref = "core" }
@@ -18,6 +22,8 @@ media3-ui = { module = "androidx.media3:media3-ui", version.ref = "media3" }
 qrcodegen = { module = "io.nayuki:qrcodegen", version.ref = "qrcodegen" }
 junit = { module = "junit:junit", version.ref = "junit" }
 json = { module = "org.json:json", version.ref = "json" }
+guava = { module = "com.google.guava:guava", version.ref = "guava" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
+kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }

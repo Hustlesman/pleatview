@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import asyncio
+import hashlib
+import hmac
 import json
 from typing import Any
 
@@ -45,6 +47,8 @@ class FakeTV:
         }
         self.config: dict[str, Any] = {}
         self.commands: list[dict[str, Any]] = []
+        self.authorizations: list[str] = []  # every Authorization header received
+        self.verify_supported = True
         self.streams: list[web.StreamResponse] = []
         self._closing = asyncio.Event()
 
@@ -57,6 +61,7 @@ class FakeTV:
         app = web.Application(middlewares=[self._auth])
         app.router.add_get("/api/info", self._info)
         app.router.add_post("/api/pair", self._pair)
+        app.router.add_post("/api/verify", self._verify)
         app.router.add_get("/api/state", self._state)
         app.router.add_get("/api/events", self._events)
         app.router.add_post("/api/command", self._command)
@@ -81,7 +86,9 @@ class FakeTV:
 
     @web.middleware
     async def _auth(self, request: web.Request, handler):
-        if request.path not in ("/api/info", "/api/pair"):
+        if "Authorization" in request.headers:
+            self.authorizations.append(request.headers["Authorization"])
+        if request.path not in ("/api/info", "/api/pair", "/api/verify"):
             header = request.headers.get("Authorization", "")
             if header.removeprefix("Bearer ") not in self.tokens:
                 return web.json_response({"error": "unauthorized"}, status=401)
@@ -95,6 +102,16 @@ class FakeTV:
         if body.get("pin", "").replace(" ", "") != self.pin:
             return web.json_response({"error": "invalid_pin"}, status=403)
         return web.json_response({"token": self.issue_token()})
+
+    async def _verify(self, request: web.Request) -> web.Response:
+        if not self.verify_supported:
+            return web.json_response({"error": "not found"}, status=404)
+        nonce = (await request.json())["nonce"].encode()
+        proofs = [
+            hmac.new(hashlib.sha256(token.encode()).hexdigest().encode(), nonce, hashlib.sha256).hexdigest()
+            for token in self.tokens
+        ]
+        return web.json_response({"proofs": proofs})
 
     async def _state(self, request: web.Request) -> web.Response:
         return web.json_response(self.state)

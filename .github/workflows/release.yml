@@ -5,6 +5,7 @@ on:
   push:
     tags: ["v*"]
 
+# Actions are pinned to commits: this workflow holds the signing key and can publish releases.
 permissions:
   contents: write
   # Build attestations: anyone can check that a release file was built here.
@@ -16,7 +17,9 @@ jobs:
   release:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
 
       - name: Check versions match the tag
         run: |
@@ -28,6 +31,12 @@ jobs:
               exit 1
             fi
           done
+
+      - uses: actions/setup-java@cf277c60eb25467037889841efdb72551f06f6c3 # v4.9.1
+        with:
+          distribution: temurin
+          java-version: 21
+      - uses: gradle/actions/setup-gradle@748248ddd2a24f49513d8f472f81c3a07d4d50e1 # v4.4.4
 
       # The same key must sign every release, or installed apps can't update.
       - name: Restore the release signing key
@@ -41,12 +50,6 @@ jobs:
           echo "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/release.jks"
           echo "PLEATVIEW_KEYSTORE=$RUNNER_TEMP/release.jks" >> "$GITHUB_ENV"
 
-      - uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: 21
-      - uses: gradle/actions/setup-gradle@v4
-
       - name: Build signed APK and app bundle
         working-directory: android
         env:
@@ -59,8 +62,12 @@ jobs:
           ./gradlew --no-daemon bundleRelease -Ppleatview.distribution=store
           ./gradlew --no-daemon assembleRelease
 
+      - name: Remove the signing key
+        if: always()
+        run: rm -f "$RUNNER_TEMP/release.jks"
+
       - name: Keep the app bundle for Google Play
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: pleatview-${{ github.ref_name }}-aab
           path: android/app/build/outputs/bundle/release/*.aab
@@ -73,7 +80,7 @@ jobs:
 
       # Signed build provenance, so anyone can check where a file came from:
       #   gh attestation verify pleatview.apk --repo Hustlesman/pleatview
-      - uses: actions/attest@v4
+      - uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
         with:
           subject-path: |
             pleatview.apk

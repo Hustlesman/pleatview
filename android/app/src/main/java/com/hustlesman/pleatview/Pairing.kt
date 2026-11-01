@@ -4,6 +4,8 @@ import org.json.JSONArray
 import org.json.JSONObject
 import java.security.MessageDigest
 import java.security.SecureRandom
+import javax.crypto.Mac
+import javax.crypto.spec.SecretKeySpec
 
 /**
  * PIN-based pairing. The PIN is shown on the TV; a client that knows it receives a
@@ -99,6 +101,18 @@ class Pairing(
         var match = false
         for (record in records) match = MessageDigest.isEqual(record.hash.toByteArray(), hash) or match
         return match
+    }
+
+    /**
+     * Proves this is the TV a client paired with, without the client sending its token: one
+     * HMAC-SHA256 of [nonce] per paired client, keyed with the stored hash of its token.
+     * A client that holds a token computes the same value; anyone else can't.
+     */
+    @Synchronized
+    fun prove(nonce: String): List<String> = records.map { record ->
+        val mac = Mac.getInstance("HmacSHA256")
+        mac.init(SecretKeySpec(record.hash.toByteArray(), "HmacSHA256"))
+        hex(mac.doFinal(nonce.toByteArray()))
     }
 
     @Synchronized

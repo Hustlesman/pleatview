@@ -5,6 +5,8 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import javax.crypto.Mac
+import javax.crypto.spec.SecretKeySpec
 
 class PairingTest {
     private class MemoryStore : Pairing.Store {
@@ -64,5 +66,27 @@ class PairingTest {
         assertNotEquals(pin, pairing.pin)
         assertFalse(pairing.isPaired)
         assertEquals(Pairing.Result.InvalidPin, pairing.verify(pin))
+    }
+
+    @Test
+    fun `proofs answer a nonce for each paired client without revealing tokens`() {
+        val pairing = pairing()
+        val token = (pairing.pair(pairing.pin, "a") as Pairing.Result.Paired).token
+        val nonce = "00112233445566778899aabbccddeeff"
+        // What a client holding the token computes on its side.
+        val mac = Mac.getInstance("HmacSHA256").apply { init(SecretKeySpec(Pairing.sha256(token).toByteArray(), "HmacSHA256")) }
+        val expected = mac.doFinal(nonce.toByteArray()).joinToString("") { "%02x".format(it) }
+        assertEquals(listOf(expected), pairing.prove(nonce))
+        assertNotEquals(pairing.prove(nonce), pairing.prove("ffeeddccbbaa99887766554433221100"))
+        assertFalse(pairing.prove(nonce).single().contains(token))
+    }
+
+    @Test
+    fun `proof matches the protocol's test vector`() {
+        store.json = """[{"hash":"${Pairing.sha256("token-1")}","client":"a","created":0}]"""
+        assertEquals(
+            listOf("cfd2cb0b0606646c50484f870216c1870afd7f225109845b6435fdfd40887c7e"),
+            pairing().prove("00112233445566778899aabbccddeeff"),
+        )
     }
 }

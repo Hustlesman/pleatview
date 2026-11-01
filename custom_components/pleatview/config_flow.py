@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Mapping
 from contextlib import suppress
+import logging
 from typing import Any
 
 import voluptuous as vol
@@ -59,6 +60,8 @@ USER_SCHEMA = vol.Schema(
     }
 )
 PIN_SCHEMA = vol.Schema({vol.Required("pin"): str})
+
+_LOGGER = logging.getLogger(__name__)
 
 
 class PleatViewConfigFlow(ConfigFlow, domain=DOMAIN):
@@ -116,17 +119,44 @@ class PleatViewConfigFlow(ConfigFlow, domain=DOMAIN):
         self._host = discovery_info.host
         self._port = discovery_info.port or DEFAULT_PORT
         await self.async_set_unique_id(device_id)
+        for entry in self._async_current_entries(include_ignore=False):
+            if entry.unique_id == device_id:
+                await self._async_follow_moved_tv(entry)
         try:
             self._info = await self._client().get_info()
         except PleatViewError:
-            # TVs can advertise addresses Home Assistant can't reach, such as a VPN's or an
-            # emulator's. A configured TV only moves to an address where it answers.
             self._abort_if_unique_id_configured()
             return self.async_abort(reason="cannot_connect")
-        self._abort_if_unique_id_configured(updates={CONF_HOST: self._host, CONF_PORT: self._port})
+        self._abort_if_unique_id_configured()
         self.context["title_placeholders"] = {"name": self._name}
         # Entering the PIN is the confirmation: no separate "Set up this TV?" step.
         return await self.async_step_pair()
+
+    async def _async_follow_moved_tv(self, entry: ConfigEntry) -> None:
+        """Move a paired TV to the address it announced, once it proves it's that TV; then abort.
+
+        Anyone on the network can announce a TV's id, which isn't secret. Moving the entry
+        sends that address the pairing token and Home Assistant's own token for the TV. TVs
+        also announce addresses Home Assistant can't reach, such as a VPN's or an emulator's.
+        """
+        if (entry.data[CONF_HOST], entry.data[CONF_PORT]) != (self._host, self._port):
+            client = PleatViewClient(
+                async_get_clientsession(self.hass), self._host, self._port, entry.data[CONF_TOKEN]
+            )
+            try:
+                proven = await client.verify()
+            except PleatViewError:
+                proven = None  # nothing answers there
+            if proven:
+                self._abort_if_unique_id_configured(updates={CONF_HOST: self._host, CONF_PORT: self._port})
+            if proven is False:
+                _LOGGER.warning(
+                    "%s:%s announced itself as %s but couldn't prove it is that TV, so Home Assistant "
+                    "stays with %s:%s. PleatView 1.0.4 and later prove it; with an older app, update it "
+                    "or add the TV again with its new address",
+                    self._host, self._port, entry.title, entry.data[CONF_HOST], entry.data[CONF_PORT],
+                )
+        self._abort_if_unique_id_configured()
 
     async def async_step_pair(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
         """Ask for the PIN shown on the TV."""

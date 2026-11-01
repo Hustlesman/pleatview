@@ -91,4 +91,13 @@ class ConfigTest {
         assertTrue(config.toJson().getBoolean("ha_token_set"))
         assertEquals("secret", config.toJson(includeSecrets = true).getString("ha_token"))
     }
+
+    @Test
+    fun `moving to another Home Assistant drops the token unless a new one comes with it`() {
+        val config = Config(haUrl = "http://ha.local:8123", haToken = "secret")
+        assertEquals("secret", config.merge(JSONObject().put("ha_url", "http://HA.local:8123/lovelace")).haToken)
+        assertEquals("", config.merge(JSONObject().put("ha_url", "http://elsewhere:8123")).haToken)
+        assertEquals("new", config.merge(JSONObject().put("ha_url", "http://elsewhere:8123").put("ha_token", "new")).haToken)
+        assertEquals("secret", Config.fromJson(config.toJson(includeSecrets = true)).haToken)
+    }
 }

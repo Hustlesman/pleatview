@@ -39,6 +39,9 @@ class Api(
             "/", "/setup" -> get(request) { HttpResponse.html(setupPage()) }
             "/api/info" -> get(request) { HttpResponse.json(200, backend.info().put("paired", pairing.isPaired)) }
             "/api/pair" -> post(request) { pair(request) }
+            // Lets Home Assistant check that a TV announcing itself at a new address is the one
+            // it paired with, before it sends that address its token.
+            "/api/verify" -> post(request) { verify(request) }
             // The phone that scanned the TV's sign-in code has its PIN instead of a token.
             "/api/signin" -> post(request) { signIn(request) }
             else -> {
@@ -82,6 +85,12 @@ class Api(
             is Pairing.Result.LockedOut ->
                 HttpResponse.error(429, "too_many_attempts", mapOf("retry_after" to result.retryAfterSeconds))
         }
+    }
+
+    private fun verify(request: HttpRequest): HttpResponse {
+        val nonce = request.jsonBody().optString("nonce")
+        if (!NONCE.matches(nonce)) return HttpResponse.error(400, "'nonce' must be 32 to 128 hex digits")
+        return HttpResponse.json(200, JSONObject().put("proofs", JSONArray(pairing.prove(nonce))))
     }
 
     private fun signIn(request: HttpRequest): HttpResponse {
@@ -176,5 +185,6 @@ class Api(
         const val API_VERSION = 1
         private const val MAX_STREAMS = 8
         private const val PING_SECONDS = 20L
+        private val NONCE = Regex("^[0-9a-f]{32,128}$")
     }
 }

@@ -3,8 +3,11 @@
 from __future__ import annotations
 
 from collections.abc import Callable
+import hashlib
+import hmac
 import json
 import logging
+import secrets
 from typing import Any
 
 import aiohttp
@@ -39,6 +42,10 @@ class TooManyAttempts(PleatViewError):
 
 class RequestRejected(PleatViewError):
     """The TV rejected a command or configuration value."""
+
+
+class NotFound(PleatViewError):
+    """The TV doesn't know the request (an older app)."""
 
 
 class PleatViewClient:
@@ -78,6 +85,26 @@ class PleatViewClient:
         self.token = token
         return token
 
+    async def verify(self) -> bool:
+        """Check that this address is the TV that issued our token, without sending the token.
+
+        The TV answers a fresh nonce with an HMAC keyed by the hash of each token it issued.
+        Apps before 1.0.4 don't know the request, and anything else can't answer it.
+        """
+        if not self.token:
+            return False
+        nonce = secrets.token_hex(16)
+        try:
+            data = await self._request("POST", "/api/verify", {"nonce": nonce}, auth=False)
+        except (InvalidAuth, InvalidPin, TooManyAttempts, RequestRejected, NotFound):
+            return False
+        key = hashlib.sha256(self.token.encode()).hexdigest().encode()
+        expected = hmac.new(key, nonce.encode(), hashlib.sha256).hexdigest()
+        proofs = data.get("proofs")
+        return isinstance(proofs, list) and any(
+            isinstance(proof, str) and hmac.compare_digest(proof, expected) for proof in proofs
+        )
+
     async def get_state(self) -> dict[str, Any]:
         """Return the current state snapshot."""
         return await self._request("GET", "/api/state")
@@ -113,6 +140,7 @@ class PleatViewClient:
                 self._base.with_path("/api/events"),
                 headers=headers,
                 timeout=STREAM_TIMEOUT,
+                allow_redirects=False,
             ) as resp:
                 if resp.status == 401:
                     raise InvalidAuth("The TV rejected the pairing token")
@@ -162,6 +190,8 @@ class PleatViewClient:
                 json=payload,
                 headers=headers,
                 timeout=REQUEST_TIMEOUT,
+                # The TV never redirects: whatever does isn't the TV.
+                allow_redirects=False,
             ) as resp:
                 try:
                     data = await resp.json(content_type=None)
@@ -178,6 +208,8 @@ class PleatViewClient:
                     raise TooManyAttempts(data.get("retry_after"))
                 if resp.status == 400:
                     raise RequestRejected(error or "bad request")
+                if resp.status == 404:
+                    raise NotFound(error or "not found")
                 if resp.status >= 400:
                     raise PleatViewError(f"HTTP {resp.status} {error}".strip())
                 return data
