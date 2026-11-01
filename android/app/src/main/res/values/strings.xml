@@ -15,8 +15,8 @@
     <string name="support_text">PleatView is free, and every feature stays free for everyone. If it\'s useful to you, you can chip in towards test devices and app-store fees: scan the code with your phone. Bug reports and ideas help just as much.</string>
     <string name="support_back">Back to the menu</string>
     <string name="menu_info">%1$s · %2$s · PIN %3$s · v%4$s</string>
-    <string name="menu_overlay_missing">Home Assistant can\'t bring PleatView to the front or show notifications over other apps until you allow it to display over other apps.</string>
-    <string name="menu_overlay_missing_notifications">Notifications from Home Assistant only show over other apps once you allow PleatView to display over other apps.</string>
+    <string name="menu_overlay_missing">Home Assistant can\'t bring PleatView to the front or show notifications over other apps until you allow it to display over other apps. If a list of apps opens, choose PleatView and turn it on.</string>
+    <string name="menu_overlay_missing_notifications">Notifications from Home Assistant only show over other apps once you allow PleatView to display over other apps. If a list of apps opens, choose PleatView and turn it on.</string>
     <string name="signin_title">Sign in to %1$s</string>
     <string name="signin_body">This dashboard asks for a username and password. Scan the code with your phone to sign in. PleatView keeps the sign-in on this TV only.</string>
     <string name="signin_failed">That username or password didn\'t work. Try again.</string>
