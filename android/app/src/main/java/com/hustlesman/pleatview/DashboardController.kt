@@ -6,6 +6,7 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.net.ConnectivityManager
 import android.net.Network
+import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import android.os.SystemClock
@@ -34,7 +35,7 @@ import kotlin.math.roundToInt
 /**
  * Owns the dashboard WebView and keeps it alive: signs the Home Assistant frontend in
  * with the provisioned token, retries when HA is unreachable, recreates the WebView
- * when its renderer dies, and reloads pages that stop responding.
+ * when its renderer dies or freezes, and reloads pages that stop responding.
  */
 class DashboardController(
     private val activity: Activity,
@@ -64,6 +65,7 @@ class DashboardController(
     private var loadStartedAt = 0L
     private var lastHeartbeat = 0L
     private var disconnectedSince = 0L
+    private var probeSentAt = 0L
     private var ready = false
     private var failed = false
     private var paused = false
@@ -81,6 +83,11 @@ class DashboardController(
         private set
 
     private val retryRunnable = Runnable { currentUrl?.let(::load) }
+    private var recreateTarget: String? = null
+    private val recreateRunnable = Runnable {
+        create()
+        load(recreateTarget ?: config.resolve(config.homePath))
+    }
     private val reloadRunnable = Runnable {
         Log.i(TAG, "Periodic reload")
         reload()
@@ -186,6 +193,7 @@ class DashboardController(
         if (lastHeartbeat != 0L) lastHeartbeat = now
         loadStartedAt = now
         disconnectedSince = 0
+        probeSentAt = 0
         webView?.onResume()
     }
 
@@ -196,6 +204,7 @@ class DashboardController(
 
     fun destroy() {
         main.removeCallbacks(retryRunnable)
+        main.removeCallbacks(recreateRunnable)
         main.removeCallbacks(reloadRunnable)
         main.removeCallbacks(watchdogRunnable)
         networkCallback?.let { cb ->
@@ -213,6 +222,7 @@ class DashboardController(
         failed = false
         lastHeartbeat = 0
         disconnectedSince = 0
+        probeSentAt = 0
         forcedAuth.clear()
         val view = try {
             WebView(activity)
@@ -445,8 +455,22 @@ class DashboardController(
 
     private fun watchdog() {
         val view = webView ?: return
-        if (paused || failed || !config.isHaUrl(view.url)) return
+        if (paused) return
         val now = SystemClock.elapsedRealtime()
+        // A page can freeze the renderer: after a Wi-Fi drop one did on a Fire TV, and every
+        // later load went into the same frozen renderer. Only a new one gets out of that.
+        if (probeSentAt != 0L && now - probeSentAt > UNRESPONSIVE_MS) {
+            Log.w(TAG, "Dashboard renderer stopped responding; starting a new one")
+            hub.update { lastError = "The page stopped responding, so PleatView started it again" }
+            if (Build.VERSION.SDK_INT >= 29) view.webViewRenderProcess?.terminate()
+            recreate()
+            return
+        }
+        if (probeSentAt == 0L) {
+            probeSentAt = now
+            view.evaluateJavascript("0") { if (view === webView) probeSentAt = 0 }
+        }
+        if (failed || !config.isHaUrl(view.url)) return
         val silentSince = if (lastHeartbeat != 0L) lastHeartbeat else loadStartedAt
         when {
             silentSince != 0L && now - silentSince > STALL_MS -> {
@@ -459,6 +483,14 @@ class DashboardController(
                 reload()
             }
         }
+    }
+
+    /** A new WebView on the same page, once the old renderer has died or been given up on. */
+    private fun recreate() {
+        recreateTarget = currentUrl
+        destroyWebView()
+        main.removeCallbacks(recreateRunnable)
+        main.postDelayed(recreateRunnable, 1_000)
     }
 
     private fun onLoadFailed(reason: CharSequence?) {
@@ -576,12 +608,7 @@ class DashboardController(
         override fun onRenderProcessGone(view: WebView, detail: RenderProcessGoneDetail): Boolean {
             if (view === webView) {
                 Log.w(TAG, "Dashboard renderer gone; recreating")
-                val target = currentUrl
-                destroyWebView()
-                main.postDelayed({
-                    create()
-                    load(target ?: config.resolve(config.homePath))
-                }, 1_000)
+                recreate()
             }
             return true
         }
@@ -605,6 +632,7 @@ class DashboardController(
         private const val TOKEN_LIFETIME_SECONDS = 1800
         private const val WATCHDOG_INTERVAL_MS = 30_000L
         private const val STALL_MS = 120_000L
+        private const val UNRESPONSIVE_MS = 45_000L
         private const val DISCONNECTED_RELOAD_MS = 5 * 60_000L
         private val RETRY_DELAYS_SECONDS = intArrayOf(3, 5, 10, 20, 30, 60)
         private val CALLBACK_NAME = Regex("^[A-Za-z_$][A-Za-z0-9_$]{0,63}$")

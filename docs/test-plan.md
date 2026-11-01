@@ -72,6 +72,7 @@ checklist below and tick what passed. Anything that fails gets its own issue.
 - [ ] Pulling the network or rebooting the router: a status banner, then recovery without touching the TV
 - [ ] Clearing PleatView's data: Home Assistant asks for the new PIN, and the settings come back
 - [ ] A WebView crash recovers by itself (debug builds; DevTools `Page.crash`)
+- [ ] A page that freezes the WebView (an endless loop; after a Wi-Fi drop a real page did) gets a new one within about 90 seconds **(auto)**
 
 ### Sign-in and removal
 - [ ] Reconfigure: read-only user (buttons on the TV can't change devices), own token, sign in on the TV
@@ -96,7 +97,8 @@ change every 2 minutes, a notification every 15 (text, camera snapshot, animated
 and every hour a video and a camera pop-up; every 2 hours a Webpage dashboard, every 3 a
 password prompt (its sign-in card has to show, then go). It samples memory, the WebView
 renderer, the dashboard's JavaScript heap, threads, open files and CPU every minute, takes a
-screenshot every hour and keeps crashes, ANRs and renderer deaths from logcat. It runs its
+screenshot every hour and keeps crashes, ANRs and renderer deaths from logcat. A page that
+stops answering DevTools for 30 seconds goes in the issues, as a frozen renderer. It runs its
 own adb server, so end-to-end runs on other TVs can happen meanwhile.
 
 ```bash

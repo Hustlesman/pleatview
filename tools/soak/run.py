@@ -50,6 +50,7 @@ TOOLS_IMAGE = "ghcr.io/home-assistant/home-assistant:stable"
 SOAK_DASHBOARD = "dashboard-soak"
 SAMPLE_SECONDS = 60
 TICK_SECONDS = 5
+PAGE_ANSWER_SECONDS = 30  # a page that takes longer to answer DevTools counts as frozen
 
 FIELDS = [
     "time", "elapsed_h", "activity", "pid", "pss_kb", "swap_pss_kb", "java_heap_kb", "native_heap_kb",
@@ -266,6 +267,7 @@ class Soak:
         self.gif_url = None
         self.watcher = LogWatcher(self)
         self.devtools_port = free_port()  # its own, so two TVs can soak at once
+        self.page_silent = False
 
     # -- files ---------------------------------------------------------------------------
     def write(self, name: str, line: str) -> None:
@@ -392,12 +394,18 @@ class Soak:
         if js and pid:
             try:
                 self.adb("forward", f"tcp:{self.devtools_port}", f"localabstract:webview_devtools_remote_{pid}")
+                started = time.monotonic()
                 output = e2e.run("docker", "run", "--rm", "-i", "--network", "host", "--entrypoint", "python3",
-                                 TOOLS_IMAGE, "-c", e2e.CDP_SCRIPT, str(self.devtools_port), input=JS_HEAP,
-                                 timeout=90, check=False)
+                                 TOOLS_IMAGE, "-c", e2e.CDP_SCRIPT, str(self.devtools_port), str(PAGE_ANSWER_SECONDS),
+                                 input=JS_HEAP, timeout=PAGE_ANSWER_SECONDS + 15, check=False)
                 value = json.loads(output) if output.strip() else None
                 if isinstance(value, dict):
                     row["js_heap_kb"], row["js_page"] = value.get("kb"), value.get("page")
+                    self.page_silent = False
+                elif time.monotonic() - started >= PAGE_ANSWER_SECONDS and not self.page_silent:
+                    # The 1 Nov soak missed a page that froze its renderer after a Wi-Fi drop.
+                    self.page_silent = True
+                    self.issue(f"the page on screen didn't answer for {PAGE_ANSWER_SECONDS} s: a frozen renderer?")
             except Exception as error:  # noqa: BLE001
                 row["error"] = f"js heap: {error}"[:120]
         return row

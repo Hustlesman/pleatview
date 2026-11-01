@@ -39,13 +39,13 @@ each later milestone gets its issues when it starts.
 **Want to help?** Tell us about a device that works or doesn't, report a bug, or join the
 Google TV beta ([#9](https://github.com/Hustlesman/pleatview/issues/9)).
 
-Done so far: v1.0.1 is published as a signed release with build attestations (versions are
+Done so far: v1.0.2 is published as a signed release with build attestations (versions are
 1.x from 29 Oct; each milestone ends with the next minor release). One command
 (`tools/e2e/run.py`) tests the Android TV app and the Home Assistant integration together in
-16 checks, on an Android TV 16 emulator or a real TV: pairing, automatic sign-in, kiosk mode,
-casting, cameras, notifications, sign-ins, standby, updates and recovery from a Home Assistant
-restart. The first real TV, a Fire TV Stick, passed the automated checks on 29 Oct and its
-first soak test.
+18 checks, on an Android TV 16 emulator or a real TV: pairing, automatic sign-in, kiosk mode,
+casting, cameras, notifications, sign-ins, standby, updates, and recovery from a Home Assistant
+restart and from a frozen page. A Fire TV Stick and a Chromecast HD pass the automated checks,
+and both ran a 42-hour soak test without a crash.
 44 app tests and 25 integration tests pass.
 
 ## How we stay on track
@@ -105,12 +105,15 @@ from GitHub Releases.
 - [ ] Home Assistant versions: oldest supported (2025.1), current stable, beta. On 29 Oct
       all 13 checks passed on 2025.1.4, 2026.10.4, the 2026.11 beta (2026.11.0b0) and the
       2026.11 nightly. Still to run: the stable release again before v1.1.0
-- [ ] 7-day soak on the Streamer and the Chromecast HD, with a dashboard showing a live
-      camera and rotation on. No crash or blank screen, stable memory (checked daily),
-      and automatic recovery from a router reboot and a Home Assistant restart.
-      `tools/soak/run.py` automates it. A first run on the Fire TV Stick passed after 23 hours
-      (PleatView's memory +3 %, no crashes or restarts). Next: 7 days on the Chromecast HD
-      and the Fire TV Stick
+- [x] Soak on the Chromecast HD and the Fire TV Stick with `tools/soak/run.py`: a busy
+      household, a live camera and rotation on. 42 hours on both (30 Oct to 1 Nov), stopped
+      before the planned 7 days; the 30-day soak in M6 is the long run. No crashes, and
+      PleatView's memory stayed flat (Chromecast +0.2 %, Fire TV −3 %). Both recovered from a
+      Home Assistant restart. Fire OS's "Are you still watching?" sends the Fire TV to its
+      home screen every 4 hours; twice Fire OS then closed PleatView to free memory, and it
+      came back by itself both times. A 2-minute Wi-Fi drop on the Fire TV left a page
+      frozen, and PleatView didn't recover until its WebView was rebuilt: it now does that
+      by itself when a page stops answering. A first 23-hour run passed on 29 Oct
 - [x] Decide the foreground-service type Google Play will accept: `connectedDevice`
       (Home Assistant controls the TV over the network), with Wi-Fi kept optional
 - [x] Ask for "Display over other apps" from the PleatView menu on TVs that have that
