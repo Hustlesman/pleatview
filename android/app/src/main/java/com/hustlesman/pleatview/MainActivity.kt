@@ -4,6 +4,7 @@ import android.app.Activity
 import android.app.AlertDialog
 import android.content.ActivityNotFoundException
 import android.content.Intent
+import android.content.res.Configuration
 import android.os.Build
 import android.os.Bundle
 import android.os.Handler
@@ -12,6 +13,7 @@ import android.os.SystemClock
 import android.text.InputType
 import android.view.Gravity
 import android.view.KeyEvent
+import android.view.MotionEvent
 import android.view.View
 import android.view.WindowManager
 import android.widget.Button
@@ -38,6 +40,7 @@ class MainActivity : Activity(), Hub.Display, DashboardController.Callbacks, Med
     private lateinit var menuItems: LinearLayout
     private lateinit var curtain: View
     private lateinit var signInCard: View
+    private lateinit var touchMenu: View
 
     private val main = Handler(Looper.getMainLooper())
     private var visible = false
@@ -53,6 +56,9 @@ class MainActivity : Activity(), Hub.Display, DashboardController.Callbacks, Med
     private val signInVisible: Boolean get() = signInCard.visibility == View.VISIBLE
 
     private val revertRunnable = Runnable { dashboard.navigate(config.homePath) }
+    private val hideTouchMenu = Runnable {
+        touchMenu.animate().alpha(0f).withEndAction { touchMenu.visibility = View.GONE }
+    }
     private val setupRefresh = object : Runnable {
         override fun run() {
             refreshSetup()
@@ -111,6 +117,12 @@ class MainActivity : Activity(), Hub.Display, DashboardController.Callbacks, Med
         )
         webOverlay = WebOverlay(this, findViewById(R.id.web_overlay_container), app.hub) { onLayerClosed() }
         menuOverlay.setOnClickListener { closeMenu() }
+        touchMenu = findViewById(R.id.touch_menu)
+        touchMenu.setOnClickListener {
+            hideTouchMenu.run()
+            openMenu()
+        }
+        fitLayouts()
 
         if (Build.VERSION.SDK_INT >= 33) {
             onBackInvokedDispatcher.registerOnBackInvokedCallback(OnBackInvokedDispatcher.PRIORITY_DEFAULT) { handleBack() }
@@ -340,7 +352,9 @@ class MainActivity : Activity(), Hub.Display, DashboardController.Callbacks, Med
         val ip = NetUtil.localIpv4()
         val port = app.settings.port
         findViewById<TextView>(R.id.setup_address).text =
-            if (ip != null) "Host  $ip     Port  $port" else getString(R.string.setup_no_network)
+            if (ip == null) getString(R.string.setup_no_network)
+            // One line on wide screens; a phone's is too narrow for both.
+            else "Host  $ip" + (if (isWide) "     " else "\n") + "Port  $port"
         findViewById<TextView>(R.id.setup_pin).text = formatPin(app.pairing.pin)
         val qr = findViewById<ImageView>(R.id.setup_qr)
         if (ip != null) {
@@ -354,7 +368,7 @@ class MainActivity : Activity(), Hub.Display, DashboardController.Callbacks, Med
             qr.visibility = View.INVISIBLE
         }
         findViewById<TextView>(R.id.setup_manual).text =
-            getString(R.string.setup_manual, if (ip != null) "http://$ip:$port" else "http://<tv-address>:$port")
+            getString(R.string.setup_manual, if (ip != null) "http://$ip:$port" else "http://<address>:$port")
         findViewById<TextView>(R.id.setup_device).text =
             getString(R.string.setup_device, app.settings.deviceName, BuildConfig.VERSION_NAME)
     }
@@ -413,6 +427,64 @@ class MainActivity : Activity(), Hub.Display, DashboardController.Callbacks, Med
     private fun drainPending() {
         if (!visible) return
         app.hub.takePending().forEach(::handle)
+    }
+
+    override fun onConfigurationChanged(newConfig: Configuration) {
+        super.onConfigurationChanged(newConfig)
+        fitLayouts()
+    }
+
+    /** Text and QR code side by side on TVs and wide screens, stacked on phones and portrait tablets. */
+    private val isWide: Boolean get() = resources.configuration.screenWidthDp >= WIDE_LAYOUT_DP
+
+    private fun fitLayouts() {
+        val widthDp = resources.configuration.screenWidthDp
+        val wide = isWide
+        val density = resources.displayMetrics.density
+        fun stack(row: Int, text: Int, textWidthDp: Int, code: Int) {
+            findViewById<LinearLayout>(row).orientation = if (wide) LinearLayout.HORIZONTAL else LinearLayout.VERTICAL
+            val textView = findViewById<View>(text)
+            textView.layoutParams = (textView.layoutParams as LinearLayout.LayoutParams).apply {
+                // The screens have 24 dp padding on each side.
+                width = (minOf(textWidthDp, widthDp - 48) * density).toInt()
+            }
+            val codeView = findViewById<View>(code)
+            codeView.layoutParams = (codeView.layoutParams as LinearLayout.LayoutParams).apply {
+                marginStart = if (wide) (56 * density).toInt() else 0
+                topMargin = if (wide) 0 else (28 * density).toInt()
+            }
+        }
+        stack(R.id.setup_row, R.id.setup_text, 560, R.id.setup_code)
+        stack(R.id.signin_row, R.id.signin_text, 520, R.id.signin_code)
+        if (setupScreen.visibility == View.VISIBLE) refreshSetup()
+    }
+
+    // ---- Touch (phones, tablets, Chromebooks) -------------------------------------------
+
+    override fun dispatchTouchEvent(event: MotionEvent): Boolean {
+        if (event.actionMasked == MotionEvent.ACTION_DOWN) {
+            // A touch counts like a remote press: rotation pauses, and after a while the
+            // home dashboard comes back.
+            lastInput = SystemClock.elapsedRealtime()
+            if (standby) {
+                wake()
+                return true
+            }
+            if (!menuVisible) {
+                userBrowsing = true
+                showTouchMenu()
+            }
+        }
+        return super.dispatchTouchEvent(event)
+    }
+
+    /** The menu button fades in on a touch and out again, so it never covers the dashboard for long. */
+    private fun showTouchMenu() {
+        main.removeCallbacks(hideTouchMenu)
+        touchMenu.animate().cancel()
+        touchMenu.alpha = 1f
+        touchMenu.visibility = View.VISIBLE
+        main.postDelayed(hideTouchMenu, TOUCH_MENU_MS)
     }
 
     // ---- Remote control ---------------------------------------------------------------
@@ -624,5 +696,9 @@ class MainActivity : Activity(), Hub.Display, DashboardController.Callbacks, Med
     companion object {
         private const val ROTATE_INPUT_GRACE_MS = 60_000L
         private const val SEEK_STEP_MS = 10_000L
+        private const val TOUCH_MENU_MS = 5_000L
+
+        /** Width the setup and sign-in screens need with the text and QR code side by side. */
+        private const val WIDE_LAYOUT_DP = 900
     }
 }

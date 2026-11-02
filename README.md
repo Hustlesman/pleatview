@@ -312,6 +312,7 @@ tools/build-apk.sh                    # app unit tests + debug APK
 tools/build-apk.sh lintDebug          # any Gradle tasks
 tools/test-integration.sh             # integration tests on the pinned Home Assistant
 tools/e2e/run.py                      # end to end: Android TV emulator + real Home Assistant
+tools/e2e/run.py --form-factor tablet  # ...on a Pixel Tablet emulator (or phone: a Pixel 8)
 tools/e2e/run.py --ha-version 2025.1.4   # ...against another Home Assistant version
 tools/e2e/run.py --ha-url http://192.168.1.20:8123 --ha-token-file token.txt
                                       # ...against your own (admin token; the entry is removed afterwards)

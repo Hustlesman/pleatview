@@ -1,13 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">PleatView</string>
-    <string name="setup_tagline">Home Assistant dashboards and media on this TV</string>
-    <string name="setup_step_discover">In Home Assistant, open Settings → Devices &amp; services. This TV should appear as a discovered PleatView device. If it doesn\'t, add the PleatView integration with this address:</string>
+    <string name="setup_tagline">Home Assistant dashboards and media on this screen</string>
+    <string name="setup_step_discover">In Home Assistant, open Settings → Devices &amp; services. This device should appear as a discovered PleatView device. If it doesn\'t, add the PleatView integration with this address:</string>
     <string name="setup_step_pin">When Home Assistant asks for a PIN, enter</string>
     <string name="setup_manual">No integration? Scan the code, or open %1$s on your phone.</string>
-    <string name="setup_qr_caption">Scan with your phone to add this TV to Home Assistant without typing</string>
+    <string name="setup_qr_caption">Scan with a phone to add this device to Home Assistant without typing</string>
     <string name="setup_device">%1$s · v%2$s · Help: pleatview.hustlesman.com</string>
     <string name="setup_no_network">Not connected to a network</string>
+    <string name="menu_open">Menu</string>
     <string name="menu_home">Home dashboard</string>
     <string name="menu_reload">Reload</string>
     <string name="menu_exit">Exit</string>
@@ -18,19 +19,19 @@
     <string name="menu_overlay_missing">Home Assistant can\'t bring PleatView to the front or show notifications over other apps until you allow it to display over other apps. If a list of apps opens, choose PleatView and turn it on.</string>
     <string name="menu_overlay_missing_notifications">Notifications from Home Assistant only show over other apps once you allow PleatView to display over other apps. If a list of apps opens, choose PleatView and turn it on.</string>
     <string name="signin_title">Sign in to %1$s</string>
-    <string name="signin_body">This dashboard asks for a username and password. Scan the code with your phone to sign in. PleatView keeps the sign-in on this TV only.</string>
+    <string name="signin_body">This dashboard asks for a username and password. Enter them here, or scan the code with your phone. PleatView keeps the sign-in on this device only.</string>
     <string name="signin_failed">That username or password didn\'t work. Try again.</string>
     <string name="signin_qr_caption">Scan to sign in with your phone</string>
-    <string name="signin_enter_here">Enter on the TV</string>
+    <string name="signin_enter_here">Enter here</string>
     <string name="signin_not_now">Not now</string>
     <string name="signin_username">Username</string>
     <string name="signin_password">Password</string>
-    <string name="signin_remember">Keep me signed in on this TV</string>
+    <string name="signin_remember">Keep me signed in on this device</string>
     <string name="signin_submit">Sign in</string>
     <string name="menu_forget_signins">Forget saved sign-ins (%1$d)</string>
     <string name="signins_forgotten">Saved sign-ins forgotten</string>
     <string name="menu_allow_overlay">Allow display over other apps</string>
-    <string name="overlay_settings_missing">This TV has no setting for it. See pleatview.hustlesman.com/support for the one-line fix.</string>
+    <string name="overlay_settings_missing">This device has no setting for it. See pleatview.hustlesman.com/support for the one-line fix.</string>
     <string name="status_unreachable">Can\'t reach Home Assistant (%1$s). Retrying in %2$d s…</string>
     <string name="status_auth_failed">Home Assistant rejected the access token. Re-provision it from Home Assistant or the setup page.</string>
     <string name="status_no_webview">Android System WebView is unavailable. Install or update it from the Play Store.</string>

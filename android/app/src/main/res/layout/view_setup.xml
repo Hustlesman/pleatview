@@ -1,17 +1,23 @@
 <?xml version="1.0" encoding="utf-8"?>
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<!-- Scrolls when the screen is short (a phone on its side). -->
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/background">
+    android:background="@color/background"
+    android:fillViewport="true">
 
+    <!-- Side by side on TVs and wide screens; MainActivity stacks them on narrow ones. -->
     <LinearLayout
+        android:id="@+id/setup_row"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_gravity="center"
+        android:layout_gravity="center_horizontal"
         android:gravity="center_vertical"
-        android:orientation="horizontal">
+        android:orientation="horizontal"
+        android:padding="24dp">
 
     <LinearLayout
+        android:id="@+id/setup_text"
         android:layout_width="560dp"
         android:layout_height="wrap_content"
         android:orientation="vertical">
@@ -91,6 +97,7 @@
     </LinearLayout>
 
     <LinearLayout
+        android:id="@+id/setup_code"
         android:layout_width="240dp"
         android:layout_height="wrap_content"
         android:layout_marginStart="56dp"
@@ -112,4 +119,4 @@
             android:textSize="15sp" />
     </LinearLayout>
     </LinearLayout>
-</FrameLayout>
+</ScrollView>

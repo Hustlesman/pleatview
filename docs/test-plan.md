@@ -1,8 +1,9 @@
 # Test plan
 
 What we check before a release and on each reference device. `tools/e2e/run.py` automates
-the items marked **(auto)** against a real Home Assistant, on an Android TV emulator or, with
-`--device`, on a real TV over the network. The rest need a person.
+the items marked **(auto)** against a real Home Assistant, on an Android TV emulator (or, with
+`--form-factor phone` or `tablet`, a Pixel 8 or Pixel Tablet emulator) or, with `--device`, on
+a real TV over the network. The rest need a person.
 
 Record a device run as a GitHub issue titled `Test run: vX.Y.Z on <device>`. Start with
 `tools/e2e/run.py --device <TV address> --ha-url … --ha-token-file …` and paste its
@@ -13,7 +14,7 @@ checklist below and tick what passed. Anything that fails gets its own issue.
 
 | | Covered by |
 | --- | --- |
-| **Devices** | Google TV Streamer, Chromecast with Google TV (HD), a TV with Google TV built in, Fire TV on Fire OS (or beta testers), Android TV emulator (auto) |
+| **Devices** | Google TV Streamer, Chromecast with Google TV (HD), a TV with Google TV built in, Fire TV on Fire OS (or beta testers), Android TV emulator (auto); from M2 also an Android phone, a tablet and a Chromebook, and phone and tablet emulators (auto) |
 | **Home Assistant** | Oldest supported (2025.1), current release, current beta (auto: any version) |
 | **Install paths** | Downloader with `pleatview.hustlesman.com/apk`, adb, Google Play (from M2) |
 
@@ -38,6 +39,7 @@ checklist below and tick what passed. Anything that fails gets its own issue.
 - [ ] Back closes Home Assistant dialogs, then goes to the home dashboard, then opens the menu
 - [ ] The menu shows address, PIN and version, and its dashboard buttons work
 - [ ] The GitHub download's menu has *Support PleatView*, whose QR code opens the donation page; a store build has no such item **(auto: GitHub build)**
+- [ ] Phones, tablets and Chromebooks: a touch shows the menu button for a few seconds, and it opens the menu **(auto: phone and tablet emulators)**; a tap wakes the screen from standby; the setup screen and the sign-in card fit in portrait, with the QR code under the text
 
 ### Casting and media
 - [ ] MP4 video plays full screen; Home Assistant shows title, position and duration; pause, seek and stop work **(auto: play and stop)**

@@ -7,6 +7,7 @@ also runs in Docker, listening only on 127.0.0.1.
     tools/e2e/run.py                         # throwaway Home Assistant stable, fresh debug build
     tools/e2e/run.py --ha-version 2025.1.4   # any Home Assistant image tag (beta, dev, ...)
     tools/e2e/run.py --apk path/to/app.apk   # test a specific APK (release builds skip the DevTools check)
+    tools/e2e/run.py --form-factor tablet    # a Pixel Tablet emulator (or phone: a Pixel 8) instead of a TV
     tools/e2e/run.py --keep                  # leave the containers running afterwards
     tools/e2e/run.py --screens clip.mp4      # then take the website and store pictures (out/<time>/screens),
                                              # with clip.mp4 in picture-in-picture
@@ -55,6 +56,14 @@ DEVTOOLS_PORT = 19222
 HA_CONTAINER = "pleatview-e2e-ha"
 TV_CONTAINER = "pleatview-e2e-tv"
 TV_IMAGE = "pleatview-e2e-emulator"
+# Emulator image, its Docker build arguments and the AVD to start, per --form-factor.
+MOBILE = ("pleatview-e2e-emulator-mobile",
+          ["--build-arg", "SYSTEM_IMAGE=system-images;android-36;google_apis;x86_64",
+           "--build-arg", "DEVICES=phone:pixel_8 tablet:pixel_tablet"])
+FORM_FACTORS = {"tv": (TV_IMAGE, [], "tv"), "phone": (*MOBILE, "phone"), "tablet": (*MOBILE, "tablet")}
+# The Pixel Tablet's 2560×1600 is slow to draw in software (System UI stops responding):
+# use a typical 10-inch tablet's 1920×1200 at the same 1280×800 dp.
+SCREEN_SIZES = {"tablet": ("1920x1200", "240")}
 EMULATOR_HOST = "10.0.2.2"  # how the emulator reaches this machine
 SCREENS_TV_NAME = "Living Room TV"  # what the emulator calls itself in --screens runs
 # With --device, adb runs in its own container, on a port the emulator's adb doesn't use.
@@ -295,6 +304,7 @@ class Run:
             self.ha.access = Path(args.ha_token_file).expanduser().read_text().strip()
         # Home Assistant's image doubles as a toolbox: ffmpeg and Python with aiohttp.
         self.tools_image = f"ghcr.io/home-assistant/home-assistant:{'stable' if self.external else args.ha_version}"
+        self.emulator_image, self.emulator_build_args, self.avd = FORM_FACTORS[args.form_factor]
         # A real TV is reached directly; the emulator through an adb forward.
         self.device = args.device
         tv_host = self.device.rsplit(":", 1)[0] if self.device else ""
@@ -422,6 +432,17 @@ def screen_attribute(view_id: str, attribute: str, texts: str | None = None) -> 
     return ""
 
 
+def view_bounds(view_id: str) -> tuple[int, int, int, int] | None:
+    """Where one of PleatView's views is (left, top, right, bottom) while it's visible.
+
+    From the activity's view dump, which is much faster than a UI dump; the bounds are
+    relative to the view's parent, which for the views asked about fills the screen.
+    """
+    dump = adb("shell", "dumpsys", "activity", f"{PACKAGE}/.MainActivity", check=False)
+    match = re.search(r"\{\w+ V\S* \S+ (-?\d+),(-?\d+)-(-?\d+),(-?\d+) #\w+ app:id/" + view_id + r"\}", dump)
+    return tuple(int(n) for n in match.groups()) if match else None
+
+
 def read_pin() -> str:
     return "".join(ch for ch in screen_attribute("setup_pin", "text") if ch.isdigit())
 
@@ -430,7 +451,7 @@ def prepare(r: Run) -> Path:
     print("Preparing images and the APK…", flush=True)
     run("docker", "build", "-q", "-t", "pleatview-android-build", str(ROOT / "tools/android-build"))
     dockerfile = (ROOT / "tools/e2e/emulator.Dockerfile").read_text()
-    run("docker", "build", "-q", "-t", TV_IMAGE, "-", input=dockerfile, timeout=3600)
+    run("docker", "build", "-q", "-t", r.emulator_image, *r.emulator_build_args, "-", input=dockerfile, timeout=3600)
     run("docker", "pull", "-q", r.tools_image, timeout=3600)
     if r.args.apk:
         return Path(r.args.apk).resolve()
@@ -442,7 +463,7 @@ def connect_device(r: Run) -> None:
     ADB_KEYS.mkdir(parents=True, exist_ok=True)
     run("docker", "run", "-d", "--name", ADB_CONTAINER, "--network", "host", "--user", f"{os.getuid()}:{os.getgid()}",
         "-e", "HOME=/keys", "-e", f"ANDROID_ADB_SERVER_PORT={ADB_SERVER_PORT}", "-v", f"{ADB_KEYS}:/keys",
-        TV_IMAGE, "sleep", "infinity")
+        r.emulator_image, "sleep", "infinity")
     print("  If the TV asks to allow USB debugging, tick \"Always allow\" and choose OK.", flush=True)
 
     def authorized():
@@ -478,7 +499,7 @@ def start(r: Run, work: Path, apk: Path) -> None:
         connect_device(r)
     else:
         run("docker", "run", "-d", "--name", TV_CONTAINER, "--network", "host", "--device", "/dev/kvm",
-            "--cpus", "2", TV_IMAGE, "emulator", "-avd", "tv", "-no-window", "-no-audio", "-no-boot-anim",
+            "--cpus", "2", r.emulator_image, "emulator", "-avd", r.avd, "-no-window", "-no-audio", "-no-boot-anim",
             "-gpu", "swiftshader_indirect", "-no-snapshot", "-memory", "3072", "-cores", "2", "-no-metrics")
     if not r.external:
         # Home Assistant first: its HTTP port must be promoted within five minutes.
@@ -497,6 +518,16 @@ def start(r: Run, work: Path, apk: Path) -> None:
         # Start at the setup screen, whatever was installed before (a release build can't
         # be updated with a debug one anyway).
         adb("uninstall", PACKAGE, check=False)
+    if r.args.form_factor != "tv":
+        # Skip phones' and tablets' first-run hint for full-screen apps, which covers the
+        # screen, and their animations.
+        adb("shell", "settings", "put", "secure", "immersive_mode_confirmations", "confirmed")
+        for scale in ("window_animation_scale", "transition_animation_scale", "animator_duration_scale"):
+            adb("shell", "settings", "put", "global", scale, "0")
+        if r.args.form_factor in SCREEN_SIZES:
+            size, density = SCREEN_SIZES[r.args.form_factor]
+            adb("shell", "wm", "size", size)
+            adb("shell", "wm", "density", density)
     # The package manager can still be busy for a moment after boot_completed.
     wait_for("the APK to install", lambda: adb("install", "-r", "/tmp/pleatview.apk"), timeout=120, interval=5)
     if r.args.screens is not None:
@@ -597,9 +628,11 @@ def checks(r: Run, report: Report, apk: Path) -> None:
 
     def setup_screen():
         entity["pin"] = wait_for("the PIN on the setup screen", read_pin, timeout=60)
+        # The QR code opens the TV's phone page with the PIN filled in. Right after boot the
+        # network may still be coming up; the setup screen checks again every 10 s.
+        code = wait_for("the QR code on the setup screen",
+                        lambda: screen_attribute("setup_qr", "content-desc"), timeout=30)
         report.screenshot("01-setup")
-        # The QR code opens the TV's phone page with the PIN filled in.
-        code = screen_attribute("setup_qr", "content-desc")
         if not (code.startswith("http://") and code.endswith(f":8765/#pin={entity['pin']}")):
             raise AssertionError(f"the QR code links to {code!r}, not the phone page with PIN {entity['pin']}")
         status, page = http_text(f"{r.tv_api}/")
@@ -988,6 +1021,28 @@ def checks(r: Run, report: Report, apk: Path) -> None:
         adb("shell", "input", "keyevent", "KEYCODE_BACK")
         return f"QR code for {code}"
 
+    def touch_menu():
+        # Phones, tablets and Chromebooks: a touch shows a menu button for a few seconds.
+        ha.call("pleatview", "home", {"entity_id": entity["id"]})
+        wait_for("the home dashboard",
+                 lambda: str(state()["attributes"].get("dashboard") or "").startswith("/"), timeout=30)
+        time.sleep(2)
+        _, _, _, height = view_bounds("root")
+        # Bottom left, where a dashboard rarely has a card that a tap would open.
+        adb("shell", "input", "tap", "20", str(height - 20))
+        left, top, right, bottom = wait_for("the menu button", lambda: view_bounds("touch_menu"),
+                                            timeout=4, interval=0.5)
+        adb("shell", "input", "tap", str((left + right) // 2), str((top + bottom) // 2))
+        wait_for("the menu", lambda: "Home dashboard" in screen_texts(), timeout=15)
+        report.screenshot("10-touch-menu")
+        adb("shell", "input", "keyevent", "KEYCODE_BACK")
+        # A tap on the black standby screen wakes it.
+        ha.call("media_player", "turn_off", {"entity_id": entity["id"]})
+        wait_for("standby", lambda: state()["state"] == "off", timeout=20)
+        adb("shell", "input", "tap", "20", str(height - 20))
+        wait_for("a tap to wake it", lambda: state()["state"] == "idle", timeout=20)
+        return "a touch showed the menu button, which opened the menu; a tap woke the screen"
+
     def update_in_place():
         adb("install", "-r", "/tmp/pleatview.apk")
         adb("shell", "am", "start", "-n", f"{PACKAGE}/.MainActivity")
@@ -1080,6 +1135,7 @@ def checks(r: Run, report: Report, apk: Path) -> None:
         # that the WebView kept for the session after the sign-in check.
         ("Back after a dismissed sign-in opens the menu", back_after_sign_in),
         ("Support PleatView in the menu", support_code),
+        *([("Touch opens the menu and wakes the screen", touch_menu)] if r.args.form_factor != "tv" else []),
         *([("Website and store pictures", screens)] if r.args.screens is not None else []),
     ]:
         if "id" in entity:
@@ -1094,6 +1150,8 @@ def main() -> int:
     parser.add_argument("--ha-url", help="use this existing Home Assistant instead of a throwaway one")
     parser.add_argument("--ha-token-file", help="file holding an admin long-lived token for --ha-url")
     parser.add_argument("--device", metavar="HOST[:PORT]", help="test on this TV over network adb, not the emulator")
+    parser.add_argument("--form-factor", choices=FORM_FACTORS, default="tv",
+                        help="emulator to test on: tv (default), phone or tablet")
     parser.add_argument("--apk", help="APK to test (default: build a debug APK)")
     parser.add_argument("--keep", action="store_true", help="leave the containers running")
     parser.add_argument("--screens", nargs="?", const="", metavar="VIDEO",
@@ -1103,6 +1161,8 @@ def main() -> int:
         parser.error("--screens needs the emulator and a throwaway Home Assistant: it renames the TV and adds dashboards")
     if bool(args.ha_url) != bool(args.ha_token_file):
         parser.error("--ha-url and --ha-token-file go together")
+    if args.device and args.form_factor != "tv":
+        parser.error("--form-factor picks an emulator; --device tests the device it names")
     if args.device and not args.ha_url:
         parser.error("--device needs --ha-url: the TV must reach Home Assistant over the network")
     if args.device:
@@ -1148,7 +1208,7 @@ def main() -> int:
             print(f"Home Assistant's config and the test site's files stay in {work}")
         else:
             # Home Assistant writes its config as root; remove it from inside a container.
-            run("docker", "run", "--rm", "-v", f"{work}:/work", TV_IMAGE, "rm", "-rf", "/work/ha", "/work/media",
+            run("docker", "run", "--rm", "-v", f"{work}:/work", r.emulator_image, "rm", "-rf", "/work/ha", "/work/media",
                 check=False)
             shutil.rmtree(work, ignore_errors=True)
 
