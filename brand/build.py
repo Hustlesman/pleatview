@@ -167,6 +167,9 @@ def main() -> None:
     render("site/img/play/feature-graphic.png", centred(1024, 500, 115, tagline=True), 1024, 500, opaque=True)
     render("site/img/play/tv-banner.png", centred(1280, 720, 140, tagline=True), 1280, 720, opaque=True)
 
+    # GitHub: the repository's social preview (Settings → General → Social preview), 2:1.
+    render("brand/github-social-preview.png", centred(1280, 640, 140, tagline=True), 1280, 640, opaque=True)
+
     # Android: the adaptive icon's foreground (the mark half as wide as the 108 dp canvas, inside the
     # 66 dp safe circle) as bitmaps, which launchers such as Fire TV's can decode, and the TV banner.
     foreground = document(108, 108, MARK, "-136 -136 784 784")
