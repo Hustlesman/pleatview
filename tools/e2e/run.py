@@ -274,6 +274,8 @@ class Report:
             self.results.append(("SKIP", name, str(skip)))
         except Exception as err:  # noqa: BLE001 - report and carry on with the next check
             self.results.append(("FAIL", name, str(err)))
+            # What was on screen, for working out why.
+            self.screenshot(f"failed-{sum(1 for s, _, _ in self.results if s == 'FAIL')}")
         status, _, detail = self.results[-1]
         print(f"  {status}  {name}" + (f"  ({detail})" if detail else ""), flush=True)
 
@@ -520,8 +522,13 @@ def start(r: Run, work: Path, apk: Path) -> None:
         adb("uninstall", PACKAGE, check=False)
     if r.args.form_factor != "tv":
         # Skip phones' and tablets' first-run hint for full-screen apps, which covers the
-        # screen, and their animations.
+        # screen, and their animations. The phone image's Bluetooth sometimes crashes at
+        # boot, and its "keeps stopping" dialog would hide PleatView: no Bluetooth, no
+        # error dialogs, and close any that's already up.
         adb("shell", "settings", "put", "secure", "immersive_mode_confirmations", "confirmed")
+        adb("shell", "settings", "put", "global", "hide_error_dialogs", "1")
+        adb("shell", "cmd", "bluetooth_manager", "disable", check=False)
+        adb("shell", "am", "broadcast", "-a", "android.intent.action.CLOSE_SYSTEM_DIALOGS", check=False)
         for scale in ("window_animation_scale", "transition_animation_scale", "animator_duration_scale"):
             adb("shell", "settings", "put", "global", scale, "0")
         if r.args.form_factor in SCREEN_SIZES:
