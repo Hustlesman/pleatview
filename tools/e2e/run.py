@@ -688,6 +688,7 @@ def checks(r: Run, report: Report, apk: Path) -> None:
         found = wait_for("this TV's entities in Home Assistant", own_entities, timeout=30)
         entity["id"] = found["media_player"]
         entity["notify"] = found.get("notify", entity["id"].replace("media_player.", "notify."))
+        entity["battery"], entity["charging"] = found.get("sensor"), found.get("binary_sensor")
         return entity["id"]
 
     def state():
@@ -992,6 +993,19 @@ def checks(r: Run, report: Report, apk: Path) -> None:
             ws_call(r, {"type": "lovelace/dashboards/delete", "dashboard_id": created["result"]["id"]})
             ha.call("pleatview", "home", {"entity_id": entity["id"]})
 
+    def battery():
+        # Tablets and phones report their battery; TVs have none and get no sensors.
+        if r.args.form_factor == "tv":
+            if entity["battery"] or entity["charging"]:
+                raise AssertionError(f"a TV got {entity['battery']} and {entity['charging']}")
+            return "none on a TV"
+        if not (entity["battery"] and entity["charging"]):
+            raise AssertionError("no battery or charging sensor")
+        level, charging = ha.state(entity["battery"])["state"], ha.state(entity["charging"])["state"]
+        if not level.isdigit() or charging not in ("on", "off"):
+            raise AssertionError(f"battery {level!r}, charging {charging!r}")
+        return f"battery {level} %, charging {charging}"
+
     def ha_version_repair():
         # Dashboard cards before 2026.7 have published XSS bugs: PleatView asks for an update.
         version = ha.api("GET", "/api/config")[1]["version"]
@@ -1125,6 +1139,7 @@ def checks(r: Run, report: Report, apk: Path) -> None:
     for name, fn in [
         ("Dashboard signs in automatically", signed_in),
         ("Repair for Home Assistant older than 2026.7", ha_version_repair),
+        ("Battery sensors only where there's a battery", battery),
         ("Kiosk mode hides the sidebar and header", kiosk),
         ("Notification card appears", notification),
         ("Video plays and stops", video),

@@ -42,7 +42,7 @@ _LOGGER = logging.getLogger(__name__)
 
 LOVELACE_UPDATED = "lovelace_updated"  # fired when a dashboard's configuration is saved
 
-PLATFORMS = [Platform.MEDIA_PLAYER, Platform.NOTIFY]
+PLATFORMS = [Platform.BINARY_SENSOR, Platform.MEDIA_PLAYER, Platform.NOTIFY, Platform.SENSOR]
 TOKEN_LIFETIME = timedelta(days=3650)
 
 

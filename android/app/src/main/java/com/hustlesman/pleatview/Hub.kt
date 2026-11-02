@@ -253,6 +253,7 @@ class StateModel {
     var configRev = ""
     var overlayPermission = false
     var signIn: SignInRequest? = null
+    var battery: BatteryInfo? = null
 
     fun toJson(): JSONObject = JSONObject()
         .put("foreground", foreground)
@@ -270,6 +271,7 @@ class StateModel {
         .put("config_rev", configRev)
         .put("overlay_permission", overlayPermission)
         .put("sign_in", signIn?.toJson() ?: JSONObject.NULL)
+        .put("battery", battery?.toJson() ?: JSONObject.NULL)
 
     companion object {
         const val POWER_ON = "on"

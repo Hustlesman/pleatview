@@ -141,6 +141,11 @@ You get `media_player.<tv>` and `notify.<tv>`. The media player is `off` while P
 is in the background or in standby, `idle` while showing a dashboard, and
 `playing`/`paused` while showing media. Its **sources are your dashboards**.
 
+Tablets and phones also get a battery sensor and a charging sensor (`sensor.<device>_battery`,
+`binary_sensor.<device>_charging`; charging means plugged in, also when full), for example
+to switch a wall tablet's smart plug on below 20 % and off above 80 %. TVs have no battery
+and get neither.
+
 **Webpage dashboards** (Grafana, OpenSearch, Kibana, UniFi…) work too: add one in Home
 Assistant (*Settings → Dashboards → Add dashboard → Webpage*) and it becomes a source. The
 TV opens the site itself rather than inside Home Assistant's frame, so sites that refuse
