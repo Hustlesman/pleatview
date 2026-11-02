@@ -4,6 +4,8 @@
 
 - the TV app is installable from Google Play (Google TV / Android TV) and the Amazon
   Appstore (Fire TV), and LG and Samsung TVs have their own store apps,
+- the same app installs from Google Play on Android phones, tablets and Chromebooks, and
+  from the Amazon Appstore on Fire tablets; iPhones and iPads use the web player,
 - it has been validated on real hardware, including a 30-day soak,
 - the Home Assistant integration is in the HACS default list,
 - install guides live on [pleatview.hustlesman.com](https://pleatview.hustlesman.com).
@@ -20,17 +22,18 @@ on their own.
 
 ## Status
 
-Last updated 2 November 2026. **Current milestone: M1** (M0 finished early).
+Last updated 3 November 2026. **Current milestone: M1** (M0 finished early).
 
 | Milestone | Target | Needs first | Status |
 | --- | --- | --- | --- |
 | [M0](#m0--foundation) Foundation | Fri 6 Nov 2026 | — | Done 28 Oct |
 | [M1](#m1--validated-on-real-android-tv-hardware) Validated on real Android TV hardware | Fri 20 Nov 2026 | M0, devices | In progress |
-| [M2](#m2--public-beta) Public beta and Google Play closed test | Fri 4 Dec 2026 | M1, 12 beta testers | Not started |
+| [M2](#m2--public-beta) Public beta, Google Play closed test, phones and tablets | Fri 4 Dec 2026 | M1, 12 beta testers | Not started |
 | [M3](#m3--google-play-and-amazon-appstore) Google Play and Amazon Appstore | Fri 15 Jan 2027 | M2, store reviews | Not started |
 | [M4](#m4--web-player) Web player for any TV browser | Fri 29 Jan 2027 | M3 submitted | Not started |
 | [M5](#m5--lg-and-samsung-apps) LG and Samsung apps submitted | Fri 5 Mar 2027 | M4, test TVs | Not started |
 | [M6](#m6--on-every-store) On every store | Fri 2 Apr 2027 | M5 approvals, 30-day soak | Not started |
+| [M7](#m7--iphone-and-ipad-app) iPhone and iPad app | Fri 14 May 2027 | M4, Apple developer account | Not started |
 
 Progress is tracked in [GitHub milestones](https://github.com/Hustlesman/pleatview/milestones).
 Bugs and features for the current milestone are [issues](https://github.com/Hustlesman/pleatview/issues);
@@ -107,8 +110,10 @@ from GitHub Releases.
       other apps* button leads to the permission. On the Fire TV, clearing PleatView's data
       makes Home Assistant ask for the new PIN and the settings come back, and removing
       the integration returns the TV to its setup screen and deletes its Home Assistant
-      user. Still to do: installing with Downloader on the Chromecast, the "My Home
-      Assistant" buttons, a sign-in on a real site
+      user. On 3 Nov the Chromecast moved from the Google Play build to the GitHub one,
+      installed with Downloader: Home Assistant asked for the new PIN and kept the TV's
+      entity and settings. Still to do: the "My Home Assistant" buttons, a sign-in on a
+      real site
 - [ ] Home Assistant versions: oldest supported (2025.1), current stable, beta. On 1 Nov
       all 18 checks passed on 2025.1.4, 2026.10.4, the 2026.11 beta (2026.11.0b2) and the
       nightly. Still to run: the 2026.11 release (due 4 Nov) before v1.1.0
@@ -127,7 +132,7 @@ from GitHub Releases.
       settings screen, with adb only as the fallback
 - [ ] Test plan covers installing with Downloader and the "My Home Assistant" buttons.
       Downloader with `pleatview.hustlesman.com/apk`, then discovery and the PIN, worked
-      on the Fire TV on 29 Oct
+      on the Fire TV on 29 Oct and on the Chromecast on 3 Nov
 - [x] Fixes from the first hardware run: Webpage dashboards (Grafana, OpenSearch…) open
       the site directly, with the zoom, instead of in Home Assistant's frame; a
       discovered TV goes straight to the PIN; the setup screen has a QR code for phones
@@ -147,8 +152,15 @@ requires.
 - [ ] **Demo for reviewers:** a "Try the demo" option on the setup screen, connected to
       an isolated, read-only demo Home Assistant (demo data only, never a real home).
       Store reviewers can't test without a server, and Google reviews beta builds too.
-- [ ] Google Play beta: 12 or more testers with Google TV devices who stay in for 14 days,
-      which Google requires before PleatView can go public. Sign up in
+- [ ] **Phones, tablets and Chromebooks.** The same Android app, made for touch: the menu
+      opens by touch, setup and the menu work in portrait, and Home Assistant gets battery
+      and charging sensors for wall-mounted tablets. Google Play builds install on phones,
+      tablets and Chromebooks as well as TVs. Checked with `tools/e2e/run.py` on phone and
+      tablet emulators, and by hand on a real phone, tablet and Chromebook. (Added 3 Nov;
+      it was in the parking lot.)
+- [ ] Google Play beta: 12 or more testers on Google TV, Android phones, tablets or
+      Chromebooks who stay in for 14 days, which Google requires before PleatView can go
+      public. Sign up in
       [#9](https://github.com/Hustlesman/pleatview/issues/9)
 - [ ] P1 bugs fixed within 48 hours; a beta build every week
 - [ ] Device compatibility table on the website, filled from tester reports
@@ -173,11 +185,12 @@ fixed, v1.2.0 released.
 *Mon 7 Dec 2026 → Fri 15 Jan 2027* (reviews and holidays included). Install from the
 store on Google TV and Fire TV.
 
-- [ ] Store listings with TV screenshots (1920×1080), a feature graphic and a description
+- [ ] Store listings with TV, phone and tablet screenshots, a feature graphic and a
+      description
 - [ ] Releases go to Google Play automatically from the release workflow
 - [ ] Checked against Google's TV app quality guidelines
 - [ ] Public on Google Play once the beta has run its 14 days
-- [ ] Submitted to the Amazon Appstore for Fire TV (Fire OS devices only)
+- [ ] Submitted to the Amazon Appstore for Fire TV and Fire tablets (Fire OS devices only)
 - [ ] **Encrypted connections at home.** Today Home Assistant, the TV and the phone page talk
       plain HTTP on the local network ([SECURITY.md](SECURITY.md)). The TV makes its own
       certificate, and Home Assistant pins it when pairing, so the tokens travel encrypted.
@@ -205,7 +218,8 @@ Home Assistant instead of the other way round.
       Home Assistant's security headers. It handles kiosk mode, zoom, video
       (`<video>` with hls.js), camera images, notifications, standby, and reloads on
       stalls.
-- [ ] Checked in Chrome, Firefox, Safari and a Raspberry Pi kiosk, plus a first run in
+- [ ] Checked in Chrome, Firefox, Safari (including an iPad and an iPhone, added to the
+      home screen) and a Raspberry Pi kiosk, plus a first run in
       the LG and Samsung TV browsers. Set the minimum webOS and Tizen versions (2021+
       models expected). A first look on 1 Nov, on a 2024 Samsung (Tizen 9, Chrome 120
       engine): Home Assistant dashboards work in its browser (connected in 2 s, all cards
@@ -250,13 +264,29 @@ submitted.
 
 **Exit:** the release is published on every channel and announced.
 
+## M7 — iPhone and iPad app
+
+*Mon 5 Apr → Fri 14 May 2027* (first estimate; may start earlier while M6 only waits on
+reviews). Until then, iPhones and iPads use the web player in Safari (M4).
+
+- [ ] Native app that wraps the web player, like the LG and Samsung apps: finds Home
+      Assistant on the network, shows the pairing code, keeps the screen awake while a
+      dashboard shows, and works with Guided Access for wall-mounted iPads
+- [ ] Built and signed by GitHub Actions on macOS runners; TestFlight beta
+- [ ] Submitted to the App Store
+
+**Exit:** PleatView installs from the App Store on iPhone and iPad, and the link is on the
+website and in the README.
+
 ## Platforms
 
-| Platform | How | Store | By M6 |
+| Platform | How | Store | When |
 | --- | --- | --- | --- |
 | Google TV / Android TV | Native app | Google Play | Yes (M3) |
 | Fire TV on Fire OS | Same native app | Amazon Appstore | Yes (M3) |
-| Android tablets (wall panels) | Same native app | Sideload | Works, not listed |
+| Android phones, tablets and Chromebooks | Same native app | Google Play | Yes (beta in M2, public in M3) |
+| Fire tablets | Same native app | Amazon Appstore | Yes (M3) |
+| iPhone and iPad | Web player in Safari, then a native app that wraps it | App Store | Web player (M4); app in M7 |
 | LG webOS (2021+) | Web player in a webOS app | LG Content Store | Yes (M5) |
 | Samsung Tizen (2021+) | Web player in a Tizen app | Samsung TV Apps | Yes (M5) |
 | Browsers and kiosks | Web player served by Home Assistant | — | Yes (M4) |
@@ -273,6 +303,7 @@ submitted.
 | LG or Samsung store approval takes too long | Meanwhile, the web player works in their TV browsers and sideloading is documented |
 | OLED burn-in on displays that stay on 24/7 | Pixel shift option, dark themes, night standby, guidance in the docs |
 | TV screensavers or energy-saving modes override keep-awake on webOS and Tizen | Use the platforms' keep-awake APIs in M5 and document the TV settings |
+| Apple rejects an app that mostly shows web pages (App Store guideline 4.2) | Native features beyond the page (discovery, pairing, keep-awake, Guided Access); meanwhile the web player works in Safari |
 | One developer, many platforms | The rules above: one milestone at a time, a fixed scope, and the parking lot |
 
 ## Parking lot
@@ -282,7 +313,6 @@ Ideas we'll consider after M6, or between milestones if there's slack:
 - Picture-in-picture video over other apps (Android overlay window)
 - Update prompts for GitHub installs (store installs update by themselves)
 - Move the Android app to protocol v2, so there's a single protocol
-- Phone and tablet listing on Google Play (wall panels)
 - TV remote buttons as Home Assistant events for automations
 - Assist (voice) on the TV
 - Dashboard schedules (for example, a calendar in the morning and energy in the evening)
