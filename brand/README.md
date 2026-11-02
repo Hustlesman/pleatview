@@ -12,6 +12,7 @@ Chosen on 29 October 2026 from a blind comparison with icons from AI image gener
 | `pleatview-icon.svg` | App icon: the mark on a rounded dark square (also the website's favicon) |
 | `pleatview-logo-on-dark.svg` | Mark and name for dark backgrounds |
 | `pleatview-logo-on-light.svg` | Mark and name for light backgrounds |
+| `github-social-preview.png` | 1280 × 640 card that sites show for links to the repository (set in GitHub's repository settings) |
 | `build.py` | Generates all of the above and every PNG: run `tools/build-brand.sh` |
 
 `build.py` also writes the app's launcher icon and TV banner, the Google Play images in
