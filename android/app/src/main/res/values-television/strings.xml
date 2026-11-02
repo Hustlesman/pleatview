@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- On TVs (Google TV, Android TV, Fire TV); res/values has the wording for phones, tablets and Chromebooks. -->
+<resources>
+    <string name="setup_tagline">Home Assistant dashboards and media on this TV</string>
+    <string name="setup_step_discover">In Home Assistant, open Settings → Devices &amp; services. This TV should appear as a discovered PleatView device. If it doesn\'t, add the PleatView integration with this address:</string>
+    <string name="setup_qr_caption">Scan with your phone to add this TV to Home Assistant without typing</string>
+    <string name="signin_body">This dashboard asks for a username and password. Scan the code with your phone to sign in. PleatView keeps the sign-in on this TV only.</string>
+    <string name="signin_enter_here">Enter on the TV</string>
+    <string name="signin_remember">Keep me signed in on this TV</string>
+    <string name="overlay_settings_missing">This TV has no setting for it. See pleatview.hustlesman.com/support for the one-line fix.</string>
+</resources>

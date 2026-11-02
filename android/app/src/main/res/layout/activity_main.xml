@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- Layers, bottom to top: dashboard, media, web/image overlay, now-playing bar,
-     notifications, status banner, sign-in card, setup screen, menu, standby curtain. -->
+     notifications, status banner, sign-in card, setup screen, touch menu button, menu,
+     standby curtain. -->
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:id="@+id/root"
@@ -123,6 +124,19 @@
     <include
         android:id="@+id/setup_screen"
         layout="@layout/view_setup"
+        android:visibility="gone" />
+
+    <!-- Opens the menu on touch screens; shown for a few seconds after a touch. -->
+    <ImageButton
+        android:id="@+id/touch_menu"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:layout_gravity="top|end"
+        android:layout_margin="12dp"
+        android:background="@drawable/touch_menu"
+        android:contentDescription="@string/menu_open"
+        android:focusable="false"
+        android:src="@drawable/ic_more"
         android:visibility="gone" />
 
     <FrameLayout
