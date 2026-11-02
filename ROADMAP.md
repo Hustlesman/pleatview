@@ -44,12 +44,12 @@ Google TV beta ([#9](https://github.com/Hustlesman/pleatview/issues/9)).
 
 Done so far: v1.0.5 is published as a signed release with build attestations (versions are
 1.x from 29 Oct; each milestone ends with the next minor release). One command
-(`tools/e2e/run.py`) tests the Android TV app and the Home Assistant integration together in
-19 checks, on an Android TV 16 emulator or a real TV: pairing, automatic sign-in, kiosk mode,
+(`tools/e2e/run.py`) tests the Android app and the Home Assistant integration together in
+20 checks, on an Android TV 16 emulator or a real TV: pairing, automatic sign-in, kiosk mode,
 casting, cameras, notifications, sign-ins, standby, updates, and recovery from a Home Assistant
-restart and from a frozen page. A Fire TV Stick and a Chromecast HD pass the automated checks,
+restart and from a frozen page. Phone and tablet emulators add touch, for 21. A Fire TV Stick and a Chromecast HD pass the automated checks,
 and both ran a 42-hour soak test without a crash. A security review on 2 Nov fixed what it
-found, and no dependency has a known vulnerability. 54 app tests and 29 integration tests pass.
+found, and no dependency has a known vulnerability. 56 app tests and 31 integration tests pass.
 
 ## How we stay on track
 
