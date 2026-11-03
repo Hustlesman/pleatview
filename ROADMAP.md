@@ -157,7 +157,9 @@ requires.
       and charging sensors for wall-mounted tablets. Google Play builds install on phones,
       tablets and Chromebooks as well as TVs. Checked with `tools/e2e/run.py` on phone and
       tablet emulators, and by hand on a real phone, tablet and Chromebook. (Added 3 Nov;
-      it was in the parking lot.)
+      it was in the parking lot.) Done on 3 Nov: touch, portrait layouts, wording, battery
+      and charging sensors, Play builds for every form factor, and phone and tablet
+      emulators passing every check. Still to do: the real phone, tablet and Chromebook
 - [ ] Google Play beta: 12 or more testers on Google TV, Android phones, tablets or
       Chromebooks who stay in for 14 days, which Google requires before PleatView can go
       public. Sign up in
