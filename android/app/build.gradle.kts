@@ -32,9 +32,6 @@ android {
         versionCode = 8
         versionName = "1.0.5"
         buildConfigField("String", "DONATE_URL", "\"$donateUrl\"")
-        // Stores list PleatView for TVs only. The GitHub download also installs on tablets
-        // used as wall panels.
-        manifestPlaceholders["tvRequired"] = (distribution == "store").toString()
     }
 
     signingConfigs {

@@ -47,6 +47,9 @@ On the TV, install the free **Downloader** app (from Google Play on Google TV, o
 Amazon Appstore on Fire TV). Open it, enter **`pleatview.hustlesman.com/apk`** and
 choose *Install*. Android asks once to allow installs from Downloader.
 
+On an Android phone or tablet, open the same address in its browser and install the
+download; Android asks once to allow installs from the browser.
+
 The link always serves the newest signed release from
 [GitHub Releases](https://github.com/Hustlesman/pleatview/releases). Google Play and Amazon
 Appstore listings are on the [roadmap](ROADMAP.md). Android 7.0 or newer; see
