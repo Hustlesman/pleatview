@@ -124,8 +124,8 @@ to 1 November 2026:
 
 | Device | Result |
 | --- | --- |
-| Google TV, Android TV 16 (emulator) | All 19 checks pass |
-| Android 16 phone and tablet (Pixel 8 and Pixel Tablet emulators, 3 Nov) | All 20 checks pass: the 19 above, plus touch opening the menu and waking the screen |
+| Google TV, Android TV 16 (emulator) | All 20 checks pass |
+| Android 16 phone and tablet (Pixel 8 and Pixel Tablet emulators, 3 Nov) | All 21 checks pass: the 20 above, plus touch opening the menu and waking the screen |
 | Fire TV Stick 3rd gen, Fire OS 7.7 (Android 9) | All checks pass (the restart check is skipped on a shared Home Assistant). Animated pictures show their first frame before Android 10. 42-hour soak test: no crashes, memory steady |
 | Chromecast with Google TV (HD), Android TV 14, 1.4 GB | All checks pass (the restart check is skipped on a shared Home Assistant). 42-hour soak test: no crashes, memory steady |
 
@@ -140,6 +140,11 @@ to 1 November 2026:
 You get `media_player.<tv>` and `notify.<tv>`. The media player is `off` while PleatView
 is in the background or in standby, `idle` while showing a dashboard, and
 `playing`/`paused` while showing media. Its **sources are your dashboards**.
+
+Tablets and phones also get a battery sensor and a charging sensor (`sensor.<device>_battery`,
+`binary_sensor.<device>_charging`; charging means plugged in, also when full), for example
+to switch a wall tablet's smart plug on below 20 % and off above 80 %. TVs have no battery
+and get neither.
 
 **Webpage dashboards** (Grafana, OpenSearch, Kibana, UniFi…) work too: add one in Home
 Assistant (*Settings → Dashboards → Add dashboard → Webpage*) and it becomes a source. The

@@ -71,6 +71,7 @@ Events stream that sends the full snapshot on connect and after every change
   "config_rev": "3f9a…",
   "overlay_permission": false,
   "sign_in": null,
+  "battery": {"level": 87, "charging": true},
   "app_version": "0.1.0"
 }
 ```
@@ -85,6 +86,9 @@ Events stream that sends the full snapshot on connect and after every change
 - `sign_in`: null, or the page waiting for a username and password:
   `{"kind": "prompt" | "form", "title": "Grafana", "site": "http://grafana.lan:3000", "failed": false}`.
   `title` is the dashboard's name; `failed` means the last sign-in for it was rejected.
+- `battery`: null on devices without one (TVs), else `level` in percent and `charging`,
+  which means plugged in, also when full. Home Assistant shows them as sensors, for
+  example to switch a wall tablet's smart plug on and off.
 
 ## Commands
 

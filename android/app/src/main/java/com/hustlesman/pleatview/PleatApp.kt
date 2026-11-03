@@ -22,6 +22,7 @@ class PleatApp : Application() {
         pairing = Pairing(settings)
         signIns = SignIns(settings, KeystoreVault())
         hub = Hub(this, settings, pairing, signIns)
+        Battery.watch(this) { info -> hub.update { battery = info } }
     }
 
     companion object {
