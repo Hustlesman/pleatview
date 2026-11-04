@@ -29,6 +29,11 @@ PleatView is built for a home network you trust. What it does, and what it can't
   household can join (WPA2 or WPA3), not a guest or shared one.
 - **The TV's web engine.** Dashboards and web pages run in the TV's Android System WebView.
   Keep the TV updated: Fire TV and some older TVs update it slowly. Only show sites you trust.
+- **Phones and tablets with a screen lock.** On a device with a PIN, pattern or password,
+  Home Assistant can't show PleatView over the lock screen or wake the screen for it: a
+  dashboard's controls would otherwise work without unlocking. Casts wait until it's
+  unlocked. On TVs, and on tablets whose lock is None or Swipe, a cast wakes the screen as
+  before. Versions up to 1.0.6 showed the dashboard over any lock screen.
 - **Releases** are built on GitHub from the tagged source, signed with the same key every
   time, and come with build provenance: `gh attestation verify pleatview.apk --repo
   Hustlesman/pleatview`.

@@ -41,9 +41,10 @@ checklist below and tick what passed. Anything that fails gets its own issue.
 - [ ] The GitHub download's menu has *Support PleatView*, whose QR code opens the donation page; a store build has no such item **(auto: GitHub build)**
 - [ ] Phones, tablets and Chromebooks: a touch shows the menu button for a few seconds, and it opens the menu **(auto: phone and tablet emulators)**; a tap wakes the screen from standby; the setup screen and the sign-in card fit in portrait, with the QR code under the text
 - [ ] Phones and tablets get battery and charging sensors that follow plugging in and out; TVs get none **(auto: present or absent)**
+- [ ] Phones and tablets with a PIN: a cast doesn't wake the screen or show the dashboard over the lock screen; without a lock it wakes and shows it **(auto)**
 
 ### Casting and media
-- [ ] MP4 video plays full screen; Home Assistant shows title, position and duration; pause, seek and stop work **(auto: play and stop)**
+- [ ] MP4 video plays full screen; Home Assistant shows title, position and duration; pause, seek and stop work **(auto: play and stop)**; on a portrait phone the black bars have no frame around them **(auto)**
 - [ ] A camera with a live stream plays in a corner (`show_camera`), at the requested position and size, and closes after `duration`
 - [ ] A camera without streaming shows as moving images **(auto)**
 - [ ] An RTSP URL plays

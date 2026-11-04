@@ -2,6 +2,7 @@ package com.hustlesman.pleatview
 
 import android.app.Activity
 import android.app.AlertDialog
+import android.app.KeyguardManager
 import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.content.res.Configuration
@@ -96,10 +97,7 @@ class MainActivity : Activity(), Hub.Display, DashboardController.Callbacks, Med
         app = PleatApp.from(this)
         setContentView(R.layout.activity_main)
         hideSystemBars()
-        if (Build.VERSION.SDK_INT >= 27) {
-            setTurnScreenOn(true)
-            setShowWhenLocked(true)
-        }
+        applyLockScreen()
 
         statusBanner = findViewById(R.id.status_banner)
         setupScreen = findViewById(R.id.setup_screen)
@@ -165,6 +163,7 @@ class MainActivity : Activity(), Hub.Display, DashboardController.Callbacks, Med
         dashboard.onPause()
         app.hub.update { foreground = false }
         app.hub.uiHidden()
+        applyLockScreen()
         super.onStop()
     }
 
@@ -224,6 +223,21 @@ class MainActivity : Activity(), Hub.Display, DashboardController.Callbacks, Med
     }
 
     override fun onConfigChanged(old: Config, new: Config) = applyConfig(old, new)
+
+    override fun beforeShow() = applyLockScreen()
+
+    /**
+     * Whether Home Assistant may wake the screen and show PleatView over the lock screen: on
+     * TVs and on tablets whose lock is None or Swipe, yes. With a PIN, pattern or password it
+     * mustn't, or the dashboard's controls would work without unlocking. Checked again before
+     * each time PleatView comes to the front, in case a lock was set meanwhile.
+     */
+    private fun applyLockScreen() {
+        if (Build.VERSION.SDK_INT < 27) return
+        val open = !getSystemService(KeyguardManager::class.java).isDeviceSecure
+        setShowWhenLocked(open)
+        setTurnScreenOn(open)
+    }
 
     override fun onPairingChanged() {
         if (setupScreen.visibility == View.VISIBLE) refreshSetup()
