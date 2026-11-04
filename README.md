@@ -86,10 +86,9 @@ otherwise), show notifications over other apps, and open PleatView at boot.
 [![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=Hustlesman&repository=pleatview&category=integration)
 
 The button opens PleatView on your own Home Assistant: in the built-in *Marketplace* on
-Home Assistant 2026.11 and later, in HACS on older versions. Install it, then restart
-Home Assistant. Until PleatView is in the Marketplace catalogue, the Marketplace asks you
-to connect a GitHub account once before it adds PleatView from GitHub. Without either,
-copy `custom_components/pleatview` into your `config/custom_components/` folder.
+Home Assistant 2026.11 and later, in HACS on older versions. You can also search for
+PleatView there. Install it, then restart Home Assistant. Without either, copy
+`custom_components/pleatview` into your `config/custom_components/` folder.
 Requires Home Assistant 2025.1 or newer.
 
 ### 3. Pair
@@ -136,9 +135,9 @@ to 1 November 2026:
 
 | Home Assistant | Result |
 | --- | --- |
-| 2026.11 beta, 2026.11 nightly | 13 of 13 |
-| 2026.10 (current release) | 13 of 13 |
-| 2025.1 (oldest supported) | 13 of 13 |
+| 2026.11 (current release, 5 Nov) | 20 of 20 on a TV, 22 of 22 on a phone and a tablet; installs from the Marketplace without a GitHub account |
+| 2026.10 | 20 of 20 |
+| 2025.1 (oldest supported) | 20 of 20 |
 
 ## Using it from Home Assistant
 

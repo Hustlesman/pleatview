@@ -7,7 +7,7 @@
 - the same app installs from Google Play on Android phones, tablets and Chromebooks, and
   from the Amazon Appstore on Fire tablets; iPhones and iPads use the web player,
 - it has been validated on real hardware, including a 30-day soak,
-- the Home Assistant integration is in the HACS default list,
+- the Home Assistant integration is in the HACS default list (done 2 Nov),
 - install guides live on [pleatview.hustlesman.com](https://pleatview.hustlesman.com).
 
 Dates assume about 20 hours of development a week, and include store review times. We
@@ -42,7 +42,7 @@ each later milestone gets its issues when it starts.
 **Want to help?** Tell us about a device that works or doesn't, report a bug, or join the
 Google TV beta ([#9](https://github.com/Hustlesman/pleatview/issues/9)).
 
-Done so far: v1.0.6 is published as a signed release with build attestations (versions are
+Done so far: v1.0.7 is published as a signed release with build attestations (versions are
 1.x from 29 Oct; each milestone ends with the next minor release). One command
 (`tools/e2e/run.py`) tests the Android app and the Home Assistant integration together in
 20 checks, on an Android TV 16 emulator or a real TV: pairing, automatic sign-in, kiosk mode,
@@ -114,9 +114,9 @@ from GitHub Releases.
       installed with Downloader: Home Assistant asked for the new PIN and kept the TV's
       entity and settings. Still to do: the "My Home Assistant" buttons, a sign-in on a
       real site
-- [ ] Home Assistant versions: oldest supported (2025.1), current stable, beta. On 1 Nov
-      all 18 checks passed on 2025.1.4, 2026.10.4, the 2026.11 beta (2026.11.0b2) and the
-      nightly. Still to run: the 2026.11 release (due 4 Nov) before v1.1.0
+- [x] Home Assistant versions: oldest supported (2025.1), current stable, beta. On 5 Nov
+      all 20 checks passed on 2025.1.4, 2026.10.4 and the 2026.11.0 release, after the
+      2026.11 beta (2026.11.0b3) on 3 Nov. The matrix runs again before each release
 - [x] Soak on the Chromecast HD and the Fire TV Stick with `tools/soak/run.py`: a busy
       household, a live camera and rotation on. 42 hours on both (30 Oct to 1 Nov), stopped
       before the planned 7 days; the 30-day soak in M6 is the long run. No crashes, and
@@ -169,15 +169,11 @@ requires.
 - [ ] One-press pairing: approve Home Assistant on the TV with OK, instead of typing the PIN
 - [x] Sign-ins for dashboards behind a login form or a password prompt: entered from a phone
       code, saved encrypted on the TV only, used again by themselves
-- [ ] **In Home Assistant's Marketplace.** Home Assistant 2026.11 builds HACS in as
-      *Settings → Marketplace*, which lists the HACS default repositories (checked in the
-      2026.11 nightly; our "Open in HACS" links keep working). Get into the HACS default
-      list: brand images in `custom_components/pleatview/brand/` (done), validation green
-      with nothing ignored (done), and the request to `hacs/default`
-      ([sent 29 Oct](https://github.com/hacs/default/pull/12905), waiting for review). Until
-      then the Marketplace asks 2026.11 users to connect GitHub once (checked in
-      2026.11.0b0). Then the install guide says Marketplace → PleatView, with HACS for older
-      versions
+- [x] **In Home Assistant's Marketplace.** Home Assistant 2026.11 builds HACS in as
+      *Settings → Marketplace*, which lists the HACS default repositories. PleatView joined
+      the HACS default list on 2 Nov ([hacs/default#12905](https://github.com/hacs/default/pull/12905))
+      and its catalogue on 4 Nov. On 5 Nov, Home Assistant 2026.11.0 listed it and installed
+      it without a GitHub account; the install guide says so
 
 **Exit:** ≥12 testers active for 14 days, no open P1 bugs, the five most-reported issues
 fixed, v1.2.0 released.
