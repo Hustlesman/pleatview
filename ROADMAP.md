@@ -22,7 +22,7 @@ on their own.
 
 ## Status
 
-Last updated 3 November 2026. **Current milestone: M1** (M0 finished early).
+Last updated 5 November 2026. **Current milestone: M1** (M0 finished early).
 
 | Milestone | Target | Needs first | Status |
 | --- | --- | --- | --- |
@@ -292,6 +292,8 @@ website and in the README.
 | LG webOS (2021+) | Web player in a webOS app | LG Content Store | Yes (M5) |
 | Samsung Tizen (2021+) | Web player in a Tizen app | Samsung TV Apps | Yes (M5) |
 | Browsers and kiosks | Web player served by Home Assistant | — | Yes (M4) |
+| Amazon Echo Show 8 | Web player in the built-in Silk browser, opened by an Alexa routine or skill. Echo devices can't install apps, and the 2025 model runs Vega OS instead of Fire OS | — | After M6 |
+| Google Nest Hub | A Google Cast receiver that loads the web player; Home Assistant casts it, and casts it again when the hub drops it | Google Cast (registered receiver) | After M6 |
 | Fire TV on Vega OS, Hisense VIDAA, Philips/Titan OS, Xbox, Google Cast | Web player wrappers | Various | After M6 |
 | Roku, Apple TV | No web engine for apps, so dashboards are impossible. Home Assistant's own integrations already cast media to them. | — | Not planned |
 
@@ -306,6 +308,7 @@ website and in the README.
 | OLED burn-in on displays that stay on 24/7 | Pixel shift option, dark themes, night standby, guidance in the docs |
 | TV screensavers or energy-saving modes override keep-awake on webOS and Tizen | Use the platforms' keep-awake APIs in M5 and document the TV settings |
 | Apple rejects an app that mostly shows web pages (App Store guideline 4.2) | Native features beyond the page (discovery, pairing, keep-awake, Guided Access); meanwhile the web player works in Safari |
+| Smart displays close the page after a while: the Nest Hub stops a cast after about 10 minutes, and an Echo Show can go back to its home screen | The integration opens or casts the player again when it stops; checked on each device before it's listed |
 | One developer, many platforms | The rules above: one milestone at a time, a fixed scope, and the parking lot |
 
 ## Parking lot
