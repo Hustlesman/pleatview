@@ -33,6 +33,9 @@ class Hub(
         fun onConfigChanged(old: Config, new: Config)
         fun onPairingChanged()
 
+        /** PleatView is about to be brought to the front from the background. */
+        fun beforeShow()
+
         /** A username and password for the page that asked for one. */
         fun applySignIn(username: String, password: String, remember: Boolean)
     }
@@ -209,6 +212,7 @@ class Hub(
         state.toJson().put("app_version", BuildConfig.VERSION_NAME).toString()
 
     private fun bringToFront() {
+        display?.beforeShow()
         val intent = Intent(app, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         try {
             app.startActivity(intent)

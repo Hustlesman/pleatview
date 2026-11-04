@@ -3,6 +3,7 @@ package com.hustlesman.pleatview
 import android.content.Context
 import android.content.res.Resources
 import android.graphics.BitmapFactory
+import android.graphics.Color
 import android.graphics.ImageDecoder
 import android.graphics.PixelFormat
 import android.graphics.drawable.Animatable
@@ -146,12 +147,15 @@ object Layouts {
             params.height = params.width * 9 / 16
             params.gravity = ToastViews.gravity(layout.position)
             params.setMargins(margin, margin, margin, margin)
+            view.setBackgroundResource(R.drawable.pip_frame)
             view.setPadding(2, 2, 2, 2)
         } else {
             params.width = FrameLayout.LayoutParams.MATCH_PARENT
             params.height = FrameLayout.LayoutParams.MATCH_PARENT
             params.gravity = Gravity.NO_GRAVITY
             params.setMargins(0, 0, 0, 0)
+            // No frame: on a portrait phone the video's black bars would show it.
+            view.setBackgroundColor(Color.BLACK)
             view.setPadding(0, 0, 0, 0)
         }
         view.layoutParams = params

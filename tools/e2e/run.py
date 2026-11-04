@@ -426,6 +426,18 @@ def frame(box: list[int], tools_image: str) -> bytes:
                           input=png, capture_output=True, check=False).stdout
 
 
+def brightest(box: list[int], tools_image: str) -> int:
+    """The brightest colour channel among the screen's pixels inside [left, top, right, bottom]."""
+    png = subprocess.run([*ADB_COMMAND, "exec-out", "screencap", "-p"], capture_output=True, check=False).stdout
+    out = subprocess.run(["docker", "run", "--rm", "-i", "--entrypoint", "python3", tools_image, "-c",
+                          "import io, sys; from PIL import Image; "
+                          "im = Image.open(io.BytesIO(sys.stdin.buffer.read())).convert('RGB')"
+                          f".crop(({box[0]}, {box[1]}, {box[2]}, {box[3]})); "
+                          "print(max(max(p) for p in im.getdata()))"],
+                         input=png, capture_output=True, check=False).stdout
+    return int(out.decode().strip() or 255)
+
+
 def screen_attribute(view_id: str, attribute: str, texts: str | None = None) -> str:
     """An attribute of one of PleatView's views in the current UI dump."""
     for node in (texts if texts is not None else screen_texts()).split("<node"):
@@ -750,6 +762,13 @@ def checks(r: Run, report: Report, apk: Path) -> None:
                                                "media_content_id": r.video_url, "extra": {"title": "E2E clip"}})
         playing = wait_for("playback", lambda: (s := state())["state"] == "playing" and s, timeout=45)
         report.screenshot("04-video")
+        if r.args.form_factor != "tv":
+            # A 16:9 video on a phone or tablet has black bars above and below it. The
+            # picture-in-picture frame used to show at their edges (and the dashboard through it).
+            _, _, _, height = view_bounds("root")
+            top = height // 100
+            if (edge := brightest([0, top, 6, top + 6], r.tools_image)) > 16:
+                raise AssertionError(f"the full-screen video has a frame at the screen's edge (brightness {edge})")
         ha.call("media_player", "media_stop", {"entity_id": entity["id"]})
         wait_for("the dashboard after stop", lambda: state()["state"] == "idle", timeout=20)
         return f"title {playing['attributes'].get('media_title')!r}, duration {playing['attributes'].get('media_duration')}"
@@ -894,6 +913,19 @@ def checks(r: Run, report: Report, apk: Path) -> None:
             wait_for(f"the test site to see '{confirmation}'", lambda: confirmation in site.events, timeout=45)
             wait_for("the sign-in card to close", lambda: state()["attributes"].get("sign_in_needed") is None, timeout=20)
 
+        def saved(count: int) -> None:
+            # PleatView saves a sign-in once it sees the site accept it, a moment after the
+            # site itself does: wait for the menu to count it before restarting or reloading.
+            def counted():
+                adb("shell", "input", "keyevent", "KEYCODE_MENU")
+                # The item sits near the end of the menu, which scrolls on a TV.
+                adb("shell", "input", "keyevent", *["KEYCODE_DPAD_DOWN"] * 25)
+                texts = screen_texts()
+                if "Home dashboard" in texts:
+                    adb("shell", "input", "keyevent", "KEYCODE_MENU")  # closes it again
+                return f"Forget saved sign-ins ({count})" in texts
+            wait_for(f"the TV to save sign-in {count}", counted, timeout=30, interval=1)
+
         def signs_in_by_itself(confirmation: str) -> None:
             deadline = time.monotonic() + 45
             while confirmation not in site.events:
@@ -908,6 +940,7 @@ def checks(r: Run, report: Report, apk: Path) -> None:
             use(f"{r.site}/prompt/")
             ha.call("pleatview", "show_dashboard", show)
             sign_in_from_a_phone("prompt ok", "08-sign-in-prompt")
+            saved(1)
             site.events.clear()
             adb("shell", "am", "force-stop", PACKAGE)
             adb("shell", "am", "start", "-n", f"{PACKAGE}/.MainActivity")
@@ -919,6 +952,7 @@ def checks(r: Run, report: Report, apk: Path) -> None:
             use(f"{r.site}/form/")
             ha.call("pleatview", "show_dashboard", show)
             sign_in_from_a_phone("form ok", "09-sign-in-form")
+            saved(2)
             site.events.clear()
             ha.call("pleatview", "reload", {"entity_id": entity["id"]})
             signs_in_by_itself("form ok")
@@ -1064,6 +1098,35 @@ def checks(r: Run, report: Report, apk: Path) -> None:
         wait_for("a tap to wake it", lambda: state()["state"] == "idle", timeout=20)
         return "a touch showed the menu button, which opened the menu; a tap woke the screen"
 
+    def lock_screen():
+        # A cast wakes a screen without a lock (a wall tablet) and shows the dashboard over
+        # it. With a PIN it mustn't: the dashboard's controls would work without unlocking.
+        def cast_while_asleep():
+            ha.call("pleatview", "home", {"entity_id": entity["id"]})
+            wait_for("the home dashboard", lambda: state()["state"] == "idle", timeout=30)
+            adb("shell", "input", "keyevent", "KEYCODE_SLEEP")
+            wait_for("the screen to go off", lambda: state()["state"] == "off", timeout=20)
+            time.sleep(2)
+            ha.call("pleatview", "show_dashboard", {"entity_id": entity["id"], "path": "/map"})
+
+        cast_while_asleep()
+        wait_for("the cast to wake the screen and show the dashboard",
+                 lambda: state()["state"] == "idle", timeout=20)
+        adb("shell", "locksettings", "set-pin", "1234")
+        try:
+            cast_while_asleep()
+            time.sleep(10)
+            if (shown := state())["state"] != "off":
+                raise AssertionError(f"with a PIN, a cast showed {shown['attributes'].get('dashboard')} "
+                                     "over the lock screen")
+        finally:
+            adb("shell", "locksettings", "clear", "--old", "1234", check=False)
+            adb("shell", "input", "keyevent", "KEYCODE_WAKEUP")
+            adb("shell", "wm", "dismiss-keyguard", check=False)
+            ha.call("pleatview", "home", {"entity_id": entity["id"]})
+            wait_for("PleatView after unlocking", lambda: state()["state"] == "idle", timeout=30)
+        return "no lock: a cast woke the screen and showed the dashboard; with a PIN the lock screen stayed"
+
     def update_in_place():
         adb("install", "-r", "/tmp/pleatview.apk")
         adb("shell", "am", "start", "-n", f"{PACKAGE}/.MainActivity")
@@ -1157,7 +1220,8 @@ def checks(r: Run, report: Report, apk: Path) -> None:
         # that the WebView kept for the session after the sign-in check.
         ("Back after a dismissed sign-in opens the menu", back_after_sign_in),
         ("Support PleatView in the menu", support_code),
-        *([("Touch opens the menu and wakes the screen", touch_menu)] if r.args.form_factor != "tv" else []),
+        *([("Touch opens the menu and wakes the screen", touch_menu),
+           ("A PIN lock screen stays in front of a cast", lock_screen)] if r.args.form_factor != "tv" else []),
         *([("Website and store pictures", screens)] if r.args.screens is not None else []),
     ]:
         if "id" in entity:

@@ -47,7 +47,7 @@ Done so far: v1.0.6 is published as a signed release with build attestations (ve
 (`tools/e2e/run.py`) tests the Android app and the Home Assistant integration together in
 20 checks, on an Android TV 16 emulator or a real TV: pairing, automatic sign-in, kiosk mode,
 casting, cameras, notifications, sign-ins, standby, updates, and recovery from a Home Assistant
-restart and from a frozen page. Phone and tablet emulators add touch, for 21. A Fire TV Stick and a Chromecast HD pass the automated checks,
+restart and from a frozen page. Phone and tablet emulators add touch and the lock screen, for 22. A Fire TV Stick and a Chromecast HD pass the automated checks,
 and both ran a 42-hour soak test without a crash. A security review on 2 Nov fixed what it
 found, and no dependency has a known vulnerability. 56 app tests and 31 integration tests pass.
 

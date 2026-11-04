@@ -48,7 +48,9 @@ Amazon Appstore on Fire TV). Open it, enter **`pleatview.hustlesman.com/apk`** a
 choose *Install*. Android asks once to allow installs from Downloader.
 
 On an Android phone or tablet, open the same address in its browser and install the
-download; Android asks once to allow installs from the browser.
+download; Android asks once to allow installs from the browser. For a wall-mounted tablet,
+set its screen lock to None or Swipe: with a PIN, pattern or password, Home Assistant can't
+wake it or show PleatView over the lock screen.
 
 The link always serves the newest signed release from
 [GitHub Releases](https://github.com/Hustlesman/pleatview/releases). Google Play and Amazon
@@ -128,7 +130,7 @@ to 1 November 2026:
 | Device | Result |
 | --- | --- |
 | Google TV, Android TV 16 (emulator) | All 20 checks pass |
-| Android 16 phone and tablet (Pixel 8 and Pixel Tablet emulators, 3 Nov) | All 21 checks pass: the 20 above, plus touch opening the menu and waking the screen |
+| Android 16 phone and tablet (Pixel 8 and Pixel Tablet emulators, 5 Nov) | All 22 checks pass: the 20 above, plus touch opening the menu and waking the screen, and a PIN lock screen staying in front of a cast |
 | Fire TV Stick 3rd gen, Fire OS 7.7 (Android 9) | All checks pass (the restart check is skipped on a shared Home Assistant). Animated pictures show their first frame before Android 10. 42-hour soak test: no crashes, memory steady |
 | Chromecast with Google TV (HD), Android TV 14, 1.4 GB | All checks pass (the restart check is skipped on a shared Home Assistant). 42-hour soak test: no crashes, memory steady |
 
