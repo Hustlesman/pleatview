@@ -1,0 +1,215 @@
+// The local control API, as in the Android app (Api.kt and HttpServer.kt). The wire format
+// is documented in docs/protocol.md; the Home Assistant integration is its client.
+import { createServer } from "node:http";
+import { BadCommand, parseCommand } from "./command.js";
+
+export const API_VERSION = 1;
+const MAX_BODY_BYTES = 256 * 1024;
+const MAX_STREAMS = 8;
+const PING_MS = 20_000;
+const NONCE = /^[0-9a-f]{32,128}$/;
+
+class HttpError extends Error {
+  constructor(status, message, extra = {}) {
+    super(message);
+    this.status = status;
+    this.extra = extra;
+  }
+}
+
+/**
+ * @param {object} backend
+ * @param {() => object} backend.info `id`, `name`, `manufacturer`, `model`, `app_version`, `api_version`
+ * @param {() => string} backend.stateJson
+ * @param {(listener: (json: string) => void) => () => void} backend.onState adds a listener; returns its removal
+ * @param {(command: object) => void} backend.dispatch
+ * @param {() => import("./config.js").Config} backend.config
+ * @param {(update: object) => import("./config.js").Config} backend.updateConfig throws RangeError
+ * @param {(username: string, password: string, remember: boolean) => boolean} backend.submitSignIn
+ * @param {() => object[]} backend.signIns
+ * @param {(site: string | null) => number} backend.forgetSignIns
+ * @param {() => Buffer} backend.setupPage
+ * @param {import("./pairing.js").Pairing} pairing
+ */
+export function createApi(backend, pairing) {
+  let openStreams = 0;
+
+  async function route(req, res) {
+    const url = new URL(req.url ?? "/", "http://screen");
+    const path = url.pathname.replace(/\/+$/, "") || "/";
+    switch (path) {
+      case "/":
+      case "/setup":
+        return get(req, () => send(res, 200, backend.setupPage(), "text/html; charset=utf-8"));
+      case "/api/info":
+        return get(req, () => json(res, 200, { ...backend.info(), paired: pairing.isPaired }));
+      case "/api/pair":
+        return post(req, async () => pair(res, await body(req)));
+      // Lets Home Assistant check that a screen announcing itself at a new address is the one
+      // it paired with, before it sends that address its token.
+      case "/api/verify":
+        return post(req, async () => {
+          const nonce = (await body(req)).nonce;
+          if (typeof nonce !== "string" || !NONCE.test(nonce)) throw new HttpError(400, "'nonce' must be 32 to 128 hex digits");
+          json(res, 200, { proofs: pairing.prove(nonce) });
+        });
+      // The phone that scanned the sign-in code has the PIN instead of a token.
+      case "/api/signin":
+        return post(req, async () => signIn(req, res, await body(req)));
+    }
+    if (!path.startsWith("/api/")) throw new HttpError(404, "not found");
+    if (!pairing.isValid(bearer(req))) throw new HttpError(401, "unauthorized");
+    switch (path) {
+      case "/api/state":
+        return get(req, () => send(res, 200, backend.stateJson(), "application/json"));
+      case "/api/events":
+        return get(req, () => events(req, res));
+      case "/api/command":
+        return post(req, async () => {
+          let command;
+          try {
+            command = parseCommand(await body(req));
+          } catch (e) {
+            if (e instanceof BadCommand) throw new HttpError(400, e.message);
+            throw e;
+          }
+          backend.dispatch(command);
+          ok(res);
+        });
+      case "/api/config":
+        if (req.method === "GET" || req.method === "HEAD") return json(res, 200, backend.config().toJson());
+        if (req.method === "POST") {
+          const update = await body(req);
+          let config;
+          try {
+            config = backend.updateConfig(update);
+          } catch (e) {
+            if (e instanceof RangeError) throw new HttpError(400, e.message);
+            throw e;
+          }
+          return json(res, 200, config.toJson());
+        }
+        throw new HttpError(405, "method not allowed");
+      case "/api/signins":
+        if (req.method === "GET" || req.method === "HEAD") return json(res, 200, { sign_ins: backend.signIns() });
+        if (req.method === "DELETE") {
+          const site = (await body(req)).site;
+          return json(res, 200, { forgotten: backend.forgetSignIns(typeof site === "string" && site.trim() ? site.trim() : null) });
+        }
+        throw new HttpError(405, "method not allowed");
+      case "/api/unpair":
+        return post(req, () => {
+          pairing.revoke(bearer(req) ?? "");
+          ok(res);
+        });
+      default:
+        throw new HttpError(404, "not found");
+    }
+  }
+
+  function pair(res, request) {
+    if (typeof request.pin !== "string" || !request.pin.trim()) throw new HttpError(400, "'pin' is required");
+    const result = pairing.pair(request.pin, typeof request.client === "string" ? request.client : "client");
+    if (result.result === "paired") return json(res, 200, { token: result.token });
+    refused(result);
+  }
+
+  function signIn(req, res, request) {
+    if (!pairing.isValid(bearer(req))) {
+      const result = pairing.verify(typeof request.pin === "string" ? request.pin : "");
+      if (result.result !== "verified") refused(result);
+    }
+    const password = typeof request.password === "string" ? request.password : "";
+    if (!password) throw new HttpError(400, "'password' is required");
+    const username = typeof request.username === "string" ? request.username.trim() : "";
+    const accepted = backend.submitSignIn(username, password, request.remember !== false);
+    if (!accepted) throw new HttpError(409, "no_sign_in_pending");
+    ok(res);
+  }
+
+  /** Server-Sent Events: the full state on connect and after every change, pings in between. */
+  function events(req, res) {
+    if (openStreams >= MAX_STREAMS) throw new HttpError(503, "too many event streams");
+    openStreams++;
+    res.writeHead(200, { ...HEADERS, "Content-Type": "text/event-stream; charset=utf-8", "X-Accel-Buffering": "no" });
+    const sendState = (state) => res.write(`event: state\ndata: ${state}\n\n`);
+    res.write("retry: 3000\n\n");
+    sendState(backend.stateJson());
+    const remove = backend.onState(sendState);
+    const ping = setInterval(() => res.write(": ping\n\n"), PING_MS);
+    req.socket.setTimeout(0);
+    res.on("close", () => {
+      clearInterval(ping);
+      remove();
+      openStreams--;
+    });
+  }
+
+  const server = createServer({ maxHeaderSize: 16 * 1024, requestTimeout: 30_000 }, async (req, res) => {
+    try {
+      await route(req, res);
+    } catch (e) {
+      if (res.headersSent) return res.destroy();
+      if (e instanceof HttpError) return json(res, e.status, { error: e.message, ...e.extra });
+      console.error("PleatView API:", e);
+      json(res, 500, { error: "internal error" });
+    }
+  });
+  server.keepAliveTimeout = 0;
+  return server;
+}
+
+function refused(result) {
+  if (result.result === "locked_out") throw new HttpError(429, "too_many_attempts", { retry_after: result.retryAfter });
+  throw new HttpError(403, "invalid_pin");
+}
+
+function bearer(req) {
+  const header = req.headers.authorization ?? "";
+  return /^bearer /i.test(header) ? header.slice(7).trim() : null;
+}
+
+async function get(req, handler) {
+  if (req.method !== "GET" && req.method !== "HEAD") throw new HttpError(405, "method not allowed");
+  return handler();
+}
+
+async function post(req, handler) {
+  if (req.method !== "POST") throw new HttpError(405, "method not allowed");
+  return handler();
+}
+
+/** The JSON body: needs a Content-Length, at most 256 KiB. An empty body is `{}`. */
+async function body(req) {
+  if (req.headers["transfer-encoding"]) throw new HttpError(411, "Content-Length required");
+  const length = Number(req.headers["content-length"] ?? 0);
+  if (!Number.isInteger(length) || length < 0) throw new HttpError(400, "bad Content-Length");
+  if (length > MAX_BODY_BYTES) throw new HttpError(413, "body too large");
+  const chunks = [];
+  let size = 0;
+  for await (const chunk of req) {
+    size += chunk.length;
+    if (size > MAX_BODY_BYTES) throw new HttpError(413, "body too large");
+    chunks.push(chunk);
+  }
+  if (size === 0) return {};
+  let value;
+  try {
+    value = JSON.parse(Buffer.concat(chunks).toString("utf8"));
+  } catch {
+    throw new HttpError(400, "invalid JSON");
+  }
+  if (value === null || typeof value !== "object" || Array.isArray(value)) throw new HttpError(400, "expected a JSON object");
+  return value;
+}
+
+const HEADERS = { "Cache-Control": "no-store", "X-Content-Type-Options": "nosniff", Connection: "close" };
+
+function send(res, status, payload, contentType) {
+  const data = Buffer.isBuffer(payload) ? payload : Buffer.from(payload, "utf8");
+  res.writeHead(status, { ...HEADERS, "Content-Type": contentType, "Content-Length": data.length });
+  res.end(res.req?.method === "HEAD" ? undefined : data);
+}
+
+const json = (res, status, value) => send(res, status, JSON.stringify(value), "application/json");
+const ok = (res) => json(res, 200, { ok: true });

@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src * data: blob:; media-src * blob:; connect-src *; style-src 'self'; script-src 'self'; worker-src blob:">
+  <title>PleatView</title>
+  <link rel="stylesheet" href="ui.css">
+</head>
+<body>
+  <div id="screen">
+    <div id="media" class="layer" hidden>
+      <video id="video" playsinline></video>
+    </div>
+    <div id="image" class="layer" hidden><img id="image-img" alt=""></div>
+
+    <section id="setup" class="layer full" hidden>
+      <div class="setup-row">
+        <div class="setup-text">
+          <h1>PleatView</h1>
+          <p class="tagline">Home Assistant dashboards and media on this screen</p>
+          <p>In Home Assistant, open Settings → Devices &amp; services. This device should appear as a discovered PleatView device. If it doesn't, add the PleatView integration with this address:</p>
+          <pre id="setup-address"></pre>
+          <p>When Home Assistant asks for a PIN, enter</p>
+          <div id="setup-pin" class="pin"></div>
+          <p class="secondary" id="setup-manual"></p>
+          <p class="secondary small" id="setup-device"></p>
+        </div>
+        <div class="setup-code">
+          <div id="setup-qr" class="qr"></div>
+          <p class="secondary">Scan with a phone to add this device to Home Assistant without typing</p>
+        </div>
+      </div>
+    </section>
+
+    <div id="now-playing" class="card region" hidden>
+      <img id="now-playing-art" alt="" hidden>
+      <div class="now-playing-text">
+        <div id="now-playing-title"></div>
+        <div id="now-playing-subtitle" class="secondary"></div>
+        <progress id="now-playing-progress" max="1" value="0"></progress>
+      </div>
+    </div>
+
+    <div id="toasts"></div>
+    <div id="banner" class="card region" hidden></div>
+
+    <section id="menu" class="layer full" hidden>
+      <div class="menu-panel">
+        <p id="menu-info" class="secondary"></p>
+        <p id="menu-url" class="secondary small"></p>
+        <div id="menu-items"></div>
+      </div>
+    </section>
+
+    <div id="curtain" class="layer full" hidden></div>
+  </div>
+  <audio id="announcement"></audio>
+  <script src="../../node_modules/hls.js/dist/hls.min.js"></script>
+  <script src="ui.js"></script>
+</body>
+</html>
