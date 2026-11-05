@@ -26,6 +26,7 @@
     <a class="logo" href="/" aria-label="PleatView home"><img src="img/logo.svg" width="135" height="26" alt="PleatView"></a>
     <nav class="site-nav" aria-label="Main">
       <a href="#features">Features</a>
+      <a href="#ideas">Ideas</a>
       <a href="#install">Install</a>
       <a href="#tested">Tested on</a>
       <a href="support.html">Support</a>
@@ -112,6 +113,124 @@
           <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="7" y="2.5" width="10" height="19" rx="5"/><circle cx="12" cy="8" r="2"/><path d="M12 13v.01M12 16.5v.01"/></svg></span>
           <h3>Made for the remote</h3>
           <p>Channel up and down switch dashboards, Back closes pop-ups, and the menu needs no keyboard. Setup ends at a six-digit PIN.</p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="ideas">
+    <div class="wrap">
+      <div class="section-head">
+        <span class="kicker">Ideas</span>
+        <h2>What people put on the big screen</h2>
+        <p>Things Home Assistant users ask for on the forums, and the automation that does each with PleatView. Copy one, then change the entity names to yours.</p>
+      </div>
+      <div class="features ideas">
+        <article class="feature wide">
+          <h3>Who's at the door?</h3>
+          <p>When the doorbell rings, the door camera opens in a corner of the TV and a card shows who's there. Over a film or another app, the card still appears.</p>
+          <div class="shot"><img src="img/screens/usecase-doorbell.webp" width="1920" height="1080" loading="lazy" alt="A dashboard on the TV with the front door camera in the corner and a card saying someone is at the door"></div>
+          <details><summary>The automation</summary><pre><code>triggers:
+  - trigger: state
+    entity_id: binary_sensor.doorbell
+    to: "on"
+actions:
+  - action: pleatview.notify
+    target:
+      entity_id: media_player.living_room_tv
+    data:
+      title: Front door
+      message: Someone is at the door.
+      camera: camera.front_door
+  - action: pleatview.show_camera
+    target:
+      entity_id: media_player.living_room_tv
+    data:
+      camera: camera.front_door
+      position: bottom-left
+      duration: 60</code></pre></details>
+        </article>
+        <article class="feature wide">
+          <h3>The washing machine is done</h3>
+          <p>A smart plug sees the machine stop, and a card says so over whatever you're watching. Any automation can send one with <code>notify.send_message</code>.</p>
+          <div class="shot"><img src="img/screens/usecase-laundry.webp" width="1920" height="1080" loading="lazy" alt="A card saying the washing machine has finished, over a film playing on the TV"></div>
+          <details><summary>The automation</summary><pre><code>triggers:
+  - trigger: numeric_state
+    entity_id: sensor.washing_machine_power
+    below: 5
+    for: "00:02:00"
+actions:
+  - action: notify.send_message
+    target:
+      entity_id: notify.living_room_tv
+    data:
+      title: Laundry
+      message: The washing machine has finished.</code></pre></details>
+        </article>
+        <article class="feature wide">
+          <h3>A family board in the morning</h3>
+          <p>Today's calendar, the weather and the shopping list from 7 to 9, then back to your usual dashboard. Custom cards work too: the TV runs Home Assistant's full frontend.</p>
+          <div class="shot"><img src="img/screens/usecase-morning.webp" width="1920" height="1080" loading="lazy" alt="A Good morning dashboard with the weather forecast, this week's calendar and the shopping list"></div>
+          <details><summary>The automation</summary><pre><code>triggers:
+  - trigger: time
+    at: "07:00:00"
+actions:
+  - action: pleatview.show_dashboard
+    target:
+      entity_id: media_player.living_room_tv
+    data:
+      path: /dashboard-morning
+      duration: 7200</code></pre></details>
+        </article>
+        <article class="feature wide">
+          <h3>A camera wall</h3>
+          <p>Your cameras on a dashboard of their own, on a spare TV all day, or on the main one when there's motion outside at night.</p>
+          <div class="shot"><img src="img/screens/usecase-cameras.webp" width="1920" height="1080" loading="lazy" alt="Four cameras around the house in a grid, full screen on the TV"></div>
+          <details><summary>The automation</summary><pre><code>triggers:
+  - trigger: state
+    entity_id: binary_sensor.driveway_motion
+    to: "on"
+conditions:
+  - condition: sun
+    after: sunset
+actions:
+  - action: pleatview.show_dashboard
+    target:
+      entity_id: media_player.living_room_tv
+    data:
+      path: /dashboard-cameras
+      duration: 120</code></pre></details>
+        </article>
+        <article class="feature wide">
+          <h3>A wall tablet that wakes up for you</h3>
+          <p>An Android tablet on the wall turns its screen on when someone walks up and off when they leave. Its battery sensor can also switch a smart plug, so it charges only between 20 and 80 %.</p>
+          <details><summary>The automation</summary><pre><code>triggers:
+  - trigger: state
+    entity_id: binary_sensor.hallway_motion
+    to: "on"
+    id: "on"
+  - trigger: state
+    entity_id: binary_sensor.hallway_motion
+    to: "off"
+    for: "00:05:00"
+    id: "off"
+actions:
+  - action: media_player.turn_{{ trigger.id }}
+    target:
+      entity_id: media_player.hallway_tablet</code></pre></details>
+        </article>
+        <article class="feature wide">
+          <h3>Energy at a glance</h3>
+          <p>Solar production by day and what each circuit uses at night, on a TV in the kitchen or office. Two automations at sunrise and sunset switch the dashboard.</p>
+          <details><summary>The automation</summary><pre><code>triggers:
+  - trigger: sun
+    event: sunset
+actions:
+  - action: pleatview.show_dashboard
+    target:
+      entity_id: media_player.living_room_tv
+    data:
+      path: /dashboard-circuits</code></pre></details>
         </article>
       </div>
     </div>
