@@ -123,22 +123,22 @@ casting and notifications need the integration.
 
 Every release runs `tools/e2e/run.py` on a TV against a real Home Assistant: pairing,
 dashboards, kiosk mode, notifications, video, cameras, Webpage dashboards, sign-ins,
-standby, a Home Assistant restart, a frozen page and an update in place. Results from 29 October
-to 1 November 2026:
+standby, a Home Assistant restart, a frozen page and an update in place. Last run on
+5 November 2026; [the test plan](docs/test-plan.md) lists every check.
 
 | Device | Result |
 | --- | --- |
-| Google TV, Android TV 16 (emulator) | All 20 checks pass |
-| Android 16 phone and tablet (Pixel 8 emulator at 360 dp, like most Samsung phones, and Pixel Tablet emulator, 5 Nov) | All 23 checks pass: the 20 above, plus touch opening the menu and waking the screen, turning the screen, and a PIN lock screen staying in front of a cast |
-| Android 11 phone (Galaxy S10 emulator, 360 dp, a 2020 WebView; 5 Nov) | Checked by hand: pairing, dashboards, touch, turning the screen, cards over other apps, battery and charging, a PIN lock screen, standby, and video with an announcement over it. Found the cut-off cards and menu, and media ignoring the Home Assistant URL option, fixed in 1.0.8 |
-| Fire TV Stick 3rd gen, Fire OS 7.7 (Android 9) | All checks pass (the restart check is skipped on a shared Home Assistant). Animated pictures show their first frame before Android 10. 42-hour soak test: no crashes, memory steady |
-| Chromecast with Google TV (HD), Android TV 14, 1.4 GB | All checks pass (the restart check is skipped on a shared Home Assistant). 42-hour soak test: no crashes, memory steady |
+| Google TV, Android TV 16 (emulator) | 🟢 Compatible |
+| Android 16 phone and tablet (Pixel 8 emulator at 360 dp, like most Samsung phones, and Pixel Tablet emulator, 5 Nov) | 🟢 Compatible, including touch, turning the screen and the lock screen |
+| Android 11 phone (Galaxy S10 emulator, 360 dp, a 2020 WebView; 5 Nov) | 🟢 Compatible, checked by hand |
+| Fire TV Stick 3rd gen, Fire OS 7.7 (Android 9) | 🟢 Compatible. Animated pictures show their first frame before Android 10. 42-hour soak test: no crashes |
+| Chromecast with Google TV (HD), Android TV 14, 1.4 GB | 🟢 Compatible. 42-hour soak test: no crashes |
 
 | Home Assistant | Result |
 | --- | --- |
-| 2026.11 (current release, 5 Nov) | 20 of 20 on a TV, 23 of 23 on a phone and a tablet; installs from the Marketplace without a GitHub account |
-| 2026.10 | 20 of 20 |
-| 2025.1 (oldest supported) | 20 of 20 |
+| 2026.11 (current release) | 🟢 Compatible. Installs from the Marketplace without a GitHub account |
+| 2026.10 | 🟢 Compatible |
+| 2025.1 (oldest supported) | 🟢 Compatible |
 
 ## Using it from Home Assistant
 
