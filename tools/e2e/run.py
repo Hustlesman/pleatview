@@ -63,7 +63,8 @@ MOBILE = ("pleatview-e2e-emulator-mobile",
 FORM_FACTORS = {"tv": (TV_IMAGE, [], "tv"), "phone": (*MOBILE, "phone"), "tablet": (*MOBILE, "tablet")}
 # The Pixel Tablet's 2560×1600 is slow to draw in software (System UI stops responding):
 # use a typical 10-inch tablet's 1920×1200 at the same 1280×800 dp.
-SCREEN_SIZES = {"tablet": ("1920x1200", "240")}
+# The phone is 360 dp wide, like most Samsung phones and narrower than the Pixel 8 it runs as.
+SCREEN_SIZES = {"phone": ("1080x2340", "480"), "tablet": ("1920x1200", "240")}
 EMULATOR_HOST = "10.0.2.2"  # how the emulator reaches this machine
 SCREENS_TV_NAME = "Living Room TV"  # what the emulator calls itself in --screens runs
 # With --device, adb runs in its own container, on a port the emulator's adb doesn't use.
@@ -72,7 +73,11 @@ ADB_CONTAINER = "pleatview-e2e-adb"
 ADB_SERVER_PORT = 5038
 DONATE_URL = "https://pleatview.hustlesman.com/donate"
 ADB_KEYS = Path("~/.config/pleatview/adb").expanduser()
-ADB_COMMAND = ["docker", "exec", TV_CONTAINER, "adb"]  # main() points this at the TV for --device
+# The emulator's console and adb ports, clear of 5554/5555: this machine's network may already
+# have another emulator, or a phone emulator's adb port published by Docker, which the adb
+# server would pick up as a second device.
+EMULATOR_PORT = 5580
+ADB_COMMAND = ["docker", "exec", TV_CONTAINER, "adb", "-s", f"emulator-{EMULATOR_PORT}"]  # main() points this at the TV for --device
 
 HA_CONFIG = f"""\
 homeassistant:
@@ -457,6 +462,26 @@ def view_bounds(view_id: str) -> tuple[int, int, int, int] | None:
     return tuple(int(n) for n in match.groups()) if match else None
 
 
+def density() -> float:
+    """Pixels per dp, after any override."""
+    return int(re.findall(r"\d+", adb("shell", "wm", "density"))[-1]) / 160
+
+
+def overlay_card() -> tuple[int, bool] | None:
+    """PleatView's card over other apps: the width it asked for, and whether it's drawn."""
+    for window in adb("shell", "dumpsys", "window", "windows", check=False).split("Window #")[1:]:
+        if f" {PACKAGE}}}:" in window.split("\n", 1)[0]:
+            width = re.search(r"mAttrs=\{\(-?\d+,-?\d+\)\((\d+)x", window)
+            drawn = any(sign in window for sign in ("Surface: shown=true", "isReadyForDisplay()=true", "isOnScreen=true"))
+            return (int(width.group(1)) if width else 0), drawn
+    return None
+
+
+def fits(width: int, screen: int) -> bool:
+    """Whether a card this wide leaves its 24 dp margins on a screen this wide."""
+    return width + 48 * density() <= screen + 1
+
+
 def read_pin() -> str:
     return "".join(ch for ch in screen_attribute("setup_pin", "text") if ch.isdigit())
 
@@ -513,7 +538,8 @@ def start(r: Run, work: Path, apk: Path) -> None:
         connect_device(r)
     else:
         run("docker", "run", "-d", "--name", TV_CONTAINER, "--network", "host", "--device", "/dev/kvm",
-            "--cpus", "2", r.emulator_image, "emulator", "-avd", r.avd, "-no-window", "-no-audio", "-no-boot-anim",
+            "--cpus", "2", r.emulator_image, "emulator", "-avd", r.avd, "-port", str(EMULATOR_PORT),
+            "-no-window", "-no-audio", "-no-boot-anim",
             "-gpu", "swiftshader_indirect", "-no-snapshot", "-memory", "3072", "-cores", "2", "-no-metrics")
     if not r.external:
         # Home Assistant first: its HTTP port must be promoted within five minutes.
@@ -739,6 +765,11 @@ def checks(r: Run, report: Report, apk: Path) -> None:
         wait_for("the notification card", lambda: "Hello from the end-to-end test" in screen_texts(),
                  timeout=20, interval=1)
         report.screenshot("03-notification")
+        # Cards are 440 dp wide where there's room; a phone is narrower.
+        left, _, right, _ = view_bounds("toast_card")
+        screen = view_bounds("root")[2]
+        if not fits(right - left, screen):
+            raise AssertionError(f"the notification card ({right - left} px) doesn't fit the {screen} px screen")
         # An animated GIF: Android 9's animated decoder once crashed the app on it. From
         # Android 10 the picture should move.
         pid = adb("shell", "pidof", PACKAGE).strip()
@@ -844,15 +875,30 @@ def checks(r: Run, report: Report, apk: Path) -> None:
         try:
             time.sleep(8)  # new options reload the integration, which sends the TV its settings again
             wait_for("the TV after its new settings", ready, timeout=60)
+            screen = view_bounds("root")[2]
             adb("shell", "input", "keyevent", "KEYCODE_HOME")
             wait_for("the home screen in front", lambda: PACKAGE not in resumed(), timeout=20)
             left = time.time()
+            # Meanwhile a notification shows over the other app, and fits the screen. Until
+            # PleatView knows it's hidden (the entity turns off), a card would go to its own screen.
+            wait_for("the entity to turn off", lambda: state()["state"] == "off", timeout=20)
+            ha.call("pleatview", "notify", {"entity_id": entity["id"], "message": "Over another app", "duration": 10})
+            try:
+                width, _ = wait_for("the card over the other app", lambda: (card := overlay_card()) and card[1] and card,
+                                    timeout=15, interval=1)
+            except TimeoutError as err:
+                windows = adb("shell", "dumpsys window windows | grep -E 'Window #|isOnScreen|isReadyForDisplay'",
+                              check=False)
+                raise AssertionError(f"{err}; windows: {' '.join(windows.split())[:600]}") from None
+            report.screenshot("06-over-another-app")
+            if not fits(width, screen):
+                raise AssertionError(f"the card over another app ({width} px) doesn't fit the {screen} px screen")
             try:
                 wait_for("PleatView to come back", lambda: PACKAGE in resumed(), timeout=150, interval=5)
             except TimeoutError as err:
                 sound = adb("shell", "dumpsys audio | grep -iE 'state:started|isMusicActive'", check=False).strip()
                 raise AssertionError(f"{err}; in front: {resumed()[:160]}; playing: {sound[:200] or 'nothing'}") from None
-            return f"back after {time.time() - left:.0f} s on the home screen"
+            return f"a {width} px card on the {screen} px screen; back after {time.time() - left:.0f} s"
         finally:
             if PACKAGE not in resumed():
                 adb("shell", "am", "start", "-n", f"{PACKAGE}/.MainActivity")
@@ -1076,6 +1122,33 @@ def checks(r: Run, report: Report, apk: Path) -> None:
         adb("shell", "input", "keyevent", "KEYCODE_BACK")
         return f"QR code for {code}"
 
+    def turned():
+        # Turning a phone or tablet keeps PleatView and its page. Sideways, the sign-in card
+        # puts its QR code beside the text: below it, the code was off the bottom of the screen.
+        pid = adb("shell", "pidof", PACKAGE).strip()
+        before = view_bounds("root")
+        ha.call("pleatview", "forget_sign_ins", {"entity_id": entity["id"]})
+        adb("shell", "settings", "put", "system", "accelerometer_rotation", "0")
+        adb("shell", "settings", "put", "system", "user_rotation", "1")
+        try:
+            wait_for("the screen to turn", lambda: (b := view_bounds("root")) and (b[2] > b[3]) != (before[2] > before[3]),
+                     timeout=15)
+            ha.call("pleatview", "show_dashboard", {"entity_id": entity["id"], "path": f"{r.site}/prompt/"})
+            wait_for("the sign-in card", lambda: state()["attributes"].get("sign_in_needed"), timeout=45)
+            time.sleep(2)
+            report.screenshot("11-turned-sign-in")
+            bounds = screen_attribute("signin_qr", "bounds")
+            top, bottom = (int(n) for n in re.findall(r"\d+", bounds)[1::2]) if bounds else (0, 0)
+            if bottom - top < 220 * density() - 2:
+                raise AssertionError(f"the sign-in card's QR code doesn't fit on the turned screen ({bounds or 'not shown'})")
+            if adb("shell", "pidof", PACKAGE).strip() != pid:
+                raise AssertionError("PleatView restarted when the screen turned")
+            return f"same process; the QR code fits at {bounds}"
+        finally:
+            adb("shell", "input", "keyevent", "KEYCODE_BACK")
+            adb("shell", "settings", "put", "system", "user_rotation", "0")
+            ha.call("pleatview", "home", {"entity_id": entity["id"]})
+
     def touch_menu():
         # Phones, tablets and Chromebooks: a touch shows a menu button for a few seconds.
         ha.call("pleatview", "home", {"entity_id": entity["id"]})
@@ -1090,6 +1163,9 @@ def checks(r: Run, report: Report, apk: Path) -> None:
         adb("shell", "input", "tap", str((left + right) // 2), str((top + bottom) // 2))
         wait_for("the menu", lambda: "Home dashboard" in screen_texts(), timeout=15)
         report.screenshot("10-touch-menu")
+        left, _, right, _ = view_bounds("menu_panel")
+        if left < 0 or right > view_bounds("root")[2]:
+            raise AssertionError(f"the menu ({left}-{right} px) runs off the screen")
         adb("shell", "input", "keyevent", "KEYCODE_BACK")
         # A tap on the black standby screen wakes it.
         ha.call("media_player", "turn_off", {"entity_id": entity["id"]})
@@ -1209,7 +1285,7 @@ def checks(r: Run, report: Report, apk: Path) -> None:
         ("Camera without a stream shows as picture-in-picture", camera),
         ("show_dashboard and home switch dashboards", dashboards),
         ("Rotation keeps a dashboard Home Assistant showed", rotation_waits),
-        ("Comes back from another app", comes_back),
+        ("Over another app: a card shows, then PleatView comes back", comes_back),
         ("Webpage dashboard opens the site directly", webpage),
         ("Sign-ins: entered from a phone, then saved", sign_ins),
         ("turn_off and turn_on", standby),
@@ -1220,7 +1296,8 @@ def checks(r: Run, report: Report, apk: Path) -> None:
         # that the WebView kept for the session after the sign-in check.
         ("Back after a dismissed sign-in opens the menu", back_after_sign_in),
         ("Support PleatView in the menu", support_code),
-        *([("Touch opens the menu and wakes the screen", touch_menu),
+        *([("Turning the screen keeps the page, and the sign-in card fits", turned),
+           ("Touch opens the menu and wakes the screen", touch_menu),
            ("A PIN lock screen stays in front of a cast", lock_screen)] if r.args.form_factor != "tv" else []),
         *([("Website and store pictures", screens)] if r.args.screens is not None else []),
     ]:

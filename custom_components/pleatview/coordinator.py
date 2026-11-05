@@ -9,6 +9,7 @@ import json
 import logging
 from typing import Any
 
+from homeassistant.components.media_player import async_process_play_media_url
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.exceptions import HomeAssistantError
@@ -120,6 +121,20 @@ class PleatViewDevice:
             raise HomeAssistantError(f"{self.name} rejected {command}: {err}") from err
         except PleatViewError as err:
             raise HomeAssistantError(f"Could not reach {self.name}: {err}") from err
+
+    def media_url(self, url: str) -> str:
+        """An address the TV can open for media, a picture or a camera stream.
+
+        Home Assistant's own paths are signed and go through the same URL as the TV's
+        dashboards, which the "Home Assistant URL" option may set.
+        """
+        url = async_process_play_media_url(self.hass, url, allow_relative_url=True)
+        if not url.startswith("/"):
+            return url
+        base = self.entry.options.get(CONF_HA_URL) or default_ha_url(self.hass)
+        if not base:
+            raise HomeAssistantError("No URL for Home Assistant is known; set one in the PleatView options")
+        return base.rstrip("/") + url
 
     def desired_config(self) -> dict[str, Any]:
         """Configuration Home Assistant manages on the TV, tagged with a revision."""

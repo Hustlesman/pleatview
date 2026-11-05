@@ -138,6 +138,39 @@ async def test_play_media_source_is_resolved_and_signed(hass: HomeAssistant, fak
     await hass.config_entries.async_unload(entry.entry_id)
 
 
+async def test_media_uses_the_tvs_home_assistant_url(hass: HomeAssistant, fake_tv: FakeTV) -> None:
+    # A TV that reaches Home Assistant at another address gets media there too, not only dashboards.
+    tv_url = "http://192.168.1.10:8123/"
+    entry = await setup_entry(hass, make_entry(fake_tv, options={"ha_url": tv_url}))
+    with patch(
+        "homeassistant.components.media_source.async_resolve_media",
+        return_value=PlayMedia(url="/api/tts_proxy/abc.mp3", mime_type="audio/mpeg"),
+    ):
+        await hass.services.async_call(
+            MP_DOMAIN,
+            SERVICE_PLAY_MEDIA,
+            {ATTR_ENTITY_ID: ENTITY, ATTR_MEDIA_CONTENT_TYPE: "music", ATTR_MEDIA_CONTENT_ID: "media-source://tts/x"},
+            blocking=True,
+        )
+    target = {ATTR_ENTITY_ID: ENTITY}
+    with patch("homeassistant.components.camera.async_request_stream", return_value="/api/hls/abc/master_playlist.m3u8"):
+        await hass.services.async_call(DOMAIN, "show_camera", {**target, "camera": "camera.door"}, blocking=True)
+    await hass.services.async_call(DOMAIN, "notify", {**target, "message": "Ding dong", "camera": "camera.door"}, blocking=True)
+    await hass.services.async_call(
+        MP_DOMAIN,
+        SERVICE_PLAY_MEDIA,
+        {ATTR_ENTITY_ID: ENTITY, ATTR_MEDIA_CONTENT_TYPE: "music", ATTR_MEDIA_CONTENT_ID: "https://radio.example/stream"},
+        blocking=True,
+    )
+
+    tts, hls, notify, radio = fake_tv.commands[-4:]
+    assert tts["url"] == "http://192.168.1.10:8123/api/tts_proxy/abc.mp3"  # Home Assistant doesn't sign these
+    assert hls["url"].startswith("http://192.168.1.10:8123/api/hls/abc/master_playlist.m3u8")
+    assert notify["image_url"].startswith("http://192.168.1.10:8123/api/camera_proxy/camera.door?authSig=")
+    assert radio["url"] == "https://radio.example/stream"
+    await hass.config_entries.async_unload(entry.entry_id)
+
+
 async def test_pleatview_services(hass: HomeAssistant, fake_tv: FakeTV) -> None:
     entry = await setup_entry(hass, make_entry(fake_tv))
     target = {ATTR_ENTITY_ID: ENTITY}

@@ -41,10 +41,15 @@ class SignInFlow(
         val at: Long,
         /** A new page or route has shown since it was sent. */
         val navigated: Boolean = false,
+        /** Pages started before it was sent: the one it was sent from may still be finishing. */
+        val page: Int = 0,
     )
 
     /** The main frame is loading a page: until it finishes, a missing form proves nothing. */
     private var loading = false
+
+    /** Pages started in the main frame so far. */
+    private var pagesStarted = 0
 
     /** When a saved sign-in was last rejected, per origin: until a while later, ask instead. */
     private val rejected = mutableMapOf<String, Long>()
@@ -126,13 +131,21 @@ class SignInFlow(
 
     fun onPageStarted() {
         loading = true
+        pagesStarted++
     }
 
     /** A page (finished loading) or a single-page app's new route is showing: look for a login form. */
     fun onPageShown(url: String?, finished: Boolean) {
         if (finished) loading = false
         val origin = url?.let(Config::originOf) ?: return
-        trying?.let { if (it.signIn.kind == SignIn.Kind.FORM && !it.navigated) trying = it.copy(navigated = true) }
+        // The site answered with a new page or route. A form found and filled while its page
+        // was still loading would otherwise count that page finishing as the answer, and the
+        // form still on it as a rejection.
+        trying?.let {
+            if (it.signIn.kind == SignIn.Kind.FORM && !it.navigated && (!finished || pagesStarted > it.page)) {
+                trying = it.copy(navigated = true)
+            }
+        }
         val token = ++search
         if (!Config.isHttpUrl(url) || config.isHaUrl(url)) {
             // Home Assistant: no login form here.
@@ -199,7 +212,7 @@ class SignInFlow(
 
     private fun fill(signIn: SignIn, save: Boolean, saved: Boolean) {
         val view = view ?: return
-        trying = Attempt(signIn, save, saved, SystemClock.elapsedRealtime())
+        trying = Attempt(signIn, save, saved, SystemClock.elapsedRealtime(), page = pagesStarted)
         view.evaluateJavascript(SignIns.fillScript(signIn.site, signIn.username, signIn.password), null)
         // A single-page app may sign in without loading a page: watch this one too.
         val token = ++search

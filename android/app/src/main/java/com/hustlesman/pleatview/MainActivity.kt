@@ -448,19 +448,29 @@ class MainActivity : Activity(), Hub.Display, DashboardController.Callbacks, Med
         fitLayouts()
     }
 
-    /** Text and QR code side by side on TVs and wide screens, stacked on phones and portrait tablets. */
+    /** Room for the setup address on one line. */
     private val isWide: Boolean get() = resources.configuration.screenWidthDp >= WIDE_LAYOUT_DP
+
+    /**
+     * Text and QR code side by side on TVs, wide screens and phones turned sideways (where,
+     * stacked, the QR code would be below the screen); stacked on phones and portrait tablets.
+     */
+    private val sideBySide: Boolean get() = resources.configuration.let {
+        it.screenWidthDp >= WIDE_LAYOUT_DP ||
+            (it.orientation == Configuration.ORIENTATION_LANDSCAPE && it.screenWidthDp >= SIDE_BY_SIDE_MIN_DP)
+    }
 
     private fun fitLayouts() {
         val widthDp = resources.configuration.screenWidthDp
-        val wide = isWide
+        val wide = sideBySide
         val density = resources.displayMetrics.density
         fun stack(row: Int, text: Int, textWidthDp: Int, code: Int) {
             findViewById<LinearLayout>(row).orientation = if (wide) LinearLayout.HORIZONTAL else LinearLayout.VERTICAL
             val textView = findViewById<View>(text)
             textView.layoutParams = (textView.layoutParams as LinearLayout.LayoutParams).apply {
-                // The screens have 24 dp padding on each side.
-                width = (minOf(textWidthDp, widthDp - 48) * density).toInt()
+                // The screens have 24 dp padding on each side; beside the text, the QR code
+                // takes 56 + 240 dp.
+                width = (minOf(textWidthDp, widthDp - 48 - if (wide) 296 else 0) * density).toInt()
             }
             val codeView = findViewById<View>(code)
             codeView.layoutParams = (codeView.layoutParams as LinearLayout.LayoutParams).apply {
@@ -470,6 +480,14 @@ class MainActivity : Activity(), Hub.Display, DashboardController.Callbacks, Med
         }
         stack(R.id.setup_row, R.id.setup_text, 560, R.id.setup_code)
         stack(R.id.signin_row, R.id.signin_text, 520, R.id.signin_code)
+        // A phone can be narrower than the menu, and than the now-playing text beside the
+        // cover art (56 + 14 dp) in its bar (24 dp margins and 12 dp padding on each side).
+        fun cap(view: Int, dp: Int) {
+            val target = findViewById<View>(view)
+            target.layoutParams = target.layoutParams.apply { width = (dp * density).toInt() }
+        }
+        cap(R.id.menu_panel, minOf(MENU_WIDTH_DP, widthDp))
+        cap(R.id.now_playing_text, minOf(NOW_PLAYING_TEXT_DP, widthDp - 48 - 24 - 70))
         if (setupScreen.visibility == View.VISIBLE) refreshSetup()
     }
 
@@ -714,5 +732,10 @@ class MainActivity : Activity(), Hub.Display, DashboardController.Callbacks, Med
 
         /** Width the setup and sign-in screens need with the text and QR code side by side. */
         private const val WIDE_LAYOUT_DP = 900
+
+        /** Narrowest sideways phone that fits the QR code beside a 296 dp column of text. */
+        private const val SIDE_BY_SIDE_MIN_DP = 640
+        private const val MENU_WIDTH_DP = 380
+        private const val NOW_PLAYING_TEXT_DP = 320
     }
 }

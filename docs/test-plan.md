@@ -2,7 +2,8 @@
 
 What we check before a release and on each reference device. `tools/e2e/run.py` automates
 the items marked **(auto)** against a real Home Assistant, on an Android TV emulator (or, with
-`--form-factor phone` or `tablet`, a Pixel 8 or Pixel Tablet emulator) or, with `--device`, on
+`--form-factor phone` or `tablet`, a Pixel 8 emulator set to 360 dp wide like most Samsung
+phones, or a Pixel Tablet emulator) or, with `--device`, on
 a real TV over the network. The rest need a person.
 
 Record a device run as a GitHub issue titled `Test run: vX.Y.Z on <device>`. Start with
@@ -39,7 +40,7 @@ checklist below and tick what passed. Anything that fails gets its own issue.
 - [ ] Back closes Home Assistant dialogs, then goes to the home dashboard, then opens the menu
 - [ ] The menu shows address, PIN and version, and its dashboard buttons work
 - [ ] The GitHub download's menu has *Support PleatView*, whose QR code opens the donation page; a store build has no such item **(auto: GitHub build)**
-- [ ] Phones, tablets and Chromebooks: a touch shows the menu button for a few seconds, and it opens the menu **(auto: phone and tablet emulators)**; a tap wakes the screen from standby; the setup screen and the sign-in card fit in portrait, with the QR code under the text
+- [ ] Phones, tablets and Chromebooks: a touch shows the menu button for a few seconds, and it opens the menu, which fits the screen **(auto: phone and tablet emulators)**; a tap wakes the screen from standby; the setup screen and the sign-in card fit in portrait, with the QR code under the text
 - [ ] Phones and tablets get battery and charging sensors that follow plugging in and out; TVs get none **(auto: present or absent)**
 - [ ] Phones and tablets with a PIN: a cast doesn't wake the screen or show the dashboard over the lock screen; without a lock it wakes and shows it **(auto)**
 
@@ -61,9 +62,9 @@ checklist below and tick what passed. Anything that fails gets its own issue.
 - [ ] A real site's login form (Grafana, Proxmox, UniFi) signs in from the phone code; a wrong password asks again; *Forget saved sign-ins* in the menu removes it
 
 ### Notifications
-- [ ] `notify.send_message` shows a card that hides itself **(auto)**
+- [ ] `notify.send_message` shows a card that hides itself, and fits a phone's screen **(auto)**
 - [ ] `pleatview.notify` with a camera snapshot shows the picture; an animated GIF moves on Android 10 and later and shows its first frame on Android 9, without a crash **(auto: GIF)**
-- [ ] With the overlay permission, a notification appears over another app, such as YouTube
+- [ ] With the overlay permission, a notification appears over another app, such as YouTube, and fits a phone's screen **(auto: over the home screen)**
 
 ### Power and background
 - [ ] `turn_off` blanks the screen and the entity turns `off`; `turn_on` brings the dashboard back **(auto)**
