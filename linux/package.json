@@ -13,7 +13,7 @@
     "node": ">=20"
   },
   "scripts": {
-    "test": "node --test test/",
+    "test": "node --test test/*.test.js",
     "assets": "node scripts/copy-assets.js",
     "start": "npm run assets && electron .",
     "dist": "npm run assets && electron-builder --linux deb --x64 --arm64"
