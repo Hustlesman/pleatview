@@ -28,6 +28,7 @@ Last updated 5 November 2026. **Current milestone: M1** (M0 finished early).
 | --- | --- | --- | --- |
 | [M0](#m0--foundation) Foundation | Fri 6 Nov 2026 | — | Done 28 Oct |
 | [M1](#m1--validated-on-real-android-tv-hardware) Validated on real Android TV hardware | Fri 20 Nov 2026 | M0, devices | In progress |
+| [L1](#l1--linux-app) Linux app for mini PCs and Raspberry Pi, alongside M1 and M2 | Fri 18 Dec 2026 | — | In progress |
 | [M2](#m2--public-beta) Public beta, Google Play closed test, phones and tablets | Fri 4 Dec 2026 | M1, 12 beta testers | Not started |
 | [M3](#m3--google-play-and-amazon-appstore) Google Play and Amazon Appstore | Fri 15 Jan 2027 | M2, store reviews | Not started |
 | [M4](#m4--web-player) Web player for any TV browser | Fri 29 Jan 2027 | M3 submitted | Not started |
@@ -140,6 +141,36 @@ from GitHub Releases.
       played sound for a while (10 minutes by default)
 
 **Exit:** the test plan passes on all four devices, the soak passes, v1.1.0 is released.
+
+## L1 — Linux app
+
+*Thu 5 Nov → Fri 18 Dec 2026*, alongside M1 and M2 (added 5 Nov, on request: people run
+dashboards on Ubuntu mini PCs and Raspberry Pis connected to screens). A beta package by
+Fri 27 Nov.
+
+The same integration and protocol v1 as the Android app, so a Linux screen is discovered,
+paired with a PIN and controlled like a TV. It's an Electron app: the same Chromium engine
+as Android's WebView, H.264 and AAC built in, and builds for x86-64 and ARM64. Its own
+screens (setup, cards, media, menu) are web pages, a start for the M4 web player.
+
+- [x] Protocol v1 server ported from the Android app, with unit tests: pairing, commands,
+      configuration, sign-in requests, events (5 Nov)
+- [x] Discovered over mDNS, paired with the PIN, signs in to Home Assistant without a login
+      page, kiosk mode, notification cards, video, audio and announcements, cameras in
+      picture-in-picture, standby; checked in Docker against a Home Assistant (5 Nov)
+- [ ] Sign-ins for dashboards behind a login form or a password prompt, as on Android
+- [ ] `turn_off` switches the screen off: wlr-randr, xset, and HDMI-CEC standby for TVs
+- [ ] `.deb` packages for x86-64 and ARM64 on each GitHub release, with checksums and
+      build attestations; an APT repository later
+- [ ] Starts with the computer: a desktop autostart entry, or a kiosk session (cage) on
+      Ubuntu Server and Raspberry Pi OS Lite, set up by one command
+- [ ] End-to-end checks against a real Home Assistant, as `tools/e2e/run.py` does for
+      Android, in Docker on a virtual screen
+- [ ] Checked by hand on an Ubuntu mini PC, a Raspberry Pi 5 and a Raspberry Pi 4
+      (video decoding, screen power, HDMI-CEC, touch screens)
+
+**Exit:** the beta package passes the test plan, minus Android-only items, on the three
+devices above, and the README covers installing it.
 
 ## M2 — Public beta
 
@@ -287,6 +318,7 @@ website and in the README.
 | Fire TV on Fire OS | Same native app | Amazon Appstore | Yes (M3) |
 | Android phones, tablets and Chromebooks | Same native app | Google Play | Yes (beta in M2, public in M3) |
 | Fire tablets | Same native app | Amazon Appstore | Yes (M3) |
+| Linux: Ubuntu mini PCs, Raspberry Pi 4 and 5 | Electron app, same integration | `.deb` on GitHub, then an APT repository | Beta in L1 |
 | iPhone and iPad | Web player in Safari, then a native app that wraps it | App Store | Web player (M4); app in M7 |
 | LG webOS (2021+) | Web player in a webOS app | LG Content Store | Yes (M5) |
 | Samsung Tizen (2021+) | Web player in a Tizen app | Samsung TV Apps | Yes (M5) |
