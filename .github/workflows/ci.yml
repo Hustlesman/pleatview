@@ -58,6 +58,12 @@ jobs:
           cache-dependency-path: linux/package-lock.json
       - run: npm ci
       - run: npm test
+      - name: Packages for x86-64 and ARM64
+        run: npm run dist
+      - uses: actions/upload-artifact@v4
+        with:
+          name: pleatview-linux-debs
+          path: linux/dist/*.deb
 
   integration:
     name: Home Assistant integration
