@@ -36,6 +36,7 @@ import java.util.concurrent.Executors
 object ToastViews {
     fun create(context: Context, parent: ViewGroup?, notify: Command.Notify): View {
         val view = LayoutInflater.from(context).inflate(R.layout.item_toast, parent, false)
+        view.layoutParams?.let { it.width = minOf(it.width, maxWidth(context)) }
         view.findViewById<TextView>(R.id.toast_title).apply {
             text = notify.title
             visibility = if (notify.title.isNullOrEmpty()) View.GONE else View.VISIBLE
@@ -46,6 +47,12 @@ object ToastViews {
             ImageLoader.load(url, image, maxSize = 960)
         }
         return view
+    }
+
+    /** The widest a card fits on this screen (narrower than 440 dp on a phone), with 24 dp margins. */
+    fun maxWidth(context: Context): Int {
+        val resources = context.resources
+        return ((resources.configuration.screenWidthDp - 48) * resources.displayMetrics.density).toInt()
     }
 
     fun gravity(position: Command.Position): Int = when (position) {
@@ -114,7 +121,7 @@ class SystemOverlay(private val context: Context) {
             WindowManager.LayoutParams.TYPE_PHONE
         }
         val params = WindowManager.LayoutParams(
-            (440 * density).toInt(),
+            minOf((440 * density).toInt(), ToastViews.maxWidth(context)),
             WindowManager.LayoutParams.WRAP_CONTENT,
             type,
             WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE,

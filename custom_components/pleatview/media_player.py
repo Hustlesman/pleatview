@@ -20,7 +20,6 @@ from homeassistant.components.media_player import (
     MediaPlayerEntityFeature,
     MediaPlayerState,
     MediaType,
-    async_process_play_media_url,
 )
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import HomeAssistantError, ServiceValidationError
@@ -362,7 +361,7 @@ class PleatViewMediaPlayer(PleatViewEntity, MediaPlayerEntity):
 
         await self._device.async_command(
             "play_media",
-            url=async_process_play_media_url(self.hass, media_id),
+            url=self._device.media_url(media_id),
             mime_type=mime,
             title=extra.get("title"),
             artist=extra.get("artist"),
@@ -457,14 +456,14 @@ class PleatViewMediaPlayer(PleatViewEntity, MediaPlayerEntity):
             _LOGGER.debug("No HLS stream for %s (%s); showing MJPEG instead", camera, err)
             await self._device.async_command(
                 "show_image",
-                url=async_process_play_media_url(self.hass, f"/api/camera_proxy_stream/{camera}"),
+                url=self._device.media_url(f"/api/camera_proxy_stream/{camera}"),
                 mode=mode,
                 **layout,
             )
             return
         await self._device.async_command(
             "play_media",
-            url=async_process_play_media_url(self.hass, stream_path),
+            url=self._device.media_url(stream_path),
             mime_type=HLS_MIME,
             title=title,
             mode=mode,
@@ -483,11 +482,11 @@ class PleatViewMediaPlayer(PleatViewEntity, MediaPlayerEntity):
         """Show a notification card, optionally with an image or camera snapshot."""
         image_url = None
         if camera:
-            image_url = async_process_play_media_url(self.hass, f"/api/camera_proxy/{camera}")
+            image_url = self._device.media_url(f"/api/camera_proxy/{camera}")
         elif image:
             if media_source.is_media_source_id(image):
                 image = (await media_source.async_resolve_media(self.hass, image, self.entity_id)).url
-            image_url = async_process_play_media_url(self.hass, image)
+            image_url = self._device.media_url(image)
         await self._device.async_command(
             "notify",
             message=message,

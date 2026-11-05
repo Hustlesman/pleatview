@@ -42,14 +42,14 @@ each later milestone gets its issues when it starts.
 **Want to help?** Tell us about a device that works or doesn't, report a bug, or join the
 Google TV beta ([#9](https://github.com/Hustlesman/pleatview/issues/9)).
 
-Done so far: v1.0.7 is published as a signed release with build attestations (versions are
+Done so far: v1.0.8 is published as a signed release with build attestations (versions are
 1.x from 29 Oct; each milestone ends with the next minor release). One command
 (`tools/e2e/run.py`) tests the Android app and the Home Assistant integration together in
 20 checks, on an Android TV 16 emulator or a real TV: pairing, automatic sign-in, kiosk mode,
 casting, cameras, notifications, sign-ins, standby, updates, and recovery from a Home Assistant
-restart and from a frozen page. Phone and tablet emulators add touch and the lock screen, for 22. A Fire TV Stick and a Chromecast HD pass the automated checks,
+restart and from a frozen page. Phone and tablet emulators add touch, turning the screen and the lock screen, for 23. A Fire TV Stick and a Chromecast HD pass the automated checks,
 and both ran a 42-hour soak test without a crash. A security review on 2 Nov fixed what it
-found, and no dependency has a known vulnerability. 56 app tests and 31 integration tests pass.
+found, and no dependency has a known vulnerability. 56 app tests and 32 integration tests pass.
 
 ## How we stay on track
 
@@ -159,7 +159,10 @@ requires.
       tablet emulators, and by hand on a real phone, tablet and Chromebook. (Added 3 Nov;
       it was in the parking lot.) Done on 3 Nov: touch, portrait layouts, wording, battery
       and charging sensors, Play builds for every form factor, and phone and tablet
-      emulators passing every check. Still to do: the real phone, tablet and Chromebook
+      emulators passing every check. 5 Nov: cards, the menu and the now-playing bar fit
+      360 dp phones, and a phone turned sideways shows the QR code beside the text (found on
+      an Android 11 phone emulator; the phone emulator now runs at 360 dp). Still to do: the
+      real phone, tablet and Chromebook.
 - [ ] Google Play beta: 12 or more testers on Google TV, Android phones, tablets or
       Chromebooks who stay in for 14 days, which Google requires before PleatView can go
       public. Sign up in
