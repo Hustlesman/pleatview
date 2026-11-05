@@ -43,7 +43,7 @@ import time
 import urllib.error
 import urllib.parse
 import urllib.request
-from datetime import datetime
+from datetime import datetime, timedelta
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
@@ -67,6 +67,12 @@ FORM_FACTORS = {"tv": (TV_IMAGE, [], "tv"), "phone": (*MOBILE, "phone"), "tablet
 SCREEN_SIZES = {"phone": ("1080x2340", "480"), "tablet": ("1920x1200", "240")}
 EMULATOR_HOST = "10.0.2.2"  # how the emulator reaches this machine
 SCREENS_TV_NAME = "Living Room TV"  # what the emulator calls itself in --screens runs
+# The use-case pictures' cameras: stills from the --screens video, at these seconds.
+SCREENS_CAMERAS = {"Front door": 32, "Driveway": 44, "Back fence": 60, "Gate": 100}
+
+
+def camera_file(name: str) -> str:
+    return f"cam-{name.lower().replace(' ', '-')}.jpg"
 # With --device, adb runs in its own container, on a port the emulator's adb doesn't use.
 # Its key stays on this machine, so the TV only asks to allow it once.
 ADB_CONTAINER = "pleatview-e2e-adb"
@@ -524,7 +530,12 @@ def start(r: Run, work: Path, apk: Path) -> None:
         f"{TEST_VIDEO} /out/e2e.mp4 && {TEST_GIF} /out/e2e.gif && chmod a+r /out/e2e.mp4 /out/e2e.gif")
     (media / "e2e.html").write_text(TEST_PAGE)
     if r.args.screens:
-        (media / "screens.mp4").symlink_to(Path(r.args.screens).resolve())
+        video = Path(r.args.screens).resolve()
+        (media / "screens.mp4").symlink_to(video)
+        stills = " && ".join(f"ffmpeg -loglevel error -y -ss {second} -i /video -frames:v 1 -vf scale=1280:-1 "
+                             f"/out/{camera_file(name)}" for name, second in SCREENS_CAMERAS.items())
+        run("docker", "run", "--rm", "--entrypoint", "sh", "-v", f"{media}:/out", "-v", f"{video}:/video:ro",
+            r.tools_image, "-c", f"{stills} && chmod a+r /out/cam-*.jpg")
     handler = functools.partial(QuietFiles, directory=str(media))
     r.media_server = QuietServer(("127.0.0.1", MEDIA_PORT), handler)
     threading.Thread(target=r.media_server.serve_forever, daemon=True).start()
@@ -537,10 +548,13 @@ def start(r: Run, work: Path, apk: Path) -> None:
     if r.device:
         connect_device(r)
     else:
+        # The host-side renderer is faster, but crashed the emulator (exit 139) in three of four
+        # picture runs; drawing inside Android is slower and steady.
+        gpu = os.environ.get("PLEATVIEW_E2E_GPU", "guest" if r.args.screens is not None else "swiftshader_indirect")
         run("docker", "run", "-d", "--name", TV_CONTAINER, "--network", "host", "--device", "/dev/kvm",
             "--cpus", "2", r.emulator_image, "emulator", "-avd", r.avd, "-port", str(EMULATOR_PORT),
             "-no-window", "-no-audio", "-no-boot-anim",
-            "-gpu", "swiftshader_indirect", "-no-snapshot", "-memory", "3072", "-cores", "2", "-no-metrics")
+            "-gpu", gpu, "-no-snapshot", "-memory", "3072", "-cores", "2", "-no-metrics")
     if not r.external:
         # Home Assistant first: its HTTP port must be promoted within five minutes.
         wait_for("Home Assistant to start",
@@ -1210,6 +1224,113 @@ def checks(r: Run, report: Report, apk: Path) -> None:
             adb("forward", f"tcp:{TV_PORT}", "tcp:8765")
         wait_for("the TV after the update", ready, timeout=180)
 
+    def use_cases(shot) -> None:
+        """Pictures of what people use PleatView for, for the website's use cases."""
+        home = {"entity_id": entity["id"]}
+        entries = {}
+        for name in SCREENS_CAMERAS:
+            _, flow = ha.api("POST", "/api/config/config_entries/flow", {"handler": "local_file"})
+            # Home Assistant 2026.11 dropped the name from this form; the cards name the cameras.
+            asks = {field["name"] for field in flow.get("data_schema", [])}
+            data = {"file_path": f"/config/www/{camera_file(name)}", **({"name": name} if "name" in asks else {})}
+            status, added = ha.api("POST", f"/api/config/config_entries/flow/{flow['flow_id']}", data)
+            if not isinstance(added, dict) or added.get("type") != "create_entry":
+                raise AssertionError(f"couldn't add the {name} camera: {status} {added}")
+            entries[name] = added["result"]["entry_id"]
+
+        def camera_entities():
+            listed = ws_call(r, {"type": "config/entity_registry/list"}).get("result") or []
+            found = {name: next((e["entity_id"] for e in listed if e.get("config_entry_id") == entry), None)
+                     for name, entry in entries.items()}
+            return found if all(found.values()) else None
+
+        cameras = wait_for("the cameras", camera_entities, timeout=30)
+
+        # Someone rings: the door camera in a corner and a card with its picture.
+        ha.call("pleatview", "show_camera", {**home, "camera": cameras["Front door"], "mode": "pip",
+                                             "position": "bottom-left", "size": 40, "duration": 60})
+        ha.call("pleatview", "notify", {**home, "title": "Front door", "message": "Someone is at the door.",
+                                        "camera": cameras["Front door"], "duration": 30})
+        shot("usecase-doorbell", settle=5)
+        ha.call("media_player", "media_stop", home)
+        time.sleep(2)
+
+        # The washing machine finishes during a film.
+        ha.call("media_player", "play_media", {**home, "media_content_type": "video", "media_content_id": f"{r.site}/screens.mp4",
+                                               "extra": {"title": "Caminandes: Gran Dillama", "start_position": 22}})
+        wait_for("the film", lambda: state()["state"] == "playing", timeout=60)
+        time.sleep(3)
+        ha.call("pleatview", "notify", {**home, "title": "Laundry", "message": "The washing machine has finished.",
+                                        "duration": 10})
+        shot("usecase-laundry")
+        ha.call("media_player", "media_stop", home)
+        wait_for("the dashboard after the film", lambda: state()["state"] == "idle", timeout=20)
+
+        # A morning board: the day, the weather, a family calendar and the shopping list.
+        for item in ("Milk", "Bread", "Coffee", "Apples"):
+            ha.call("todo", "add_item", {"entity_id": "todo.shopping_list", "item": item})
+        _, flow = ha.api("POST", "/api/config/config_entries/flow", {"handler": "local_calendar"})
+        field = next(f["name"] for f in flow.get("data_schema", []) if f.get("required"))
+        status, added = ha.api("POST", f"/api/config/config_entries/flow/{flow['flow_id']}", {field: "Family"})
+        if not isinstance(added, dict) or added.get("type") != "create_entry":
+            raise AssertionError(f"couldn't add the family calendar: {status} {added}")
+        entries["Family"] = added["result"]["entry_id"]
+        family = wait_for("the family calendar", lambda: (found := camera_entities()) and found["Family"], timeout=30)
+        today = datetime.now().date()
+        for day, start, end, summary in ((0, "07:30", "08:00", "School run"), (0, "17:30", "18:30", "Football practice"),
+                                         (1, "10:00", "10:30", "Dentist"), (1, "18:00", "18:15", "Bins out"),
+                                         (2, "12:00", "13:00", "Lunch with Gran"), (4, "19:00", "21:00", "Movie night")):
+            date = today + timedelta(days=day)
+            ha.call("calendar", "create_event", {"entity_id": family, "summary": summary,
+                                                 "start_date_time": f"{date} {start}:00",
+                                                 "end_date_time": f"{date} {end}:00"})
+        morning = {"views": [{"title": "Good morning", "type": "sections", "max_columns": 3, "sections": [
+            {"type": "grid", "cards": [
+                {"type": "markdown", "content": "# Good morning\n### {{ now().strftime('%A %-d %B') }}"},
+                {"type": "weather-forecast", "entity": "weather.demo_weather_south", "name": "Today",
+                 "forecast_type": "daily"}]},
+            {"type": "grid", "cards": [
+                {"type": "heading", "heading": "Calendar", "icon": "mdi:calendar"},
+                {"type": "calendar", "entities": [family],
+                 "initial_view": "listWeek", "grid_options": {"columns": 12, "rows": 6}}]},
+            {"type": "grid", "cards": [
+                {"type": "heading", "heading": "Shopping list", "icon": "mdi:cart"},
+                {"type": "todo-list", "entity": "todo.shopping_list", "hide_create": True}]},
+        ]}]}
+        # Cameras around the house, on a screen of their own.
+        wall = {"views": [{"title": "Cameras", "panel": True, "cards": [{"type": "grid", "columns": 2, "square": False, "cards": [
+            {"type": "picture-entity", "entity": camera, "name": name, "camera_view": "auto", "show_state": False}
+            for name, camera in cameras.items()]}]}]}
+        boards = (("dashboard-morning", "Good morning", morning, "usecase-morning"),
+                  ("dashboard-cameras", "Cameras", wall, "usecase-cameras"))
+        created = []
+        try:
+            for path, title, config, _ in boards:
+                created.append(ws_call(r, {"type": "lovelace/dashboards/create", "url_path": path, "title": title,
+                                           "mode": "storage", "show_in_sidebar": True})["result"]["id"])
+                ws_call(r, {"type": "lovelace/config/save", "url_path": path, "config": config})
+            # The page loaded before these dashboards existed: a fresh one knows them.
+            time.sleep(2)
+            ha.call("pleatview", "reload", home)
+            wait_for("the reloaded dashboard", lambda: state()["attributes"].get("ha_connected") is not False, timeout=60)
+            time.sleep(5)
+            for path, title, _, picture in boards:
+                # Asked while the reload is still settling, the TV can end up back home: ask again.
+                for attempt in range(3):
+                    ha.call("pleatview", "show_dashboard", {**home, "path": f"/{path}"})
+                    try:
+                        wait_for(title, lambda p=path: str(state()["attributes"].get("dashboard", "")).startswith(f"/{p}"),
+                                 timeout=15)
+                        break
+                    except TimeoutError:
+                        if attempt == 2:
+                            raise
+                shot(picture, settle=10)
+        finally:
+            for dashboard_id in created:
+                ws_call(r, {"type": "lovelace/dashboards/delete", "dashboard_id": dashboard_id})
+            ha.call("pleatview", "home", home)
+
     def screens():
         """The website's and the stores' pictures: a tidy dashboard, then features over it."""
         folder = report.out / "screens"
@@ -1253,6 +1374,9 @@ def checks(r: Run, report: Report, apk: Path) -> None:
             shot("picture-in-picture", settle=4)
             ha.call("media_player", "media_stop", {"entity_id": entity["id"]})
             wait_for("the dashboard after stop", lambda: state()["state"] == "idle", timeout=20)
+
+        if r.args.screens:
+            use_cases(shot)
 
         # The sign-in check saved a sign-in for the test site; without it the card shows.
         ha.call("pleatview", "forget_sign_ins", {"entity_id": entity["id"]})
