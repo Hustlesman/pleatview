@@ -217,8 +217,9 @@ fixed, v1.2.0 released.
 *Mon 7 Dec 2026 → Fri 15 Jan 2027* (reviews and holidays included). Install from the
 store on Google TV and Fire TV.
 
-- [ ] Store listings with TV, phone and tablet screenshots, a feature graphic and a
-      description
+- [x] Store listings with TV, phone and tablet screenshots, a feature graphic and a
+      description (Google Play, 5 Nov: phones, tablets, TVs and Chromebooks, with the
+      site's ideas; Amazon's comes with M3)
 - [ ] Releases go to Google Play automatically from the release workflow
 - [ ] Checked against Google's TV app quality guidelines
 - [ ] Public on Google Play once the beta has run its 14 days
