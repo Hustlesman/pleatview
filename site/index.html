@@ -279,8 +279,16 @@ actions:
         <div>
           <p>The TV shows its PIN and a QR code. The code opens the TV's own page on your phone, which adds it to Home Assistant without typing.</p>
           <p class="note"><strong>Using the Marketplace?</strong> Until PleatView is in its catalogue, Home Assistant asks you to connect a GitHub account once before it adds PleatView from GitHub.</p>
-          <p class="note"><strong>A mini PC or a Raspberry Pi?</strong> PleatView for Linux is in beta, and its packages come with the beta release by 27 November. The <a href="https://github.com/Hustlesman/pleatview/tree/main/linux#readme">Linux guide</a> covers installing it and starting it with the computer. Steps 2 and 3 are the same.</p>
         </div>
+      </div>
+      <div class="linux-install" id="linux">
+        <div>
+          <h3 class="with-logo"><svg class="platform-icon" aria-hidden="true"><use href="#i-raspberrypi"/></svg><svg class="platform-icon" aria-hidden="true"><use href="#i-linux"/></svg>On a Raspberry Pi or a mini PC <em class="tag">Beta</em></h3>
+          <p>PleatView for Linux runs on a Raspberry Pi 4 or 5 with the 64-bit Raspberry Pi OS, and on Ubuntu with an Intel or AMD processor. Open a terminal on it, or connect with SSH, and paste these two lines. They pick the right package for the computer.</p>
+        </div>
+        <pre><code>wget -O /tmp/pleatview.deb https://github.com/Hustlesman/pleatview/releases/latest/download/pleatview_$(dpkg --print-architecture).deb
+sudo apt install /tmp/pleatview.deb</code></pre>
+        <p>To open PleatView whenever the computer starts, run <code>pleatview-kiosk autostart</code> on a desktop and restart, or <code>sudo pleatview-kiosk enable</code> without one (Raspberry Pi OS Lite, Ubuntu Server). Then add the integration and pair as above. The same two lines update it. The <a href="https://github.com/Hustlesman/pleatview/tree/main/linux#readme">Linux guide</a> has the details.</p>
       </div>
     </div>
   </section>
