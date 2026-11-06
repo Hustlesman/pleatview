@@ -7,13 +7,16 @@ player and a notifier.
 
 For Ubuntu and Raspberry Pi OS (bookworm or trixie), on x86-64 and on ARM64 (Raspberry
 Pi 4 and 5 with the 64-bit OS). Checked on a Raspberry Pi 5 (4 GB) with Raspberry Pi OS 13
-and its desktop, and on Ubuntu 24.04 in a container; mini PCs and the Raspberry Pi 4 are
-next. A Raspberry Pi 4 needs 2 GB of memory or more.
+and its desktop, on a monitor and on a TV with sound over HDMI, and on Ubuntu 24.04 in a
+container; mini PCs and the Raspberry Pi 4 are next. A Raspberry Pi 4 needs 2 GB of memory
+or more.
 
 ## Install
 
-Download the package for your computer (`amd64` for Intel and AMD, `arm64` for a
-Raspberry Pi) and install it:
+The packages come with the beta release by 27 November, on the
+[releases page](https://github.com/Hustlesman/pleatview/releases); until then, build them
+with `npm run dist` (see [Develop](#develop)). Download the package for your computer
+(`amd64` for Intel and AMD, `arm64` for a Raspberry Pi) and install it:
 
 ```bash
 sudo apt install ./pleatview_1.0.8_arm64.deb
@@ -33,6 +36,10 @@ PleatView device.
 
 On the screen, Escape, the menu key or a right-click (a long press on a touch screen)
 opens the menu.
+
+**No sound on a TV?** If the Raspberry Pi started while the TV was off, Raspberry Pi OS
+doesn't find the TV's speakers. Restart the Pi with the TV on, or run
+`systemctl --user restart wireplumber`.
 
 ## What's different from the Android app
 

@@ -170,7 +170,8 @@ screens (setup, cards, media, menu) are web pages, a start for the M4 web player
       Android, in Docker on a virtual screen
 - [ ] Checked by hand on an Ubuntu mini PC, a Raspberry Pi 5 and a Raspberry Pi 4
       (video decoding, screen power, HDMI-CEC, touch screens). Raspberry Pi 5 with
-      Raspberry Pi OS 13 and a monitor: done on 6 Nov, except HDMI-CEC with a TV and touch
+      Raspberry Pi OS 13, a monitor and a TV (sound over HDMI): done on 6 Nov, except
+      HDMI-CEC (the TV's CEC was off) and touch
 
 **Exit:** the beta package passes the test plan, minus Android-only items, on the three
 devices above, and the README covers installing it.

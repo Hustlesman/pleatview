@@ -4,10 +4,10 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>PleatView: Home Assistant dashboards on your TV</title>
-<meta name="description" content="PleatView turns a Google TV, Android TV or Fire TV into an always-on Home Assistant display. Dashboards around the clock, with cameras, video, sign-ins and notifications on top. Free, open source, local.">
+<meta name="description" content="PleatView turns a Google TV, Android TV, Fire TV, tablet or Raspberry Pi into an always-on Home Assistant display. Dashboards around the clock, with cameras, video, sign-ins and notifications on top. Free, open source, local.">
 <meta name="theme-color" content="#0a0e11">
 <meta property="og:title" content="PleatView: Home Assistant dashboards on your TV">
-<meta property="og:description" content="An always-on Home Assistant display for Google TV, Android TV and Fire TV. Free, open source and local.">
+<meta property="og:description" content="An always-on Home Assistant display for Google TV, Android TV, Fire TV, Android tablets, Linux and the Raspberry Pi. Free, open source and local.">
 <meta property="og:image" content="https://pleatview.hustlesman.com/img/play/feature-graphic.png">
 <meta property="og:url" content="https://pleatview.hustlesman.com/">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
@@ -53,7 +53,7 @@
       <div class="hero-copy">
         <span class="eyebrow"><b>v1.0</b> Free and open source, no cloud</span>
         <h1>Home Assistant, <em>always on</em> your TV.</h1>
-        <p class="lead">PleatView turns a Google TV, Android TV or Fire TV into a display for your home. Your dashboards stay on screen around the clock, and Home Assistant can put cameras, video and notifications on top.</p>
+        <p class="lead">PleatView turns a Google TV, Android TV or Fire TV into a display for your home, and a tablet, a mini PC or a Raspberry Pi too. Your dashboards stay on screen around the clock, and Home Assistant can put cameras, video and notifications on top.</p>
         <div class="actions">
           <a class="button primary" href="#install">Install on your TV</a>
           <a class="button quiet" href="https://my.home-assistant.io/redirect/hacs_repository/?owner=Hustlesman&amp;repository=pleatview&amp;category=integration">Open in Home Assistant</a>
@@ -279,6 +279,7 @@ actions:
         <div>
           <p>The TV shows its PIN and a QR code. The code opens the TV's own page on your phone, which adds it to Home Assistant without typing.</p>
           <p class="note"><strong>Using the Marketplace?</strong> Until PleatView is in its catalogue, Home Assistant asks you to connect a GitHub account once before it adds PleatView from GitHub.</p>
+          <p class="note"><strong>A mini PC or a Raspberry Pi?</strong> PleatView for Linux is in beta, and its packages come with the beta release by 27 November. The <a href="https://github.com/Hustlesman/pleatview/tree/main/linux#readme">Linux guide</a> covers installing it and starting it with the computer. Steps 2 and 3 are the same.</p>
         </div>
       </div>
     </div>
@@ -289,7 +290,7 @@ actions:
       <div class="section-head">
         <span class="kicker">Tested on</span>
         <h2>Real devices, every Home Assistant release</h2>
-        <p>Each release runs an automated test on a TV, a phone and a tablet against a real Home Assistant. It covers pairing, dashboards, kiosk mode, notifications, video, cameras, Webpage dashboards, sign-ins, standby, restarts, frozen pages and updates.</p>
+        <p>Each release runs an automated test on a TV, a phone and a tablet against a real Home Assistant. It covers pairing, dashboards, kiosk mode, notifications, video, cameras, Webpage dashboards, sign-ins, standby, restarts, frozen pages and updates. The Linux app is checked by hand on a Raspberry Pi for now.</p>
       </div>
       <div class="matrix">
         <div class="table-card">
@@ -312,8 +313,9 @@ actions:
             <tbody>
               <tr><td><div class="device"><svg class="platform-icon" aria-hidden="true"><use href="#i-android"/></svg><div>Android phones and tablets<small>Android 11 and 16 emulators, Galaxy S23</small></div></div></td><td><span class="state pass">Compatible</span><small>From Google Play in the beta</small></td></tr>
               <tr><td><div class="device"><svg class="platform-icon" aria-hidden="true"><use href="#i-android"/></svg><div>Chromebook<small>The Android app on ChromeOS</small></div></div></td><td><span class="state testing">Testing</span></td></tr>
-              <tr><td><div class="device"><svg class="platform-icon" aria-hidden="true"><use href="#i-ubuntu"/></svg><div>Ubuntu mini PC<small>Intel or AMD (x86-64)</small></div></div></td><td><span class="state beta">Beta</span></td></tr>
-              <tr><td><div class="device"><svg class="platform-icon" aria-hidden="true"><use href="#i-raspberrypi"/></svg><div>Raspberry Pi 4 and 5<small>Raspberry Pi OS, 64-bit</small></div></div></td><td><span class="state beta">Beta</span></td></tr>
+              <tr><td><div class="device"><svg class="platform-icon" aria-hidden="true"><use href="#i-raspberrypi"/></svg><div>Raspberry Pi 5<small>Raspberry Pi OS 13, 64-bit, on a monitor and a Sony TV</small></div></div></td><td><span class="state pass">Compatible</span><small>Beta. Checked by hand, sound over HDMI</small></td></tr>
+              <tr><td><div class="device"><svg class="platform-icon" aria-hidden="true"><use href="#i-raspberrypi"/></svg><div>Raspberry Pi 4<small>Raspberry Pi OS, 64-bit, 2 GB or more</small></div></div></td><td><span class="state testing">Testing</span></td></tr>
+              <tr><td><div class="device"><svg class="platform-icon" aria-hidden="true"><use href="#i-ubuntu"/></svg><div>Ubuntu mini PC<small>Ubuntu 24.04, Intel or AMD (x86-64)</small></div></div></td><td><span class="state beta">Beta</span><small>Checked in a container</small></td></tr>
               <tr><td><div class="device"><svg class="platform-icon" aria-hidden="true"><use href="#i-handheld"/></svg><div>iPhone and iPad<small>In Safari, then as an app</small></div></div></td><td><span class="state planned">On the roadmap</span></td></tr>
             </tbody>
           </table>
@@ -330,7 +332,7 @@ actions:
           </table>
         </div>
       </div>
-      <p class="matrix-foot">Last run on 5 November 2026. The full list of checks is in the <a href="https://github.com/Hustlesman/pleatview/blob/main/docs/test-plan.md">test plan</a>.</p>
+      <p class="matrix-foot">Last run on 5 November 2026, and on the Raspberry Pi 5 on 6 November. The full list of checks is in the <a href="https://github.com/Hustlesman/pleatview/blob/main/docs/test-plan.md">test plan</a>.</p>
     </div>
   </section>
 
