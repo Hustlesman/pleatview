@@ -62,6 +62,7 @@
       ],
       "recommends": [
         "cage",
+        "wlopm",
         "wlr-randr",
         "v4l-utils"
       ],

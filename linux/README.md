@@ -34,9 +34,10 @@ opens the menu.
 
 ## What's different from the Android app
 
-- `turn_off` blanks the screen and switches it off with `wlr-randr` (Wayland) or `xset`
-  (X11), and puts a TV in standby over HDMI-CEC when `cec-ctl` (package `v4l-utils`) and
-  a CEC device are present.
+- `turn_off` blanks the screen and puts it to sleep with `wlopm` (Raspberry Pi OS's
+  desktop and other wlroots ones; `wlr-randr` under cage) or `xset` (X11), and puts a TV
+  in standby over HDMI-CEC, on whichever HDMI port it's connected to, when `cec-ctl`
+  (package `v4l-utils`) is installed.
 - Not yet: sign-ins for dashboards behind a login form or a password prompt, and RTSP
   streams (cameras play through Home Assistant's HLS stream instead).
 - Settings live in `~/.config/pleatview`, readable only by you.
