@@ -5,9 +5,10 @@ Raspberry Pi, controlled by the same PleatView integration as the Android app. H
 Assistant discovers it, you pair it with the PIN on screen, and it shows up as a media
 player and a notifier.
 
-For Ubuntu and Raspberry Pi OS (bookworm), on x86-64 and on ARM64 (Raspberry Pi 4 and 5
-with the 64-bit OS). So far checked on Ubuntu 24.04 in a container; real mini PCs and
-Raspberry Pis are next. A Raspberry Pi 4 needs 2 GB of memory or more.
+For Ubuntu and Raspberry Pi OS (bookworm or trixie), on x86-64 and on ARM64 (Raspberry
+Pi 4 and 5 with the 64-bit OS). Checked on a Raspberry Pi 5 (4 GB) with Raspberry Pi OS 13
+and its desktop, and on Ubuntu 24.04 in a container; mini PCs and the Raspberry Pi 4 are
+next. A Raspberry Pi 4 needs 2 GB of memory or more.
 
 ## Install
 
@@ -23,7 +24,8 @@ Then start it with the computer:
 - **No desktop** (Ubuntu Server, Raspberry Pi OS Lite): `sudo apt install cage`, then
   `sudo pleatview-kiosk enable` runs PleatView full screen on the first console as you.
 - **A desktop** (Ubuntu Desktop, Raspberry Pi OS): `pleatview-kiosk autostart`, and turn
-  on automatic login in the desktop's settings.
+  on automatic login in the desktop's settings. On a Raspberry Pi, leave Screen Blanking
+  off (Raspberry Pi Configuration → Display): PleatView can't hold it off.
 
 `sudo pleatview-kiosk disable` undoes either. The setup screen shows a PIN: in Home
 Assistant, open Settings → Devices & services, where the screen appears as a discovered
@@ -34,9 +36,10 @@ opens the menu.
 
 ## What's different from the Android app
 
-- `turn_off` blanks the screen and switches it off with `wlr-randr` (Wayland) or `xset`
-  (X11), and puts a TV in standby over HDMI-CEC when `cec-ctl` (package `v4l-utils`) and
-  a CEC device are present.
+- `turn_off` blanks the screen and puts it to sleep with `wlopm` (Raspberry Pi OS's
+  desktop and other wlroots ones; `wlr-randr` under cage) or `xset` (X11), and puts a TV
+  in standby over HDMI-CEC, on whichever HDMI port it's connected to, when `cec-ctl`
+  (package `v4l-utils`) is installed.
 - Not yet: sign-ins for dashboards behind a login form or a password prompt, and RTSP
   streams (cameras play through Home Assistant's HLS stream instead).
 - Settings live in `~/.config/pleatview`, readable only by you.
