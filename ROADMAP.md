@@ -159,15 +159,18 @@ screens (setup, cards, media, menu) are web pages, a start for the M4 web player
       page, kiosk mode, notification cards, video, audio and announcements, cameras in
       picture-in-picture, standby; checked in Docker against a Home Assistant (5 Nov)
 - [ ] Sign-ins for dashboards behind a login form or a password prompt, as on Android
-- [ ] `turn_off` switches the screen off: wlr-randr, xset, and HDMI-CEC standby for TVs
+- [x] `turn_off` puts the screen to sleep: wlopm (wlr-randr under cage), xset, and HDMI-CEC
+      standby for TVs on either of a Raspberry Pi's HDMI ports (6 Nov)
 - [ ] `.deb` packages for x86-64 and ARM64 on each GitHub release, with checksums and
       build attestations; an APT repository later
 - [ ] Starts with the computer: a desktop autostart entry, or a kiosk session (cage) on
-      Ubuntu Server and Raspberry Pi OS Lite, set up by one command
+      Ubuntu Server and Raspberry Pi OS Lite, set up by one command (the desktop entry
+      checked on a Raspberry Pi 5 on 6 Nov; the kiosk session still to check)
 - [ ] End-to-end checks against a real Home Assistant, as `tools/e2e/run.py` does for
       Android, in Docker on a virtual screen
 - [ ] Checked by hand on an Ubuntu mini PC, a Raspberry Pi 5 and a Raspberry Pi 4
-      (video decoding, screen power, HDMI-CEC, touch screens)
+      (video decoding, screen power, HDMI-CEC, touch screens). Raspberry Pi 5 with
+      Raspberry Pi OS 13 and a monitor: done on 6 Nov, except HDMI-CEC with a TV and touch
 
 **Exit:** the beta package passes the test plan, minus Android-only items, on the three
 devices above, and the README covers installing it.
