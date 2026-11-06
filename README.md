@@ -58,9 +58,19 @@ The link always serves the newest signed release from
 Appstore listings are on the [roadmap](ROADMAP.md). Android 7.0 or newer; see
 [Tested on](#tested-on) for the devices.
 
-On a Linux mini PC or a Raspberry Pi 4 or 5, use [PleatView for Linux](linux/README.md)
-(beta) instead. Its `.deb` packages come with the beta release by 27 November; steps 2
-and 3 are the same.
+**On a Raspberry Pi or a Linux mini PC** (beta): PleatView for Linux runs on a Raspberry Pi
+4 or 5 with the 64-bit Raspberry Pi OS, and on Ubuntu with an Intel or AMD processor. In a
+terminal on it (or over SSH), these two lines download the package for the computer and
+install it; run them again to update:
+
+```bash
+wget -O /tmp/pleatview.deb https://github.com/Hustlesman/pleatview/releases/latest/download/pleatview_$(dpkg --print-architecture).deb
+sudo apt install /tmp/pleatview.deb
+```
+
+Then `pleatview-kiosk autostart` on a desktop (and restart), or `sudo pleatview-kiosk enable`
+without one, opens it whenever the computer starts. Steps 2 and 3 are the same.
+[PleatView for Linux](linux/README.md) has the details.
 
 <details>
 <summary>Install with adb instead, and allow overlays</summary>
@@ -315,7 +325,8 @@ for a permanent display.
   `27:7B:CC:FA:72:E6:00:CE:D2:58:EF:9B:C4:DE:43:C6:FA:2F:27:53:8A:98:59:B2:C6:F2:EC:7C:34:3A:E3:73`,
   also in the site's `/.well-known/assetlinks.json`), so only a genuine PleatView can
   update yours. From 1.0.1, release files also carry a signed build attestation:
-  `gh attestation verify pleatview.apk --repo Hustlesman/pleatview`.
+  `gh attestation verify pleatview.apk --repo Hustlesman/pleatview` (the Linux packages
+  from 1.0.9 too).
 
 ## Development
 
@@ -361,8 +372,9 @@ git tag v1.1.0 && git push origin v1.1.0
 
 The tag runs `.github/workflows/release.yml`. It signs the APK and app bundle with the
 release key from the repository secrets and publishes `pleatview.apk`, the integration
-zip and checksums. Keep the key safe: Android only updates an installed app signed with
-the same key. For a signed local build, set `PLEATVIEW_KEYSTORE` (a path anywhere on
+zip, the Linux packages (`pleatview_amd64.deb`, `pleatview_arm64.deb`, built in a job
+without the key) and checksums. Keep the key safe: Android only updates an installed app
+signed with the same key. For a signed local build, set `PLEATVIEW_KEYSTORE` (a path anywhere on
 disk), `PLEATVIEW_KEYSTORE_PASSWORD`, `PLEATVIEW_KEY_ALIAS` and `PLEATVIEW_KEY_PASSWORD`
 before running `tools/build-apk.sh assembleRelease`. Without them, release builds fall
 back to the local debug key. App bundles are for the stores, so they need

@@ -13,22 +13,29 @@ or more.
 
 ## Install
 
-The packages come with the beta release by 27 November, on the
-[releases page](https://github.com/Hustlesman/pleatview/releases); until then, build them
-with `npm run dist` (see [Develop](#develop)). Download the package for your computer
-(`amd64` for Intel and AMD, `arm64` for a Raspberry Pi) and install it:
+In a terminal on the computer (or over SSH), these two lines download the package for it
+(`amd64` for Intel and AMD, `arm64` for a Raspberry Pi) from the newest
+[release](https://github.com/Hustlesman/pleatview/releases) and install it:
 
 ```bash
-sudo apt install ./pleatview_1.0.8_arm64.deb
+wget -O /tmp/pleatview.deb https://github.com/Hustlesman/pleatview/releases/latest/download/pleatview_$(dpkg --print-architecture).deb
+sudo apt install /tmp/pleatview.deb
 ```
+
+Run them again to update. Each package carries a build attestation:
+`gh attestation verify /tmp/pleatview.deb --repo Hustlesman/pleatview`.
 
 Then start it with the computer:
 
-- **No desktop** (Ubuntu Server, Raspberry Pi OS Lite): `sudo apt install cage`, then
-  `sudo pleatview-kiosk enable` runs PleatView full screen on the first console as you.
-- **A desktop** (Ubuntu Desktop, Raspberry Pi OS): `pleatview-kiosk autostart`, and turn
-  on automatic login in the desktop's settings. On a Raspberry Pi, leave Screen Blanking
-  off (Raspberry Pi Configuration → Display): PleatView can't hold it off.
+- **No desktop** (Ubuntu Server, Raspberry Pi OS Lite): `sudo pleatview-kiosk enable` runs
+  PleatView full screen on the first console as you, now and at every start. It uses cage,
+  which apt installs with PleatView (if you turned recommended packages off:
+  `sudo apt install cage`).
+- **A desktop** (Ubuntu Desktop, Raspberry Pi OS): `pleatview-kiosk autostart`, then
+  restart. Turn on automatic login in the desktop's settings if it isn't on. On a
+  Raspberry Pi, leave Screen Blanking off (Raspberry Pi Configuration → Display, or
+  `sudo raspi-config nonint do_blanking 1`): PleatView can't hold it off. PleatView is
+  also in the applications menu.
 
 `sudo pleatview-kiosk disable` undoes either. The setup screen shows a PIN: in Home
 Assistant, open Settings → Devices & services, where the screen appears as a discovered

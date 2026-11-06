@@ -43,7 +43,7 @@ each later milestone gets its issues when it starts.
 **Want to help?** Tell us about a device that works or doesn't, report a bug, or join the
 Google TV beta ([#9](https://github.com/Hustlesman/pleatview/issues/9)).
 
-Done so far: v1.0.8 is published as a signed release with build attestations (versions are
+Done so far: v1.0.9 is published as a signed release with build attestations (versions are
 1.x from 29 Oct; each milestone ends with the next minor release). One command
 (`tools/e2e/run.py`) tests the Android app and the Home Assistant integration together in
 20 checks, on an Android TV 16 emulator or a real TV: pairing, automatic sign-in, kiosk mode,
@@ -146,7 +146,7 @@ from GitHub Releases.
 
 *Thu 5 Nov → Fri 18 Dec 2026*, alongside M1 and M2 (added 5 Nov, on request: people run
 dashboards on Ubuntu mini PCs and Raspberry Pis connected to screens). A beta package by
-Fri 27 Nov.
+Fri 27 Nov: published with v1.0.9 on 7 Nov.
 
 The same integration and protocol v1 as the Android app, so a Linux screen is discovered,
 paired with a PIN and controlled like a TV. It's an Electron app: the same Chromium engine
@@ -161,8 +161,9 @@ screens (setup, cards, media, menu) are web pages, a start for the M4 web player
 - [ ] Sign-ins for dashboards behind a login form or a password prompt, as on Android
 - [x] `turn_off` puts the screen to sleep: wlopm (wlr-randr under cage), xset, and HDMI-CEC
       standby for TVs on either of a Raspberry Pi's HDMI ports (6 Nov)
-- [ ] `.deb` packages for x86-64 and ARM64 on each GitHub release, with checksums and
-      build attestations; an APT repository later
+- [x] `.deb` packages for x86-64 and ARM64 on each GitHub release, with checksums and
+      build attestations, installed with two commands from the README and the site (from
+      v1.0.9, 7 Nov); an APT repository later
 - [ ] Starts with the computer: a desktop autostart entry, or a kiosk session (cage) on
       Ubuntu Server and Raspberry Pi OS Lite, set up by one command (the desktop entry
       checked on a Raspberry Pi 5 on 6 Nov; the kiosk session still to check)
