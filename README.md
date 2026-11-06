@@ -8,7 +8,8 @@
 
 A lightweight app for Google TV, Android TV and Fire TV, plus a Home Assistant
 integration, that turns a TV into an always-on Home Assistant display you can cast to.
-Made by Hustlesman.
+It also runs on Android phones and tablets, and in beta on Linux mini PCs and the
+Raspberry Pi ([PleatView for Linux](linux/README.md)). Made by Hustlesman.
 
 **Website:** [pleatview.hustlesman.com](https://pleatview.hustlesman.com) ·
 **Status:** beta, see the [roadmap](ROADMAP.md) for validation and store releases.
@@ -56,6 +57,10 @@ The link always serves the newest signed release from
 [GitHub Releases](https://github.com/Hustlesman/pleatview/releases). Google Play and Amazon
 Appstore listings are on the [roadmap](ROADMAP.md). Android 7.0 or newer; see
 [Tested on](#tested-on) for the devices.
+
+On a Linux mini PC or a Raspberry Pi 4 or 5, use [PleatView for Linux](linux/README.md)
+(beta) instead. Its `.deb` packages come with the beta release by 27 November; steps 2
+and 3 are the same.
 
 <details>
 <summary>Install with adb instead, and allow overlays</summary>
@@ -124,7 +129,8 @@ casting and notifications need the integration.
 Every release runs `tools/e2e/run.py` on a TV against a real Home Assistant: pairing,
 dashboards, kiosk mode, notifications, video, cameras, Webpage dashboards, sign-ins,
 standby, a Home Assistant restart, a frozen page and an update in place. Last run on
-5 November 2026; [the test plan](docs/test-plan.md) lists every check.
+5 November 2026; [the test plan](docs/test-plan.md) lists every check. The Linux app is
+checked by hand for now.
 
 | Device | Result |
 | --- | --- |
@@ -133,6 +139,9 @@ standby, a Home Assistant restart, a frozen page and an update in place. Last ru
 | Android 11 phone (Galaxy S10 emulator, 360 dp, a 2020 WebView; 5 Nov) | 🟢 Compatible, checked by hand |
 | Fire TV Stick 3rd gen, Fire OS 7.7 (Android 9) | 🟢 Compatible. Animated pictures show their first frame before Android 10. 42-hour soak test: no crashes |
 | Chromecast with Google TV (HD), Android TV 14, 1.4 GB | 🟢 Compatible. 42-hour soak test: no crashes |
+| Raspberry Pi 5 (4 GB), Raspberry Pi OS 13 with its desktop, on a monitor and a Sony TV (6 Nov) | 🟢 Compatible, checked by hand (beta): pairing, dashboards, notifications, video with sound over HDMI, cameras, Webpage dashboards, standby, restarts and starting at login. Not checked yet: HDMI-CEC with a TV, touch screens |
+| Raspberry Pi 4, Raspberry Pi OS 64-bit | 🟡 Testing |
+| Ubuntu 24.04, x86-64 | 🟡 Beta, checked in a container; a real mini PC is next |
 
 | Home Assistant | Result |
 | --- | --- |
@@ -312,6 +321,7 @@ for a permanent display.
 
 ```
 android/                    Kotlin app (no Compose, no AppCompat; WebView + Media3 ExoPlayer)
+linux/                      Electron app for Linux mini PCs and the Raspberry Pi (beta)
 custom_components/pleatview Home Assistant integration (no extra requirements)
 docs/protocol.md            The HTTP/SSE API between the two
 tests/                      Integration tests with a fake TV that speaks the real protocol
@@ -362,8 +372,9 @@ the app for TVs only:
 
 ## Limitations
 
-- Android-based TVs only (Google TV, Android TV, Fire TV). LG webOS and Samsung Tizen
-  would need a separate web client.
+- Android TVs (Google TV, Android TV, Fire TV), Android phones and tablets, and in beta
+  Linux. LG webOS and Samsung Tizen need a separate web client, which is on the roadmap.
+- The Linux app doesn't have sign-ins for dashboards behind a password yet.
 - Without the overlay permission, Home Assistant can't bring PleatView to the front, and
   notifications only show while PleatView is open.
 - `turn_on` can't reliably wake a TV that is fully asleep. Wake the panel with HDMI-CEC
@@ -389,4 +400,5 @@ menu; the store versions leave it out.
 ## License
 
 [MIT](LICENSE). PleatView is not affiliated with Home Assistant, Nabu Casa, Google,
-Amazon, LG or Samsung; their names are used only to describe compatibility.
+Amazon, Raspberry Pi, Canonical, LG or Samsung; their names are used only to describe
+compatibility.
