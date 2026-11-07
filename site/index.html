@@ -140,6 +140,31 @@
         <p>Things Home Assistant users ask for on the forums, and the automation that does each with PleatView. Copy one, then change the entity names to yours.</p>
       </div>
       <div class="features ideas">
+        <article class="feature full">
+          <div>
+            <h3>A kitchen screen that turns into a photo frame</h3>
+            <p>While someone's in the kitchen, it's the family board: photos, this week's calendar, the weather with tips for the washing and the lawn, and a QR code for the guest Wi-Fi. When nobody has been there for five minutes, an mmWave presence sensor switches it to just photos, like a screensaver.</p>
+            <p>A mini PC or a Raspberry Pi with a screen does it, and so do a tablet or a TV. No custom cards needed.</p>
+            <details><summary>The automation</summary><pre><code>triggers:
+  - trigger: state
+    entity_id: binary_sensor.kitchen_presence
+    to: "off"
+    for: "00:05:00"
+  - trigger: state
+    entity_id: binary_sensor.kitchen_presence
+    to: "on"
+actions:
+  - action: pleatview.show_dashboard
+    target:
+      entity_id: media_player.kitchen_display
+    data:
+      path: >-
+        {{ '/dashboard-kitchen' if trigger.to_state.state == 'on'
+        else '/dashboard-photos' }}</code></pre></details>
+            <p><a href="https://github.com/Hustlesman/pleatview/blob/main/docs/ideas/kitchen-display.md">Both dashboards and the weather tips, ready to copy</a></p>
+          </div>
+          <div class="shot"><picture><source srcset="img/screens/usecase-kitchen-still.webp" media="(prefers-reduced-motion: reduce)"><img src="img/screens/usecase-kitchen.webp" width="1920" height="1080" loading="lazy" alt="A kitchen screen showing photos, a weekly calendar, the weather, tips for the washing and the lawn, and a guest Wi-Fi QR code, then switching to a full-screen photo slideshow when nobody is there, and back"></picture></div>
+        </article>
         <article class="feature wide">
           <h3>Who's at the door?</h3>
           <p>When the doorbell rings, the door camera opens in a corner of the TV and a card shows who's there. Over a film or another app, the card still appears.</p>
