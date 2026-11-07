@@ -202,6 +202,12 @@ td small { display: block; color: var(--muted); font-size: 13.5px; margin-top: 3
 .feature details { margin-top: auto; padding-top: 6px; }
 .feature summary { cursor: pointer; color: var(--cyan); font-size: 15px; font-weight: 600; }
 .features.ideas { align-items: start; }
+.feature.full { grid-column: 1 / -1; display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 3fr); gap: 26px; align-items: start; }
+.feature.full > div:first-child { display: flex; flex-direction: column; gap: 10px; }
+.feature.full .shot { margin: 0; }
+.feature.full .shot img { display: block; }
+.ideas .feature p a { color: var(--cyan); font-weight: 600; }
+@media (max-width: 960px) { .feature.full { grid-template-columns: 1fr; } }
 .feature pre code { background: none; border: 0; padding: 0; font: inherit; color: inherit; }
 .feature pre { margin: 10px 0 0; padding: 14px 16px; border: 1px solid var(--line); border-radius: 12px; background: #06090c; overflow-x: auto; font: 13px/1.5 "Geist Mono", ui-monospace, monospace; color: #cfe6f0; }
 
