@@ -62,6 +62,12 @@ android {
         buildConfig = true
     }
 
+    // Lists the res/values-<lang> translations as the app's languages, so Android 13+ offers
+    // PleatView's own language in its app settings (English is res/resources.properties).
+    androidResources {
+        generateLocaleConfig = true
+    }
+
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
