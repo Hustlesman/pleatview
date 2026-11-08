@@ -1,0 +1,239 @@
+{
+  "config": {
+    "flow_title": "{name}",
+    "step": {
+      "user": {
+        "title": "PleatView-Fernseher hinzufügen",
+        "description": "Gib die Adresse ein, die der Einrichtungsbildschirm von PleatView auf dem Fernseher zeigt.",
+        "data": {
+          "host": "Host",
+          "port": "Port"
+        }
+      },
+      "pair": {
+        "title": "Mit {name} koppeln",
+        "description": "Gib die 6-stellige PIN ein, die der Fernseher zeigt. Öffne PleatView auf dem Fernseher, falls sie nicht zu sehen ist; die PIN steht auch in seinem Menü (Zurück drücken). Home Assistant legt dann einen rein lokalen Benutzer für den Fernseher an, damit er sich selbst anmeldet. Das kannst du später mit „Neu konfigurieren“ ändern.",
+        "data": {
+          "pin": "PIN"
+        }
+      },
+      "reconfigure": {
+        "title": "Anmeldung",
+        "description": "Wähle, wie sich der Fernseher bei Home Assistant anmeldet, um Dashboards zu zeigen.",
+        "data": {
+          "auth_mode": "Anmeldung",
+          "allow_control": "Steuern von Geräten über den Fernseher erlauben",
+          "ha_token": "Zugriffstoken"
+        },
+        "data_description": {
+          "allow_control": "Für den eigenen Benutzer. Für eine reine Anzeige ausschalten: Dashboards aktualisieren sich weiter, aber Schaltflächen auf dem Fernseher können nichts ändern.",
+          "ha_token": "Für dein eigenes Token. Erstelle eines in deinem Profil unter Sicherheit."
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Der Fernseher ist nicht erreichbar. Prüfe die Adresse und ob PleatView geöffnet ist.",
+      "invalid_pin": "Diese PIN stimmt nicht mit der auf dem Fernseher überein.",
+      "too_many_attempts": "Zu viele falsche PINs. Warte eine Minute und verwende die neue PIN auf dem Fernseher.",
+      "invalid_ha_token": "Home Assistant erkennt dieses Token nicht."
+    },
+    "abort": {
+      "already_configured": "Dieser Fernseher ist bereits eingerichtet.",
+      "cannot_connect": "Der Fernseher ist nicht erreichbar.",
+      "invalid_discovery_info": "Das entdeckte Gerät hat sich nicht zu erkennen gegeben.",
+      "reauth_successful": "Erneut gekoppelt.",
+      "reconfigure_successful": "Anmeldung aktualisiert. Der Fernseher lädt sein Dashboard neu."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Anzeigeeinstellungen",
+        "data": {
+          "ha_url": "Home-Assistant-URL für den Fernseher",
+          "home_dashboard": "Start-Dashboard",
+          "dashboards": "Dashboards",
+          "kiosk": "Kioskmodus",
+          "zoom": "Zoom",
+          "rotate_seconds": "Dashboards wechseln alle",
+          "return_home_minutes": "Zurück zum Start nach Leerlauf",
+          "reopen_minutes": "Aus anderen Apps zurückkehren nach",
+          "reload_minutes": "Seite neu laden alle",
+          "keep_screen_on": "Bildschirm eingeschaltet lassen",
+          "launch_on_boot": "PleatView beim Einschalten des Fernsehers öffnen"
+        },
+        "data_description": {
+          "ha_url": "Leer lassen, um die interne URL von Home Assistant zu verwenden.",
+          "home_dashboard": "Pfad wie /lovelace/0. Leer verwendet das erste Dashboard unten oder dein Standard-Dashboard.",
+          "dashboards": "Eines pro Zeile als „Titel = /pfad“. Leer listet alle Dashboards. Dienen als Quellen, für die Rotation und für Kanal hoch/runter auf der Fernbedienung.",
+          "zoom": "Unter 100 % passen mehr Karten auf den Bildschirm.",
+          "rotate_seconds": "0 schaltet die Rotation aus.",
+          "return_home_minutes": "Nachdem jemand mit der Fernbedienung herumgeblättert hat. 0 kehrt nie zurück.",
+          "reopen_minutes": "Wenn jemand PleatView für eine andere App verlässt, kommt es zurück, sobald so lange nichts Ton abgespielt hat. 0 kommt nie zurück.",
+          "reload_minutes": "Ein regelmäßiges vollständiges Neuladen gibt bei lange laufenden Anzeigen Speicher frei. 0 lädt nie neu.",
+          "launch_on_boot": "Braucht auf dem Fernseher die Berechtigung „Über anderen Apps einblenden“."
+        }
+      }
+    },
+    "error": {
+      "invalid_url": "Gib eine URL ein, die mit http:// oder https:// beginnt."
+    }
+  },
+  "selector": {
+    "kiosk": {
+      "options": {
+        "full": "Seitenleiste und Kopfzeile ausblenden",
+        "sidebar": "Seitenleiste ausblenden",
+        "off": "Aus"
+      }
+    },
+    "mode": {
+      "options": {
+        "fullscreen": "Vollbild",
+        "pip": "Bild-in-Bild"
+      }
+    },
+    "position": {
+      "options": {
+        "top-left": "Oben links",
+        "top-right": "Oben rechts",
+        "bottom-left": "Unten links",
+        "bottom-right": "Unten rechts",
+        "center": "Mitte"
+      }
+    },
+    "auth_mode": {
+      "options": {
+        "managed": "Eigener Benutzer für diesen Fernseher (empfohlen)",
+        "token": "Mein eigenes langlebiges Zugriffstoken",
+        "none": "Am Fernseher mit der Fernbedienung anmelden"
+      }
+    }
+  },
+  "services": {
+    "show_dashboard": {
+      "name": "Dashboard zeigen",
+      "description": "Zeigt ein Dashboard auf dem Fernseher.",
+      "fields": {
+        "path": {
+          "name": "Pfad",
+          "description": "Dashboard-Pfad wie /lovelace/cameras oder eine vollständige URL."
+        },
+        "duration": {
+          "name": "Dauer",
+          "description": "Nach so vielen Sekunden zum Start-Dashboard zurückkehren. Leer oder 0 bleibt."
+        }
+      }
+    },
+    "show_url": {
+      "name": "Webseite zeigen",
+      "description": "Öffnet eine Webseite über dem Dashboard.",
+      "fields": {
+        "url": {
+          "name": "URL",
+          "description": "Zu öffnende Seite."
+        },
+        "mode": {
+          "name": "Modus",
+          "description": "Vollbild oder Bild-in-Bild."
+        },
+        "position": {
+          "name": "Position",
+          "description": "Ecke für Bild-in-Bild."
+        },
+        "size": {
+          "name": "Größe",
+          "description": "Breite des Bild-in-Bild-Fensters in Prozent des Bildschirms."
+        },
+        "duration": {
+          "name": "Dauer",
+          "description": "Nach so vielen Sekunden schließen. Leer oder 0 bleibt, bis es gestoppt wird."
+        }
+      }
+    },
+    "show_camera": {
+      "name": "Kamera zeigen",
+      "description": "Zeigt den Livestream einer Kamera, standardmäßig als Bild-in-Bild über dem Dashboard.",
+      "fields": {
+        "camera": {
+          "name": "Kamera",
+          "description": "Zu zeigende Kamera."
+        },
+        "mode": {
+          "name": "Modus",
+          "description": "Vollbild oder Bild-in-Bild."
+        },
+        "position": {
+          "name": "Position",
+          "description": "Ecke für Bild-in-Bild."
+        },
+        "size": {
+          "name": "Größe",
+          "description": "Breite des Bild-in-Bild-Fensters in Prozent des Bildschirms."
+        },
+        "duration": {
+          "name": "Dauer",
+          "description": "Nach so vielen Sekunden schließen. Leer oder 0 bleibt, bis es gestoppt wird."
+        },
+        "title": {
+          "name": "Titel",
+          "description": "Wird in Home Assistant angezeigt, während der Stream läuft. Standard ist der Name der Kamera."
+        }
+      }
+    },
+    "notify": {
+      "name": "Benachrichtigung zeigen",
+      "description": "Zeigt eine Benachrichtigungskarte auf dem Fernseher, auch über anderen Apps, wenn PleatView sich darüber einblenden darf.",
+      "fields": {
+        "message": {
+          "name": "Nachricht",
+          "description": "Text der Benachrichtigung."
+        },
+        "title": {
+          "name": "Titel",
+          "description": "Fette erste Zeile."
+        },
+        "image": {
+          "name": "Bild",
+          "description": "Bild-URL, Home-Assistant-Pfad (/local/…) oder Medienquellen-ID."
+        },
+        "camera": {
+          "name": "Kamera-Schnappschuss",
+          "description": "Einen aktuellen Schnappschuss dieser Kamera anhängen."
+        },
+        "duration": {
+          "name": "Dauer",
+          "description": "Sekunden, bis die Karte verschwindet. Standard ist 10."
+        },
+        "position": {
+          "name": "Position",
+          "description": "Ecke des Bildschirms."
+        }
+      }
+    },
+    "home": {
+      "name": "Zum Start",
+      "description": "Stoppt Medien, schließt Einblendungen und zeigt das Start-Dashboard."
+    },
+    "reload": {
+      "name": "Dashboard neu laden",
+      "description": "Lädt die Dashboard-Seite neu."
+    },
+    "forget_sign_ins": {
+      "name": "Anmeldungen vergessen",
+      "description": "Vergisst die Benutzernamen und Passwörter, die der Fernseher für Dashboards gespeichert hat, die danach fragen.",
+      "fields": {
+        "site": {
+          "name": "Website",
+          "description": "Nur diese Website, so wie die Handy-Seite des Fernsehers sie auflistet. Leer vergisst alle."
+        }
+      }
+    }
+  },
+  "issues": {
+    "old_home_assistant": {
+      "title": "Aktualisiere Home Assistant für deine Fernseher-Dashboards",
+      "description": "Home Assistant {version} hat bekannte Sicherheitslücken in Dashboard-Karten, behoben in {safe_version}. Ein Fernseher zeigt sein Dashboard den ganzen Tag angemeldet an, also könnte eine bösartige Karte als Benutzer des Fernsehers handeln. Aktualisiere Home Assistant auf {safe_version} oder neuer."
+    }
+  }
+}

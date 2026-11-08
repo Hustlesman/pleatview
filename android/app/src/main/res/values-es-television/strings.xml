@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- TVs. -->
+<resources>
+    <string name="setup_tagline">Paneles y contenido multimedia de Home Assistant en esta TV</string>
+    <string name="setup_step_discover">En Home Assistant, abre Configuración → Dispositivos y servicios. Esta TV debería aparecer como dispositivo PleatView descubierto. Si no aparece, añade la integración PleatView con esta dirección:</string>
+    <string name="setup_qr_caption">Escanea con tu teléfono para añadir esta TV a Home Assistant sin escribir</string>
+    <string name="signin_body">Este panel pide un nombre de usuario y una contraseña. Escanea el código con tu teléfono para iniciar sesión. PleatView guarda el inicio de sesión solo en esta TV.</string>
+    <string name="signin_enter_here">Introducir en la TV</string>
+    <string name="signin_remember">Mantener la sesión iniciada en esta TV</string>
+    <string name="overlay_settings_missing">Esta TV no tiene ese ajuste. Consulta pleatview.hustlesman.com/support para la solución de una línea.</string>
+</resources>

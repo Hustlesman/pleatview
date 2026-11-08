@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Phones, tablets and Chromebooks; values-nl-television has the TV wording. -->
+<resources>
+    <string name="setup_tagline">Home Assistant-dashboards en media op dit scherm</string>
+    <string name="setup_step_discover">Open in Home Assistant Instellingen → Apparaten en diensten. Dit apparaat zou daar als ontdekt PleatView-apparaat moeten verschijnen. Zo niet, voeg dan de PleatView-integratie toe met dit adres:</string>
+    <string name="setup_step_pin">Als Home Assistant om een pincode vraagt, voer dan in:</string>
+    <string name="setup_manual">Geen integratie? Scan de code, of open %1$s op je telefoon.</string>
+    <string name="setup_qr_caption">Scan met een telefoon om dit apparaat zonder typen aan Home Assistant toe te voegen</string>
+    <string name="setup_device">%1$s · v%2$s · Hulp: pleatview.hustlesman.com</string>
+    <string name="setup_no_network">Niet verbonden met een netwerk</string>
+    <string name="menu_open">Menu</string>
+    <string name="menu_home">Startdashboard</string>
+    <string name="menu_reload">Herladen</string>
+    <string name="menu_exit">Afsluiten</string>
+    <string name="menu_support">PleatView steunen</string>
+    <string name="support_text">PleatView is gratis, en elke functie blijft gratis voor iedereen. Heb je er iets aan, dan kun je bijdragen aan testapparaten en app-winkelkosten: scan de code met je telefoon. Foutmeldingen en ideeën helpen net zo goed.</string>
+    <string name="support_back">Terug naar het menu</string>
+    <string name="menu_info">%1$s · %2$s · pincode %3$s · v%4$s</string>
+    <string name="menu_overlay_missing">Home Assistant kan PleatView pas naar voren halen of meldingen over andere apps tonen als je het toestaat om weer te geven vóór andere apps. Opent er een lijst met apps, kies dan PleatView en zet het aan.</string>
+    <string name="menu_overlay_missing_notifications">Meldingen van Home Assistant verschijnen pas over andere apps als je PleatView toestaat om weer te geven vóór andere apps. Opent er een lijst met apps, kies dan PleatView en zet het aan.</string>
+    <string name="signin_title">Inloggen bij %1$s</string>
+    <string name="signin_body">Dit dashboard vraagt om een gebruikersnaam en wachtwoord. Voer ze hier in, of scan de code met je telefoon. PleatView bewaart de inlog alleen op dit apparaat.</string>
+    <string name="signin_failed">Die gebruikersnaam of dat wachtwoord werkte niet. Probeer het opnieuw.</string>
+    <string name="signin_qr_caption">Scan om in te loggen met je telefoon</string>
+    <string name="signin_enter_here">Hier invoeren</string>
+    <string name="signin_not_now">Niet nu</string>
+    <string name="signin_username">Gebruikersnaam</string>
+    <string name="signin_password">Wachtwoord</string>
+    <string name="signin_remember">Ingelogd blijven op dit apparaat</string>
+    <string name="signin_submit">Inloggen</string>
+    <string name="menu_forget_signins">Bewaarde inlogs vergeten (%1$d)</string>
+    <string name="signins_forgotten">Bewaarde inlogs vergeten</string>
+    <string name="menu_allow_overlay">Weergeven vóór andere apps toestaan</string>
+    <string name="overlay_settings_missing">Dit apparaat heeft daar geen instelling voor. Zie pleatview.hustlesman.com/support voor de oplossing van één regel.</string>
+    <string name="status_unreachable">Home Assistant is niet bereikbaar (%1$s). Nieuwe poging over %2$d s…</string>
+    <string name="status_auth_failed">Home Assistant heeft het toegangstoken geweigerd. Stel het opnieuw in vanuit Home Assistant of de instelpagina.</string>
+    <string name="status_no_webview">Android System WebView is niet beschikbaar. Installeer of update het via de Play Store.</string>
+    <string name="playback_failed">Afspelen mislukt: %1$s</string>
+    <string name="notification_channel">Verbinding met Home Assistant</string>
+    <string name="notification_text">Wacht op Home Assistant op poort %1$d</string>
+</resources>

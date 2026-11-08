@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Phones, tablets and Chromebooks; values-da-television has the TV wording. -->
+<resources>
+    <string name="setup_tagline">Home Assistant-betjeningspaneler og medier på denne skærm</string>
+    <string name="setup_step_discover">Åbn Indstillinger → Enheder &amp; tjenester i Home Assistant. Denne enhed bør vises der som en fundet PleatView-enhed. Hvis den ikke gør, så tilføj PleatView-integrationen med denne adresse:</string>
+    <string name="setup_step_pin">Når Home Assistant beder om en pinkode, så indtast:</string>
+    <string name="setup_manual">Ingen integration? Scan koden, eller åbn %1$s på din telefon.</string>
+    <string name="setup_qr_caption">Scan med en telefon for at føje denne enhed til Home Assistant uden at skrive</string>
+    <string name="setup_device">%1$s · v%2$s · Hjælp: pleatview.hustlesman.com</string>
+    <string name="setup_no_network">Ikke forbundet til et netværk</string>
+    <string name="menu_open">Menu</string>
+    <string name="menu_home">Startpanel</string>
+    <string name="menu_reload">Genindlæs</string>
+    <string name="menu_exit">Afslut</string>
+    <string name="menu_support">Støt PleatView</string>
+    <string name="support_text">PleatView er gratis, og alle funktioner forbliver gratis for alle. Hvis du har gavn af det, kan du bidrage til testenheder og gebyrer til appbutikker: scan koden med din telefon. Fejlrapporter og idéer hjælper lige så meget.</string>
+    <string name="support_back">Tilbage til menuen</string>
+    <string name="menu_info">%1$s · %2$s · PIN %3$s · v%4$s</string>
+    <string name="menu_overlay_missing">Home Assistant kan ikke hente PleatView frem eller vise notifikationer oven på andre apps, før du tillader, at den vises oven på andre apps. Hvis der åbner en liste over apps, så vælg PleatView og slå den til.</string>
+    <string name="menu_overlay_missing_notifications">Notifikationer fra Home Assistant vises først oven på andre apps, når du tillader, at PleatView vises oven på andre apps. Hvis der åbner en liste over apps, så vælg PleatView og slå den til.</string>
+    <string name="signin_title">Log ind på %1$s</string>
+    <string name="signin_body">Dette betjeningspanel beder om brugernavn og adgangskode. Indtast dem her, eller scan koden med din telefon. PleatView gemmer kun login på denne enhed.</string>
+    <string name="signin_failed">Brugernavnet eller adgangskoden virkede ikke. Prøv igen.</string>
+    <string name="signin_qr_caption">Scan for at logge ind med din telefon</string>
+    <string name="signin_enter_here">Indtast her</string>
+    <string name="signin_not_now">Ikke nu</string>
+    <string name="signin_username">Brugernavn</string>
+    <string name="signin_password">Adgangskode</string>
+    <string name="signin_remember">Forbliv logget ind på denne enhed</string>
+    <string name="signin_submit">Log ind</string>
+    <string name="menu_forget_signins">Glem gemte logins (%1$d)</string>
+    <string name="signins_forgotten">Gemte logins er glemt</string>
+    <string name="menu_allow_overlay">Tillad visning oven på andre apps</string>
+    <string name="overlay_settings_missing">Denne enhed har ingen indstilling til det. Se pleatview.hustlesman.com/support for løsningen på én linje.</string>
+    <string name="status_unreachable">Kan ikke nå Home Assistant (%1$s). Prøver igen om %2$d s…</string>
+    <string name="status_auth_failed">Home Assistant afviste adgangstokenet. Send det igen fra Home Assistant eller opsætningssiden.</string>
+    <string name="status_no_webview">Android System WebView er ikke tilgængelig. Installer eller opdater den fra Play Butik.</string>
+    <string name="playback_failed">Afspilningen mislykkedes: %1$s</string>
+    <string name="notification_channel">Forbindelse til Home Assistant</string>
+    <string name="notification_text">Venter på Home Assistant på port %1$d</string>
+</resources>

@@ -1,0 +1,239 @@
+{
+  "config": {
+    "flow_title": "{name}",
+    "step": {
+      "user": {
+        "title": "Dodaj telewizor z PleatView",
+        "description": "Wpisz adres widoczny na ekranie konfiguracji PleatView na telewizorze.",
+        "data": {
+          "host": "Host",
+          "port": "Port"
+        }
+      },
+      "pair": {
+        "title": "Sparuj z {name}",
+        "description": "Wpisz 6-cyfrowy PIN widoczny na telewizorze. Jeśli go nie widać, otwórz PleatView na telewizorze; PIN jest też w jego menu (naciśnij Wstecz). Home Assistant utworzy wtedy lokalnego użytkownika dla telewizora, żeby logował się sam. Możesz to później zmienić przez Skonfiguruj ponownie.",
+        "data": {
+          "pin": "PIN"
+        }
+      },
+      "reconfigure": {
+        "title": "Logowanie",
+        "description": "Wybierz, jak telewizor loguje się do Home Assistant, aby pokazywać panele.",
+        "data": {
+          "auth_mode": "Logowanie",
+          "allow_control": "Zezwól na sterowanie urządzeniami z telewizora",
+          "ha_token": "Token dostępu"
+        },
+        "data_description": {
+          "allow_control": "Dla dedykowanego użytkownika. Wyłącz, jeśli ekran ma tylko wyświetlać: panele nadal się odświeżają, ale przyciski na telewizorze niczego nie zmienią.",
+          "ha_token": "Dla twojego własnego tokena. Utwórz go w swoim profilu, w sekcji Bezpieczeństwo."
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Brak połączenia z telewizorem. Sprawdź adres i czy PleatView jest otwarty.",
+      "invalid_pin": "Ten PIN nie zgadza się z PIN-em na telewizorze.",
+      "too_many_attempts": "Zbyt wiele błędnych PIN-ów. Odczekaj minutę i użyj nowego PIN-u z telewizora.",
+      "invalid_ha_token": "Home Assistant nie rozpoznaje tego tokena."
+    },
+    "abort": {
+      "already_configured": "Ten telewizor jest już skonfigurowany.",
+      "cannot_connect": "Brak połączenia z telewizorem.",
+      "invalid_discovery_info": "Wykryte urządzenie się nie przedstawiło.",
+      "reauth_successful": "Sparowano ponownie.",
+      "reconfigure_successful": "Logowanie zaktualizowane. Telewizor odświeża swój panel."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Ustawienia wyświetlania",
+        "data": {
+          "ha_url": "Adres URL Home Assistant dla telewizora",
+          "home_dashboard": "Panel startowy",
+          "dashboards": "Panele",
+          "kiosk": "Tryb kiosku",
+          "zoom": "Powiększenie",
+          "rotate_seconds": "Zmieniaj panele co",
+          "return_home_minutes": "Wróć do startu po bezczynności",
+          "reopen_minutes": "Wracaj z innych aplikacji po",
+          "reload_minutes": "Odświeżaj stronę co",
+          "keep_screen_on": "Nie wyłączaj ekranu",
+          "launch_on_boot": "Otwieraj PleatView po włączeniu telewizora"
+        },
+        "data_description": {
+          "ha_url": "Zostaw puste, aby użyć wewnętrznego adresu URL Home Assistant.",
+          "home_dashboard": "Ścieżka, np. /lovelace/0. Puste używa pierwszego panelu poniżej albo twojego domyślnego panelu.",
+          "dashboards": "Jeden w wierszu jako \"Tytuł = /ścieżka\". Puste wymienia wszystkie panele. Służą jako źródła, do rotacji i do przełączania kanałów w górę/w dół pilotem.",
+          "zoom": "Poniżej 100% na ekranie mieści się więcej kart.",
+          "rotate_seconds": "0 wyłącza rotację.",
+          "return_home_minutes": "Po tym, jak ktoś przeglądał pilotem. 0 nigdy nie wraca.",
+          "reopen_minutes": "Gdy ktoś opuści PleatView dla innej aplikacji, wraca, gdy przez tyle czasu nic nie odtwarzało dźwięku. 0 nigdy nie wraca.",
+          "reload_minutes": "Regularne pełne odświeżenie zwalnia pamięć na ekranach działających długo. 0 nigdy nie odświeża.",
+          "launch_on_boot": "Wymaga na telewizorze uprawnienia \"Wyświetlanie nad innymi aplikacjami\"."
+        }
+      }
+    },
+    "error": {
+      "invalid_url": "Wpisz adres URL zaczynający się od http:// lub https://."
+    }
+  },
+  "selector": {
+    "kiosk": {
+      "options": {
+        "full": "Ukryj pasek boczny i nagłówek",
+        "sidebar": "Ukryj pasek boczny",
+        "off": "Wyłączony"
+      }
+    },
+    "mode": {
+      "options": {
+        "fullscreen": "Pełny ekran",
+        "pip": "Obraz w obrazie"
+      }
+    },
+    "position": {
+      "options": {
+        "top-left": "Lewy górny róg",
+        "top-right": "Prawy górny róg",
+        "bottom-left": "Lewy dolny róg",
+        "bottom-right": "Prawy dolny róg",
+        "center": "Środek"
+      }
+    },
+    "auth_mode": {
+      "options": {
+        "managed": "Dedykowany użytkownik dla tego telewizora (zalecane)",
+        "token": "Mój własny długotrwały token dostępu",
+        "none": "Logowanie na telewizorze pilotem"
+      }
+    }
+  },
+  "services": {
+    "show_dashboard": {
+      "name": "Pokaż panel",
+      "description": "Pokazuje panel na telewizorze.",
+      "fields": {
+        "path": {
+          "name": "Ścieżka",
+          "description": "Ścieżka panelu, np. /lovelace/cameras, albo pełny adres URL."
+        },
+        "duration": {
+          "name": "Czas trwania",
+          "description": "Wróć do panelu startowego po tylu sekundach. Puste lub 0 zostaje."
+        }
+      }
+    },
+    "show_url": {
+      "name": "Pokaż stronę internetową",
+      "description": "Otwiera stronę internetową nad panelem.",
+      "fields": {
+        "url": {
+          "name": "URL",
+          "description": "Strona do otwarcia."
+        },
+        "mode": {
+          "name": "Tryb",
+          "description": "Pełny ekran lub obraz w obrazie."
+        },
+        "position": {
+          "name": "Położenie",
+          "description": "Róg dla obrazu w obrazie."
+        },
+        "size": {
+          "name": "Rozmiar",
+          "description": "Szerokość obrazu w obrazie jako procent ekranu."
+        },
+        "duration": {
+          "name": "Czas trwania",
+          "description": "Zamknij po tylu sekundach. Puste lub 0 zostaje do zatrzymania."
+        }
+      }
+    },
+    "show_camera": {
+      "name": "Pokaż kamerę",
+      "description": "Pokazuje obraz na żywo z kamery, domyślnie jako obraz w obrazie nad panelem.",
+      "fields": {
+        "camera": {
+          "name": "Kamera",
+          "description": "Kamera do pokazania."
+        },
+        "mode": {
+          "name": "Tryb",
+          "description": "Pełny ekran lub obraz w obrazie."
+        },
+        "position": {
+          "name": "Położenie",
+          "description": "Róg dla obrazu w obrazie."
+        },
+        "size": {
+          "name": "Rozmiar",
+          "description": "Szerokość obrazu w obrazie jako procent ekranu."
+        },
+        "duration": {
+          "name": "Czas trwania",
+          "description": "Zamknij po tylu sekundach. Puste lub 0 zostaje do zatrzymania."
+        },
+        "title": {
+          "name": "Tytuł",
+          "description": "Widoczny w Home Assistant podczas odtwarzania obrazu. Domyślnie nazwa kamery."
+        }
+      }
+    },
+    "notify": {
+      "name": "Pokaż powiadomienie",
+      "description": "Pokazuje kartę powiadomienia na telewizorze, także nad innymi aplikacjami, jeśli PleatView może się nad nimi wyświetlać.",
+      "fields": {
+        "message": {
+          "name": "Wiadomość",
+          "description": "Tekst powiadomienia."
+        },
+        "title": {
+          "name": "Tytuł",
+          "description": "Pogrubiony pierwszy wiersz."
+        },
+        "image": {
+          "name": "Obraz",
+          "description": "Adres URL obrazu, ścieżka Home Assistant (/local/…) lub identyfikator źródła multimediów."
+        },
+        "camera": {
+          "name": "Zdjęcie z kamery",
+          "description": "Dołącz aktualne zdjęcie z tej kamery."
+        },
+        "duration": {
+          "name": "Czas trwania",
+          "description": "Sekundy, po których karta znika. Domyślnie 10."
+        },
+        "position": {
+          "name": "Położenie",
+          "description": "Róg ekranu."
+        }
+      }
+    },
+    "home": {
+      "name": "Wróć do startu",
+      "description": "Zatrzymuje multimedia, zamyka nakładki i pokazuje panel startowy."
+    },
+    "reload": {
+      "name": "Odśwież panel",
+      "description": "Odświeża stronę panelu."
+    },
+    "forget_sign_ins": {
+      "name": "Zapomnij logowania",
+      "description": "Zapomina nazwy użytkowników i hasła, które telewizor zapisał dla paneli, które o nie proszą.",
+      "fields": {
+        "site": {
+          "name": "Strona",
+          "description": "Tylko ta strona, tak jak wymienia ją strona telefonu telewizora. Puste zapomina wszystkie."
+        }
+      }
+    }
+  },
+  "issues": {
+    "old_home_assistant": {
+      "title": "Zaktualizuj Home Assistant dla paneli na telewizorze",
+      "description": "Home Assistant {version} ma znane luki bezpieczeństwa w kartach paneli, naprawione w {safe_version}. Telewizor pokazuje swój panel przez cały dzień, zalogowany, więc złośliwa karta mogłaby działać jako użytkownik telewizora. Zaktualizuj Home Assistant do {safe_version} lub nowszego."
+    }
+  }
+}

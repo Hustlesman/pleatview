@@ -1,0 +1,239 @@
+{
+  "config": {
+    "flow_title": "{name}",
+    "step": {
+      "user": {
+        "title": "Een PleatView-tv toevoegen",
+        "description": "Voer het adres in dat het PleatView-instelscherm op de tv toont.",
+        "data": {
+          "host": "Host",
+          "port": "Poort"
+        }
+      },
+      "pair": {
+        "title": "Koppelen met {name}",
+        "description": "Voer de 6-cijferige pincode in die de tv toont. Open PleatView op de tv als je hem niet ziet; de pincode staat ook in het menu (druk op Terug). Home Assistant maakt dan een gebruiker voor de tv aan die alleen lokaal werkt, zodat hij zelf inlogt. Je kunt dat later wijzigen met Opnieuw configureren.",
+        "data": {
+          "pin": "Pincode"
+        }
+      },
+      "reconfigure": {
+        "title": "Inloggen",
+        "description": "Kies hoe de tv bij Home Assistant inlogt om dashboards te tonen.",
+        "data": {
+          "auth_mode": "Inloggen",
+          "allow_control": "Apparaten bedienen vanaf de tv toestaan",
+          "ha_token": "Toegangstoken"
+        },
+        "data_description": {
+          "allow_control": "Voor de eigen gebruiker. Zet uit voor een scherm dat alleen toont: dashboards worden nog bijgewerkt, maar knoppen op de tv kunnen niets veranderen.",
+          "ha_token": "Voor je eigen token. Maak er een aan in je profiel, onder Beveiliging."
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "De tv is niet bereikbaar. Controleer het adres en of PleatView open is.",
+      "invalid_pin": "Die pincode komt niet overeen met die op de tv.",
+      "too_many_attempts": "Te veel verkeerde pincodes. Wacht een minuut en gebruik de nieuwe pincode op de tv.",
+      "invalid_ha_token": "Home Assistant herkent dit token niet."
+    },
+    "abort": {
+      "already_configured": "Deze tv is al ingesteld.",
+      "cannot_connect": "De tv is niet bereikbaar.",
+      "invalid_discovery_info": "Het ontdekte apparaat heeft zich niet geïdentificeerd.",
+      "reauth_successful": "Opnieuw gekoppeld.",
+      "reconfigure_successful": "Inloggen bijgewerkt. De tv laadt zijn dashboard opnieuw."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Weergave-instellingen",
+        "data": {
+          "ha_url": "Home Assistant-URL voor de tv",
+          "home_dashboard": "Startdashboard",
+          "dashboards": "Dashboards",
+          "kiosk": "Kioskmodus",
+          "zoom": "Zoom",
+          "rotate_seconds": "Dashboards rouleren elke",
+          "return_home_minutes": "Terug naar start na inactiviteit",
+          "reopen_minutes": "Terugkomen uit andere apps na",
+          "reload_minutes": "Pagina herladen elke",
+          "keep_screen_on": "Scherm aan laten",
+          "launch_on_boot": "PleatView openen als de tv aangaat"
+        },
+        "data_description": {
+          "ha_url": "Leeg laten om de interne URL van Home Assistant te gebruiken.",
+          "home_dashboard": "Pad zoals /lovelace/0. Leeg gebruikt het eerste dashboard hieronder, of je standaarddashboard.",
+          "dashboards": "Eén per regel als \"Titel = /pad\". Leeg toont elk dashboard. Gebruikt als bronnen, voor het rouleren en voor kanaal omhoog/omlaag op de afstandsbediening.",
+          "zoom": "Onder de 100% passen er meer kaarten op het scherm.",
+          "rotate_seconds": "0 zet het rouleren uit.",
+          "return_home_minutes": "Nadat iemand met de afstandsbediening heeft rondgekeken. 0 gaat nooit terug.",
+          "reopen_minutes": "Als iemand PleatView verlaat voor een andere app, komt het terug zodra er zo lang geen geluid heeft gespeeld. 0 komt nooit terug.",
+          "reload_minutes": "Regelmatig volledig herladen maakt geheugen vrij op schermen die lang aanstaan. 0 herlaadt nooit.",
+          "launch_on_boot": "Heeft op de tv de toestemming \"Weergeven vóór andere apps\" nodig."
+        }
+      }
+    },
+    "error": {
+      "invalid_url": "Voer een URL in die begint met http:// of https://."
+    }
+  },
+  "selector": {
+    "kiosk": {
+      "options": {
+        "full": "Zijbalk en kopbalk verbergen",
+        "sidebar": "Zijbalk verbergen",
+        "off": "Uit"
+      }
+    },
+    "mode": {
+      "options": {
+        "fullscreen": "Volledig scherm",
+        "pip": "Beeld-in-beeld"
+      }
+    },
+    "position": {
+      "options": {
+        "top-left": "Linksboven",
+        "top-right": "Rechtsboven",
+        "bottom-left": "Linksonder",
+        "bottom-right": "Rechtsonder",
+        "center": "Midden"
+      }
+    },
+    "auth_mode": {
+      "options": {
+        "managed": "Eigen gebruiker voor deze tv (aanbevolen)",
+        "token": "Mijn eigen toegangstoken met lange levensduur",
+        "none": "Inloggen op de tv met de afstandsbediening"
+      }
+    }
+  },
+  "services": {
+    "show_dashboard": {
+      "name": "Dashboard tonen",
+      "description": "Toont een dashboard op de tv.",
+      "fields": {
+        "path": {
+          "name": "Pad",
+          "description": "Dashboardpad, zoals /lovelace/cameras, of een volledige URL."
+        },
+        "duration": {
+          "name": "Duur",
+          "description": "Na dit aantal seconden terug naar het startdashboard. Leeg of 0 blijft."
+        }
+      }
+    },
+    "show_url": {
+      "name": "Webpagina tonen",
+      "description": "Opent een webpagina boven het dashboard.",
+      "fields": {
+        "url": {
+          "name": "URL",
+          "description": "Te openen pagina."
+        },
+        "mode": {
+          "name": "Modus",
+          "description": "Volledig scherm of beeld-in-beeld."
+        },
+        "position": {
+          "name": "Positie",
+          "description": "Hoek voor beeld-in-beeld."
+        },
+        "size": {
+          "name": "Grootte",
+          "description": "Breedte van beeld-in-beeld als percentage van het scherm."
+        },
+        "duration": {
+          "name": "Duur",
+          "description": "Sluiten na dit aantal seconden. Leeg of 0 blijft tot het gestopt wordt."
+        }
+      }
+    },
+    "show_camera": {
+      "name": "Camera tonen",
+      "description": "Toont de livestream van een camera, standaard als beeld-in-beeld boven het dashboard.",
+      "fields": {
+        "camera": {
+          "name": "Camera",
+          "description": "Te tonen camera."
+        },
+        "mode": {
+          "name": "Modus",
+          "description": "Volledig scherm of beeld-in-beeld."
+        },
+        "position": {
+          "name": "Positie",
+          "description": "Hoek voor beeld-in-beeld."
+        },
+        "size": {
+          "name": "Grootte",
+          "description": "Breedte van beeld-in-beeld als percentage van het scherm."
+        },
+        "duration": {
+          "name": "Duur",
+          "description": "Sluiten na dit aantal seconden. Leeg of 0 blijft tot het gestopt wordt."
+        },
+        "title": {
+          "name": "Titel",
+          "description": "Getoond in Home Assistant terwijl de stream speelt. Standaard de naam van de camera."
+        }
+      }
+    },
+    "notify": {
+      "name": "Melding tonen",
+      "description": "Toont een meldingskaart op de tv, ook over andere apps als PleatView daarover mag tekenen.",
+      "fields": {
+        "message": {
+          "name": "Bericht",
+          "description": "Tekst van de melding."
+        },
+        "title": {
+          "name": "Titel",
+          "description": "Vetgedrukte eerste regel."
+        },
+        "image": {
+          "name": "Afbeelding",
+          "description": "URL van een afbeelding, Home Assistant-pad (/local/…) of mediabron-ID."
+        },
+        "camera": {
+          "name": "Camerabeeld",
+          "description": "Voeg een actueel beeld van deze camera toe."
+        },
+        "duration": {
+          "name": "Duur",
+          "description": "Seconden voordat de kaart verdwijnt. Standaard 10."
+        },
+        "position": {
+          "name": "Positie",
+          "description": "Hoek van het scherm."
+        }
+      }
+    },
+    "home": {
+      "name": "Naar start",
+      "description": "Stopt media, sluit overlays en toont het startdashboard."
+    },
+    "reload": {
+      "name": "Dashboard herladen",
+      "description": "Laadt de dashboardpagina opnieuw."
+    },
+    "forget_sign_ins": {
+      "name": "Inlogs vergeten",
+      "description": "Vergeet de gebruikersnamen en wachtwoorden die de tv heeft bewaard voor dashboards die erom vragen.",
+      "fields": {
+        "site": {
+          "name": "Site",
+          "description": "Alleen deze site, zoals de telefoonpagina van de tv hem toont. Leeg vergeet alles."
+        }
+      }
+    }
+  },
+  "issues": {
+    "old_home_assistant": {
+      "title": "Update Home Assistant voor je tv-dashboards",
+      "description": "Home Assistant {version} heeft bekende beveiligingsfouten in dashboardkaarten, opgelost in {safe_version}. Een tv toont zijn dashboard de hele dag, ingelogd, dus een kwaadaardige kaart zou kunnen handelen als de gebruiker van de tv. Update Home Assistant naar {safe_version} of later."
+    }
+  }
+}

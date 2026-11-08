@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Phones, tablets and Chromebooks; values-sv-television has the TV wording. -->
+<resources>
+    <string name="setup_tagline">Home Assistant-kontrollpaneler och media på den här skärmen</string>
+    <string name="setup_step_discover">Öppna Inställningar → Enheter och tjänster i Home Assistant. Den här enheten bör synas där som en upptäckt PleatView-enhet. Om den inte gör det, lägg till PleatView-integrationen med den här adressen:</string>
+    <string name="setup_step_pin">När Home Assistant frågar efter en PIN-kod anger du:</string>
+    <string name="setup_manual">Ingen integration? Skanna koden eller öppna %1$s på din telefon.</string>
+    <string name="setup_qr_caption">Skanna med en telefon för att lägga till den här enheten i Home Assistant utan att skriva</string>
+    <string name="setup_device">%1$s · v%2$s · Hjälp: pleatview.hustlesman.com</string>
+    <string name="setup_no_network">Inte ansluten till något nätverk</string>
+    <string name="menu_open">Meny</string>
+    <string name="menu_home">Startpanel</string>
+    <string name="menu_reload">Ladda om</string>
+    <string name="menu_exit">Avsluta</string>
+    <string name="menu_support">Stöd PleatView</string>
+    <string name="support_text">PleatView är gratis, och varje funktion förblir gratis för alla. Om du har nytta av det kan du bidra till testenheter och avgifter till appbutiker: skanna koden med din telefon. Felrapporter och idéer hjälper lika mycket.</string>
+    <string name="support_back">Tillbaka till menyn</string>
+    <string name="menu_info">%1$s · %2$s · PIN %3$s · v%4$s</string>
+    <string name="menu_overlay_missing">Home Assistant kan inte ta fram PleatView eller visa aviseringar ovanpå andra appar förrän du tillåter att den visas ovanpå andra appar. Om en lista med appar öppnas väljer du PleatView och slår på det.</string>
+    <string name="menu_overlay_missing_notifications">Aviseringar från Home Assistant visas ovanpå andra appar först när du tillåter att PleatView visas ovanpå andra appar. Om en lista med appar öppnas väljer du PleatView och slår på det.</string>
+    <string name="signin_title">Logga in på %1$s</string>
+    <string name="signin_body">Den här panelen ber om användarnamn och lösenord. Ange dem här eller skanna koden med din telefon. PleatView sparar inloggningen bara på den här enheten.</string>
+    <string name="signin_failed">Användarnamnet eller lösenordet fungerade inte. Försök igen.</string>
+    <string name="signin_qr_caption">Skanna för att logga in med din telefon</string>
+    <string name="signin_enter_here">Ange här</string>
+    <string name="signin_not_now">Inte nu</string>
+    <string name="signin_username">Användarnamn</string>
+    <string name="signin_password">Lösenord</string>
+    <string name="signin_remember">Håll mig inloggad på den här enheten</string>
+    <string name="signin_submit">Logga in</string>
+    <string name="menu_forget_signins">Glöm sparade inloggningar (%1$d)</string>
+    <string name="signins_forgotten">Sparade inloggningar glömda</string>
+    <string name="menu_allow_overlay">Tillåt visning ovanpå andra appar</string>
+    <string name="overlay_settings_missing">Den här enheten har ingen inställning för det. Se pleatview.hustlesman.com/support för lösningen på en rad.</string>
+    <string name="status_unreachable">Kan inte nå Home Assistant (%1$s). Försöker igen om %2$d s…</string>
+    <string name="status_auth_failed">Home Assistant avvisade åtkomsttoken. Skicka den igen från Home Assistant eller inställningssidan.</string>
+    <string name="status_no_webview">Android System WebView är inte tillgänglig. Installera eller uppdatera den från Play Butik.</string>
+    <string name="playback_failed">Uppspelningen misslyckades: %1$s</string>
+    <string name="notification_channel">Anslutning till Home Assistant</string>
+    <string name="notification_text">Väntar på Home Assistant på port %1$d</string>
+</resources>

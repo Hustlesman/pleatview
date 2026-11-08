@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- TVs. -->
+<resources>
+    <string name="setup_tagline">Home Assistant-betjeningspaneler og medier på dette tv</string>
+    <string name="setup_step_discover">Åbn Indstillinger → Enheder &amp; tjenester i Home Assistant. Dette tv bør vises der som en fundet PleatView-enhed. Hvis det ikke gør, så tilføj PleatView-integrationen med denne adresse:</string>
+    <string name="setup_qr_caption">Scan med din telefon for at føje dette tv til Home Assistant uden at skrive</string>
+    <string name="signin_body">Dette betjeningspanel beder om brugernavn og adgangskode. Scan koden med din telefon for at logge ind. PleatView gemmer kun login på dette tv.</string>
+    <string name="signin_enter_here">Indtast på tv\'et</string>
+    <string name="signin_remember">Forbliv logget ind på dette tv</string>
+    <string name="overlay_settings_missing">Dette tv har ingen indstilling til det. Se pleatview.hustlesman.com/support for løsningen på én linje.</string>
+</resources>

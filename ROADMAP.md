@@ -50,7 +50,9 @@ Done so far: v1.0.9 is published as a signed release with build attestations (ve
 casting, cameras, notifications, sign-ins, standby, updates, and recovery from a Home Assistant
 restart and from a frozen page. Phone and tablet emulators add touch, turning the screen and the lock screen, for 23. A Fire TV Stick and a Chromecast HD pass the automated checks,
 and both ran a 42-hour soak test without a crash. A security review on 2 Nov fixed what it
-found, and no dependency has a known vulnerability. 56 app tests and 32 integration tests pass.
+found, and no dependency has a known vulnerability. 56 app tests and 43 integration tests pass.
+The Android app, the phone page and the integration are translated into 10 languages besides
+English, chosen from where Home Assistant is used most.
 
 ## How we stay on track
 

@@ -1,0 +1,239 @@
+{
+  "config": {
+    "flow_title": "{name}",
+    "step": {
+      "user": {
+        "title": "Přidat televizi s PleatView",
+        "description": "Zadejte adresu, kterou ukazuje obrazovka nastavení PleatView na televizi.",
+        "data": {
+          "host": "Hostitel",
+          "port": "Port"
+        }
+      },
+      "pair": {
+        "title": "Spárovat s {name}",
+        "description": "Zadejte šestimístný PIN zobrazený na televizi. Pokud ho nevidíte, otevřete na televizi PleatView; PIN je také v její nabídce (stiskněte Zpět). Home Assistant pak pro televizi vytvoří pouze místního uživatele, aby se přihlašovala sama. Později to můžete změnit pomocí Přenastavit.",
+        "data": {
+          "pin": "PIN"
+        }
+      },
+      "reconfigure": {
+        "title": "Přihlášení",
+        "description": "Zvolte, jak se televize přihlašuje k Home Assistant, aby zobrazovala panely.",
+        "data": {
+          "auth_mode": "Přihlášení",
+          "allow_control": "Povolit ovládání zařízení z televize",
+          "ha_token": "Přístupový token"
+        },
+        "data_description": {
+          "allow_control": "Pro vyhrazeného uživatele. Vypněte pro obrazovku jen ke čtení: panely se dál aktualizují, ale tlačítka na televizi nic nezmění.",
+          "ha_token": "Pro váš vlastní token. Vytvořte ho ve svém profilu v části Zabezpečení."
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Televize není dostupná. Zkontrolujte adresu a jestli je PleatView otevřený.",
+      "invalid_pin": "Tento PIN neodpovídá PINu na televizi.",
+      "too_many_attempts": "Příliš mnoho chybných PINů. Počkejte minutu a použijte nový PIN z televize.",
+      "invalid_ha_token": "Home Assistant tento token nezná."
+    },
+    "abort": {
+      "already_configured": "Tato televize je už nastavená.",
+      "cannot_connect": "Televize není dostupná.",
+      "invalid_discovery_info": "Zjištěné zařízení se neidentifikovalo.",
+      "reauth_successful": "Znovu spárováno.",
+      "reconfigure_successful": "Přihlášení aktualizováno. Televize znovu načte svůj panel."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Nastavení zobrazení",
+        "data": {
+          "ha_url": "URL Home Assistant pro televizi",
+          "home_dashboard": "Úvodní panel",
+          "dashboards": "Ovládací panely",
+          "kiosk": "Režim kiosku",
+          "zoom": "Přiblížení",
+          "rotate_seconds": "Střídat panely každých",
+          "return_home_minutes": "Vrátit se na úvod po nečinnosti",
+          "reopen_minutes": "Vrátit se z jiných aplikací po",
+          "reload_minutes": "Načíst stránku znovu každých",
+          "keep_screen_on": "Nechat obrazovku zapnutou",
+          "launch_on_boot": "Otevřít PleatView po zapnutí televize"
+        },
+        "data_description": {
+          "ha_url": "Nechte prázdné, aby se použila interní URL Home Assistant.",
+          "home_dashboard": "Cesta jako /lovelace/0. Prázdné použije první panel níže, nebo váš výchozí panel.",
+          "dashboards": "Jeden na řádek ve tvaru \"Název = /cesta\". Prázdné vypíše všechny panely. Slouží jako zdroje, pro střídání a pro přepínání kanálů nahoru/dolů na ovladači.",
+          "zoom": "Pod 100 % se na obrazovku vejde víc karet.",
+          "rotate_seconds": "0 střídání vypne.",
+          "return_home_minutes": "Poté, co někdo procházel ovladačem. 0 se nikdy nevrátí.",
+          "reopen_minutes": "Když někdo opustí PleatView kvůli jiné aplikaci, vrátí se, jakmile po tuto dobu nic nehrálo zvuk. 0 se nikdy nevrátí.",
+          "reload_minutes": "Pravidelné úplné načtení uvolní paměť na dlouho zapnutých obrazovkách. 0 nikdy nenačítá znovu.",
+          "launch_on_boot": "Vyžaduje na televizi oprávnění \"Zobrazení přes ostatní aplikace\"."
+        }
+      }
+    },
+    "error": {
+      "invalid_url": "Zadejte URL začínající http:// nebo https://."
+    }
+  },
+  "selector": {
+    "kiosk": {
+      "options": {
+        "full": "Skrýt postranní panel a záhlaví",
+        "sidebar": "Skrýt postranní panel",
+        "off": "Vypnuto"
+      }
+    },
+    "mode": {
+      "options": {
+        "fullscreen": "Celá obrazovka",
+        "pip": "Obraz v obraze"
+      }
+    },
+    "position": {
+      "options": {
+        "top-left": "Vlevo nahoře",
+        "top-right": "Vpravo nahoře",
+        "bottom-left": "Vlevo dole",
+        "bottom-right": "Vpravo dole",
+        "center": "Uprostřed"
+      }
+    },
+    "auth_mode": {
+      "options": {
+        "managed": "Vyhrazený uživatel pro tuto televizi (doporučeno)",
+        "token": "Můj vlastní token s dlouhou životností",
+        "none": "Přihlásit se na televizi dálkovým ovladačem"
+      }
+    }
+  },
+  "services": {
+    "show_dashboard": {
+      "name": "Zobrazit panel",
+      "description": "Zobrazí panel na televizi.",
+      "fields": {
+        "path": {
+          "name": "Cesta",
+          "description": "Cesta k panelu, například /lovelace/cameras, nebo celá URL."
+        },
+        "duration": {
+          "name": "Doba",
+          "description": "Po tolika sekundách se vrátit na úvodní panel. Prázdné nebo 0 zůstane."
+        }
+      }
+    },
+    "show_url": {
+      "name": "Zobrazit webovou stránku",
+      "description": "Otevře webovou stránku nad panelem.",
+      "fields": {
+        "url": {
+          "name": "URL",
+          "description": "Stránka, která se otevře."
+        },
+        "mode": {
+          "name": "Režim",
+          "description": "Celá obrazovka, nebo obraz v obraze."
+        },
+        "position": {
+          "name": "Pozice",
+          "description": "Roh pro obraz v obraze."
+        },
+        "size": {
+          "name": "Velikost",
+          "description": "Šířka obrazu v obraze v procentech obrazovky."
+        },
+        "duration": {
+          "name": "Doba",
+          "description": "Zavřít po tolika sekundách. Prázdné nebo 0 zůstane, dokud se nezastaví."
+        }
+      }
+    },
+    "show_camera": {
+      "name": "Zobrazit kameru",
+      "description": "Zobrazí živý obraz z kamery, výchozí je obraz v obraze nad panelem.",
+      "fields": {
+        "camera": {
+          "name": "Kamera",
+          "description": "Kamera, která se zobrazí."
+        },
+        "mode": {
+          "name": "Režim",
+          "description": "Celá obrazovka, nebo obraz v obraze."
+        },
+        "position": {
+          "name": "Pozice",
+          "description": "Roh pro obraz v obraze."
+        },
+        "size": {
+          "name": "Velikost",
+          "description": "Šířka obrazu v obraze v procentech obrazovky."
+        },
+        "duration": {
+          "name": "Doba",
+          "description": "Zavřít po tolika sekundách. Prázdné nebo 0 zůstane, dokud se nezastaví."
+        },
+        "title": {
+          "name": "Název",
+          "description": "Zobrazí se v Home Assistant, dokud obraz běží. Výchozí je název kamery."
+        }
+      }
+    },
+    "notify": {
+      "name": "Zobrazit oznámení",
+      "description": "Zobrazí kartu oznámení na televizi, i přes jiné aplikace, pokud se PleatView smí zobrazovat přes ně.",
+      "fields": {
+        "message": {
+          "name": "Zpráva",
+          "description": "Text oznámení."
+        },
+        "title": {
+          "name": "Nadpis",
+          "description": "Tučný první řádek."
+        },
+        "image": {
+          "name": "Obrázek",
+          "description": "URL obrázku, cesta v Home Assistant (/local/…) nebo ID zdroje médií."
+        },
+        "camera": {
+          "name": "Snímek z kamery",
+          "description": "Připojit aktuální snímek z této kamery."
+        },
+        "duration": {
+          "name": "Doba",
+          "description": "Sekundy, než karta zmizí. Výchozí je 10."
+        },
+        "position": {
+          "name": "Pozice",
+          "description": "Roh obrazovky."
+        }
+      }
+    },
+    "home": {
+      "name": "Na úvod",
+      "description": "Zastaví média, zavře překryvy a zobrazí úvodní panel."
+    },
+    "reload": {
+      "name": "Načíst panel znovu",
+      "description": "Znovu načte stránku panelu."
+    },
+    "forget_sign_ins": {
+      "name": "Zapomenout přihlášení",
+      "description": "Zapomene uživatelská jména a hesla, která televize uložila pro panely, jež o ně žádají.",
+      "fields": {
+        "site": {
+          "name": "Web",
+          "description": "Jen tento web, tak jak ho uvádí telefonní stránka televize. Prázdné zapomene všechna."
+        }
+      }
+    }
+  },
+  "issues": {
+    "old_home_assistant": {
+      "title": "Aktualizujte Home Assistant kvůli panelům na televizi",
+      "description": "Home Assistant {version} má známé bezpečnostní chyby v kartách panelů, opravené ve verzi {safe_version}. Televize ukazuje svůj panel celý den a přihlášená, takže škodlivá karta by mohla jednat jako uživatel televize. Aktualizujte Home Assistant na {safe_version} nebo novější."
+    }
+  }
+}

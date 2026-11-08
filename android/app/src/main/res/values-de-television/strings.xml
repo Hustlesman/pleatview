@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- TVs. -->
+<resources>
+    <string name="setup_tagline">Home-Assistant-Dashboards und Medien auf diesem Fernseher</string>
+    <string name="setup_step_discover">Öffne in Home Assistant Einstellungen → Geräte &amp; Dienste. Dieser Fernseher sollte dort als entdecktes PleatView-Gerät erscheinen. Falls nicht, füge die PleatView-Integration mit dieser Adresse hinzu:</string>
+    <string name="setup_qr_caption">Mit deinem Handy scannen, um diesen Fernseher ohne Tippen zu Home Assistant hinzuzufügen</string>
+    <string name="signin_body">Dieses Dashboard fragt nach Benutzername und Passwort. Scanne den Code mit deinem Handy, um dich anzumelden. PleatView speichert die Anmeldung nur auf diesem Fernseher.</string>
+    <string name="signin_enter_here">Am Fernseher eingeben</string>
+    <string name="signin_remember">Auf diesem Fernseher angemeldet bleiben</string>
+    <string name="overlay_settings_missing">Dieser Fernseher hat dafür keine Einstellung. Unter pleatview.hustlesman.com/support steht die Lösung in einer Zeile.</string>
+</resources>

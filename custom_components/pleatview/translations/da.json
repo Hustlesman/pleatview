@@ -1,0 +1,239 @@
+{
+  "config": {
+    "flow_title": "{name}",
+    "step": {
+      "user": {
+        "title": "Tilføj et PleatView-tv",
+        "description": "Indtast adressen, som PleatViews opsætningsskærm viser på tv'et.",
+        "data": {
+          "host": "Vært",
+          "port": "Port"
+        }
+      },
+      "pair": {
+        "title": "Par med {name}",
+        "description": "Indtast den 6-cifrede pinkode, som tv'et viser. Åbn PleatView på tv'et, hvis den ikke er synlig; pinkoden står også i menuen (tryk på Tilbage). Home Assistant opretter så en bruger kun til lokal brug for tv'et, så det logger ind af sig selv. Du kan ændre det senere med Genkonfigurér.",
+        "data": {
+          "pin": "Pinkode"
+        }
+      },
+      "reconfigure": {
+        "title": "Login",
+        "description": "Vælg, hvordan tv'et logger ind i Home Assistant for at vise betjeningspaneler.",
+        "data": {
+          "auth_mode": "Login",
+          "allow_control": "Tillad styring af enheder fra tv'et",
+          "ha_token": "Adgangstoken"
+        },
+        "data_description": {
+          "allow_control": "Til den særlige bruger. Slå fra for en skærm, der kun viser: panelerne opdateres stadig, men knapper på tv'et kan ikke ændre noget.",
+          "ha_token": "Til dit eget token. Opret et i din profil under Sikkerhed."
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Kan ikke nå tv'et. Tjek adressen, og at PleatView er åbent.",
+      "invalid_pin": "Den pinkode passer ikke med den på tv'et.",
+      "too_many_attempts": "For mange forkerte pinkoder. Vent et minut, og brug den nye pinkode på tv'et.",
+      "invalid_ha_token": "Home Assistant genkender ikke dette token."
+    },
+    "abort": {
+      "already_configured": "Dette tv er allerede sat op.",
+      "cannot_connect": "Kan ikke nå tv'et.",
+      "invalid_discovery_info": "Den fundne enhed identificerede sig ikke.",
+      "reauth_successful": "Parret igen.",
+      "reconfigure_successful": "Login opdateret. Tv'et genindlæser sit panel."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Visningsindstillinger",
+        "data": {
+          "ha_url": "Home Assistant-URL til tv'et",
+          "home_dashboard": "Startpanel",
+          "dashboards": "Betjeningspaneler",
+          "kiosk": "Kiosktilstand",
+          "zoom": "Zoom",
+          "rotate_seconds": "Skift mellem paneler hvert",
+          "return_home_minutes": "Tilbage til start efter inaktivitet",
+          "reopen_minutes": "Kom tilbage fra andre apps efter",
+          "reload_minutes": "Genindlæs siden hvert",
+          "keep_screen_on": "Hold skærmen tændt",
+          "launch_on_boot": "Åbn PleatView, når tv'et tænder"
+        },
+        "data_description": {
+          "ha_url": "Lad stå tomt for at bruge Home Assistants interne URL.",
+          "home_dashboard": "Sti som /lovelace/0. Tomt bruger det første panel nedenfor eller dit standardpanel.",
+          "dashboards": "Ét pr. linje som \"Titel = /sti\". Tomt viser alle paneler. Bruges som kilder, til rotation og til kanal op/ned på fjernbetjeningen.",
+          "zoom": "Under 100 % kan der være flere kort på skærmen.",
+          "rotate_seconds": "0 slår rotation fra.",
+          "return_home_minutes": "Efter at nogen har bladret med fjernbetjeningen. 0 vender aldrig tilbage.",
+          "reopen_minutes": "Når nogen forlader PleatView for en anden app, kommer den tilbage, når intet har spillet lyd så længe. 0 kommer aldrig tilbage.",
+          "reload_minutes": "En fast fuld genindlæsning frigør hukommelse på skærme, der er tændt længe. 0 genindlæser aldrig.",
+          "launch_on_boot": "Kræver tilladelsen \"Vis oven på andre apps\" på tv'et."
+        }
+      }
+    },
+    "error": {
+      "invalid_url": "Indtast en URL, der starter med http:// eller https://."
+    }
+  },
+  "selector": {
+    "kiosk": {
+      "options": {
+        "full": "Skjul sidepanel og overskrift",
+        "sidebar": "Skjul sidepanel",
+        "off": "Fra"
+      }
+    },
+    "mode": {
+      "options": {
+        "fullscreen": "Fuld skærm",
+        "pip": "Billede-i-billede"
+      }
+    },
+    "position": {
+      "options": {
+        "top-left": "Øverst til venstre",
+        "top-right": "Øverst til højre",
+        "bottom-left": "Nederst til venstre",
+        "bottom-right": "Nederst til højre",
+        "center": "Midten"
+      }
+    },
+    "auth_mode": {
+      "options": {
+        "managed": "Særlig bruger til dette tv (anbefalet)",
+        "token": "Mit eget langlivede adgangstoken",
+        "none": "Log ind på tv'et med fjernbetjeningen"
+      }
+    }
+  },
+  "services": {
+    "show_dashboard": {
+      "name": "Vis betjeningspanel",
+      "description": "Viser et betjeningspanel på tv'et.",
+      "fields": {
+        "path": {
+          "name": "Sti",
+          "description": "Panelets sti, som /lovelace/cameras, eller en fuld URL."
+        },
+        "duration": {
+          "name": "Varighed",
+          "description": "Gå tilbage til startpanelet efter så mange sekunder. Tomt eller 0 bliver."
+        }
+      }
+    },
+    "show_url": {
+      "name": "Vis webside",
+      "description": "Åbner en webside oven på betjeningspanelet.",
+      "fields": {
+        "url": {
+          "name": "URL",
+          "description": "Side, der skal åbnes."
+        },
+        "mode": {
+          "name": "Tilstand",
+          "description": "Fuld skærm eller billede-i-billede."
+        },
+        "position": {
+          "name": "Placering",
+          "description": "Hjørne til billede-i-billede."
+        },
+        "size": {
+          "name": "Størrelse",
+          "description": "Billede-i-billedes bredde i procent af skærmen."
+        },
+        "duration": {
+          "name": "Varighed",
+          "description": "Luk efter så mange sekunder. Tomt eller 0 bliver, til det stoppes."
+        }
+      }
+    },
+    "show_camera": {
+      "name": "Vis kamera",
+      "description": "Viser et kameras livebillede, som standard som billede-i-billede oven på betjeningspanelet.",
+      "fields": {
+        "camera": {
+          "name": "Kamera",
+          "description": "Kamera, der skal vises."
+        },
+        "mode": {
+          "name": "Tilstand",
+          "description": "Fuld skærm eller billede-i-billede."
+        },
+        "position": {
+          "name": "Placering",
+          "description": "Hjørne til billede-i-billede."
+        },
+        "size": {
+          "name": "Størrelse",
+          "description": "Billede-i-billedes bredde i procent af skærmen."
+        },
+        "duration": {
+          "name": "Varighed",
+          "description": "Luk efter så mange sekunder. Tomt eller 0 bliver, til det stoppes."
+        },
+        "title": {
+          "name": "Titel",
+          "description": "Vises i Home Assistant, mens billedet afspilles. Standard er kameraets navn."
+        }
+      }
+    },
+    "notify": {
+      "name": "Vis notifikation",
+      "description": "Viser et notifikationskort på tv'et, også oven på andre apps, når PleatView må vises oven på dem.",
+      "fields": {
+        "message": {
+          "name": "Besked",
+          "description": "Notifikationens tekst."
+        },
+        "title": {
+          "name": "Titel",
+          "description": "Fed første linje."
+        },
+        "image": {
+          "name": "Billede",
+          "description": "Billed-URL, Home Assistant-sti (/local/…) eller mediekilde-ID."
+        },
+        "camera": {
+          "name": "Kamerabillede",
+          "description": "Vedhæft et aktuelt billede fra dette kamera."
+        },
+        "duration": {
+          "name": "Varighed",
+          "description": "Sekunder, før kortet forsvinder. Standard er 10."
+        },
+        "position": {
+          "name": "Placering",
+          "description": "Skærmens hjørne."
+        }
+      }
+    },
+    "home": {
+      "name": "Gå til start",
+      "description": "Stopper medier, lukker overlejringer og viser startpanelet."
+    },
+    "reload": {
+      "name": "Genindlæs betjeningspanel",
+      "description": "Genindlæser betjeningspanelets side."
+    },
+    "forget_sign_ins": {
+      "name": "Glem logins",
+      "description": "Glemmer de brugernavne og adgangskoder, som tv'et har gemt til paneler, der beder om dem.",
+      "fields": {
+        "site": {
+          "name": "Websted",
+          "description": "Kun dette websted, som tv'ets telefonside viser det. Tomt glemmer alle."
+        }
+      }
+    }
+  },
+  "issues": {
+    "old_home_assistant": {
+      "title": "Opdater Home Assistant til dine tv-paneler",
+      "description": "Home Assistant {version} har kendte sikkerhedsfejl i betjeningspanelernes kort, rettet i {safe_version}. Et tv viser sit panel hele dagen, logget ind, så et ondsindet kort kunne handle som tv'ets bruger. Opdater Home Assistant til {safe_version} eller nyere."
+    }
+  }
+}
