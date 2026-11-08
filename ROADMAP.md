@@ -22,7 +22,7 @@ on their own.
 
 ## Status
 
-Last updated 5 November 2026. **Current milestone: M1** (M0 finished early).
+Last updated 9 November 2026. **Current milestone: M1** (M0 finished early).
 
 | Milestone | Target | Needs first | Status |
 | --- | --- | --- | --- |
@@ -43,7 +43,7 @@ each later milestone gets its issues when it starts.
 **Want to help?** Tell us about a device that works or doesn't, report a bug, or join the
 Google TV beta ([#9](https://github.com/Hustlesman/pleatview/issues/9)).
 
-Done so far: v1.0.9 is published as a signed release with build attestations (versions are
+Done so far: v1.0.10 is published as a signed release with build attestations (versions are
 1.x from 29 Oct; each milestone ends with the next minor release). One command
 (`tools/e2e/run.py`) tests the Android app and the Home Assistant integration together in
 20 checks, on an Android TV 16 emulator or a real TV: pairing, automatic sign-in, kiosk mode,
