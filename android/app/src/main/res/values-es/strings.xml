@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Phones, tablets and Chromebooks; values-es-television has the TV wording. -->
+<resources>
+    <string name="setup_tagline">Paneles y contenido multimedia de Home Assistant en esta pantalla</string>
+    <string name="setup_step_discover">En Home Assistant, abre Configuración → Dispositivos y servicios. Este dispositivo debería aparecer como dispositivo PleatView descubierto. Si no aparece, añade la integración PleatView con esta dirección:</string>
+    <string name="setup_step_pin">Cuando Home Assistant pida un PIN, introduce:</string>
+    <string name="setup_manual">¿Sin integración? Escanea el código o abre %1$s en tu teléfono.</string>
+    <string name="setup_qr_caption">Escanea con un teléfono para añadir este dispositivo a Home Assistant sin escribir</string>
+    <string name="setup_device">%1$s · v%2$s · Ayuda: pleatview.hustlesman.com</string>
+    <string name="setup_no_network">No conectado a ninguna red</string>
+    <string name="menu_open">Menú</string>
+    <string name="menu_home">Panel de inicio</string>
+    <string name="menu_reload">Recargar</string>
+    <string name="menu_exit">Salir</string>
+    <string name="menu_support">Apoyar PleatView</string>
+    <string name="support_text">PleatView es gratis, y cada función sigue gratis para todos. Si te resulta útil, puedes contribuir a los dispositivos de prueba y las tarifas de las tiendas de apps: escanea el código con tu teléfono. Los informes de errores y las ideas ayudan igual.</string>
+    <string name="support_back">Volver al menú</string>
+    <string name="menu_info">%1$s · %2$s · PIN %3$s · v%4$s</string>
+    <string name="menu_overlay_missing">Home Assistant no puede traer PleatView al frente ni mostrar notificaciones sobre otras apps hasta que le permitas mostrarse sobre otras apps. Si se abre una lista de apps, elige PleatView y actívalo.</string>
+    <string name="menu_overlay_missing_notifications">Las notificaciones de Home Assistant solo aparecen sobre otras apps cuando permites que PleatView se muestre sobre otras apps. Si se abre una lista de apps, elige PleatView y actívalo.</string>
+    <string name="signin_title">Iniciar sesión en %1$s</string>
+    <string name="signin_body">Este panel pide un nombre de usuario y una contraseña. Introdúcelos aquí o escanea el código con tu teléfono. PleatView guarda el inicio de sesión solo en este dispositivo.</string>
+    <string name="signin_failed">Ese nombre de usuario o esa contraseña no han funcionado. Inténtalo de nuevo.</string>
+    <string name="signin_qr_caption">Escanea para iniciar sesión con tu teléfono</string>
+    <string name="signin_enter_here">Introducir aquí</string>
+    <string name="signin_not_now">Ahora no</string>
+    <string name="signin_username">Nombre de usuario</string>
+    <string name="signin_password">Contraseña</string>
+    <string name="signin_remember">Mantener la sesión iniciada en este dispositivo</string>
+    <string name="signin_submit">Iniciar sesión</string>
+    <string name="menu_forget_signins">Olvidar los inicios de sesión guardados (%1$d)</string>
+    <string name="signins_forgotten">Inicios de sesión guardados olvidados</string>
+    <string name="menu_allow_overlay">Permitir mostrar sobre otras apps</string>
+    <string name="overlay_settings_missing">Este dispositivo no tiene ese ajuste. Consulta pleatview.hustlesman.com/support para la solución de una línea.</string>
+    <string name="status_unreachable">No se puede conectar con Home Assistant (%1$s). Reintentando en %2$d s…</string>
+    <string name="status_auth_failed">Home Assistant ha rechazado el token de acceso. Vuelve a configurarlo desde Home Assistant o la página de configuración.</string>
+    <string name="status_no_webview">Android System WebView no está disponible. Instálalo o actualízalo desde Play Store.</string>
+    <string name="playback_failed">Error de reproducción: %1$s</string>
+    <string name="notification_channel">Conexión con Home Assistant</string>
+    <string name="notification_text">Esperando a Home Assistant en el puerto %1$d</string>
+</resources>

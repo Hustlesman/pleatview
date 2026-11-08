@@ -1,0 +1,239 @@
+{
+  "config": {
+    "flow_title": "{name}",
+    "step": {
+      "user": {
+        "title": "Aggiungi una TV PleatView",
+        "description": "Inserisci l'indirizzo mostrato nella schermata di configurazione di PleatView sulla TV.",
+        "data": {
+          "host": "Host",
+          "port": "Porta"
+        }
+      },
+      "pair": {
+        "title": "Abbina {name}",
+        "description": "Inserisci il PIN di 6 cifre mostrato sulla TV. Apri PleatView sulla TV se non lo vedi; il PIN è anche nel suo menu (premi Indietro). Home Assistant crea poi un utente solo locale per la TV, così accede da sola. Puoi cambiarlo in seguito con Riconfigura.",
+        "data": {
+          "pin": "PIN"
+        }
+      },
+      "reconfigure": {
+        "title": "Accesso",
+        "description": "Scegli come la TV accede a Home Assistant per mostrare le plance.",
+        "data": {
+          "auth_mode": "Accesso",
+          "allow_control": "Consenti di controllare i dispositivi dalla TV",
+          "ha_token": "Token di accesso"
+        },
+        "data_description": {
+          "allow_control": "Per l'utente dedicato. Disattivalo per uno schermo di sola lettura: le plance si aggiornano comunque, ma i pulsanti sulla TV non possono cambiare nulla.",
+          "ha_token": "Per il tuo token. Creane uno nel tuo profilo, in Sicurezza."
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "La TV non è raggiungibile. Controlla l'indirizzo e che PleatView sia aperto.",
+      "invalid_pin": "Questo PIN non corrisponde a quello sulla TV.",
+      "too_many_attempts": "Troppi PIN sbagliati. Aspetta un minuto e usa il nuovo PIN sulla TV.",
+      "invalid_ha_token": "Home Assistant non riconosce questo token."
+    },
+    "abort": {
+      "already_configured": "Questa TV è già configurata.",
+      "cannot_connect": "La TV non è raggiungibile.",
+      "invalid_discovery_info": "Il dispositivo rilevato non si è identificato.",
+      "reauth_successful": "Abbinata di nuovo.",
+      "reconfigure_successful": "Accesso aggiornato. La TV ricarica la sua plancia."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Impostazioni di visualizzazione",
+        "data": {
+          "ha_url": "URL di Home Assistant per la TV",
+          "home_dashboard": "Plancia iniziale",
+          "dashboards": "Plance",
+          "kiosk": "Modalità kiosk",
+          "zoom": "Zoom",
+          "rotate_seconds": "Ruota le plance ogni",
+          "return_home_minutes": "Torna all'inizio dopo inattività",
+          "reopen_minutes": "Torna dalle altre app dopo",
+          "reload_minutes": "Ricarica la pagina ogni",
+          "keep_screen_on": "Tieni lo schermo acceso",
+          "launch_on_boot": "Apri PleatView all'accensione della TV"
+        },
+        "data_description": {
+          "ha_url": "Lascia vuoto per usare l'URL interno di Home Assistant.",
+          "home_dashboard": "Percorso come /lovelace/0. Vuoto usa la prima plancia qui sotto, o la tua plancia predefinita.",
+          "dashboards": "Una per riga come \"Titolo = /percorso\". Vuoto elenca tutte le plance. Usate come sorgenti, per la rotazione e per canale su/giù sul telecomando.",
+          "zoom": "Sotto il 100% entrano più schede sullo schermo.",
+          "rotate_seconds": "0 disattiva la rotazione.",
+          "return_home_minutes": "Dopo che qualcuno ha navigato con il telecomando. 0 non torna mai.",
+          "reopen_minutes": "Quando qualcuno lascia PleatView per un'altra app, torna appena nulla ha riprodotto audio per questo tempo. 0 non torna mai.",
+          "reload_minutes": "Una ricarica completa periodica libera memoria sugli schermi sempre accesi. 0 non ricarica mai.",
+          "launch_on_boot": "Richiede sulla TV l'autorizzazione \"Mostra sopra altre app\"."
+        }
+      }
+    },
+    "error": {
+      "invalid_url": "Inserisci un URL che inizia con http:// o https://."
+    }
+  },
+  "selector": {
+    "kiosk": {
+      "options": {
+        "full": "Nascondi barra laterale e intestazione",
+        "sidebar": "Nascondi barra laterale",
+        "off": "Disattivata"
+      }
+    },
+    "mode": {
+      "options": {
+        "fullscreen": "Schermo intero",
+        "pip": "Picture-in-picture"
+      }
+    },
+    "position": {
+      "options": {
+        "top-left": "In alto a sinistra",
+        "top-right": "In alto a destra",
+        "bottom-left": "In basso a sinistra",
+        "bottom-right": "In basso a destra",
+        "center": "Al centro"
+      }
+    },
+    "auth_mode": {
+      "options": {
+        "managed": "Utente dedicato per questa TV (consigliato)",
+        "token": "Il mio token di accesso a lungo termine",
+        "none": "Accedi sulla TV con il telecomando"
+      }
+    }
+  },
+  "services": {
+    "show_dashboard": {
+      "name": "Mostra plancia",
+      "description": "Mostra una plancia sulla TV.",
+      "fields": {
+        "path": {
+          "name": "Percorso",
+          "description": "Percorso della plancia, come /lovelace/cameras, o un URL completo."
+        },
+        "duration": {
+          "name": "Durata",
+          "description": "Torna alla plancia iniziale dopo questi secondi. Vuoto o 0 resta."
+        }
+      }
+    },
+    "show_url": {
+      "name": "Mostra pagina web",
+      "description": "Apre una pagina web sopra la plancia.",
+      "fields": {
+        "url": {
+          "name": "URL",
+          "description": "Pagina da aprire."
+        },
+        "mode": {
+          "name": "Modalità",
+          "description": "Schermo intero o picture-in-picture."
+        },
+        "position": {
+          "name": "Posizione",
+          "description": "Angolo per il picture-in-picture."
+        },
+        "size": {
+          "name": "Dimensione",
+          "description": "Larghezza del picture-in-picture in percentuale dello schermo."
+        },
+        "duration": {
+          "name": "Durata",
+          "description": "Chiudi dopo questi secondi. Vuoto o 0 resta finché non viene fermato."
+        }
+      }
+    },
+    "show_camera": {
+      "name": "Mostra telecamera",
+      "description": "Mostra il flusso dal vivo di una telecamera, di solito in picture-in-picture sopra la plancia.",
+      "fields": {
+        "camera": {
+          "name": "Telecamera",
+          "description": "Telecamera da mostrare."
+        },
+        "mode": {
+          "name": "Modalità",
+          "description": "Schermo intero o picture-in-picture."
+        },
+        "position": {
+          "name": "Posizione",
+          "description": "Angolo per il picture-in-picture."
+        },
+        "size": {
+          "name": "Dimensione",
+          "description": "Larghezza del picture-in-picture in percentuale dello schermo."
+        },
+        "duration": {
+          "name": "Durata",
+          "description": "Chiudi dopo questi secondi. Vuoto o 0 resta finché non viene fermato."
+        },
+        "title": {
+          "name": "Titolo",
+          "description": "Mostrato in Home Assistant mentre il flusso è in riproduzione. Predefinito: il nome della telecamera."
+        }
+      }
+    },
+    "notify": {
+      "name": "Mostra notifica",
+      "description": "Mostra una scheda di notifica sulla TV, anche sopra altre app se PleatView può sovrapporsi.",
+      "fields": {
+        "message": {
+          "name": "Messaggio",
+          "description": "Testo della notifica."
+        },
+        "title": {
+          "name": "Titolo",
+          "description": "Prima riga in grassetto."
+        },
+        "image": {
+          "name": "Immagine",
+          "description": "URL dell'immagine, percorso di Home Assistant (/local/…) o ID della sorgente multimediale."
+        },
+        "camera": {
+          "name": "Istantanea della telecamera",
+          "description": "Allega un'istantanea attuale di questa telecamera."
+        },
+        "duration": {
+          "name": "Durata",
+          "description": "Secondi prima che la scheda scompaia. Predefinito: 10."
+        },
+        "position": {
+          "name": "Posizione",
+          "description": "Angolo dello schermo."
+        }
+      }
+    },
+    "home": {
+      "name": "Torna all'inizio",
+      "description": "Ferma i contenuti, chiude le sovrapposizioni e mostra la plancia iniziale."
+    },
+    "reload": {
+      "name": "Ricarica plancia",
+      "description": "Ricarica la pagina della plancia."
+    },
+    "forget_sign_ins": {
+      "name": "Dimentica gli accessi",
+      "description": "Dimentica i nomi utente e le password che la TV ha salvato per le plance che li chiedono.",
+      "fields": {
+        "site": {
+          "name": "Sito",
+          "description": "Solo questo sito, come lo elenca la pagina per telefono della TV. Vuoto dimentica tutto."
+        }
+      }
+    }
+  },
+  "issues": {
+    "old_home_assistant": {
+      "title": "Aggiorna Home Assistant per le plance sulla TV",
+      "description": "Home Assistant {version} ha falle di sicurezza note nelle schede delle plance, corrette in {safe_version}. Una TV mostra la sua plancia tutto il giorno, con l'accesso fatto, quindi una scheda malevola potrebbe agire come l'utente della TV. Aggiorna Home Assistant a {safe_version} o successivo."
+    }
+  }
+}

@@ -29,6 +29,9 @@ Raspberry Pi ([PleatView for Linux](linux/README.md)). Made by Hustlesman.
   phone, and the TV keeps the sign-in, encrypted, on the TV only.
 - **Small.** The release APK is about 1.2 MB, with no Google Play services and no
   cloud. Everything stays on your LAN.
+- **In your language.** The TV app, its phone page and the integration's settings are in
+  English, German, Dutch, French, Italian, Spanish, Polish, Swedish, Portuguese, Czech and
+  Danish. If you're a native speaker and something reads oddly, please open an issue.
 
 ```
                  control: HTTP + Server-Sent Events (port 8765, paired with a PIN)
@@ -386,7 +389,8 @@ the app for TVs only:
 
 - Android TVs (Google TV, Android TV, Fire TV), Android phones and tablets, and in beta
   Linux. LG webOS and Samsung Tizen need a separate web client, which is on the roadmap.
-- The Linux app doesn't have sign-ins for dashboards behind a password yet.
+- The Linux app doesn't have sign-ins for dashboards behind a password yet, and its own
+  screen is in English only (the phone page and the integration are translated).
 - Without the overlay permission, Home Assistant can't bring PleatView to the front, and
   notifications only show while PleatView is open.
 - `turn_on` can't reliably wake a TV that is fully asleep. Wake the panel with HDMI-CEC

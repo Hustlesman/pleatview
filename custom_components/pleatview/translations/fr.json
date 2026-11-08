@@ -1,0 +1,239 @@
+{
+  "config": {
+    "flow_title": "{name}",
+    "step": {
+      "user": {
+        "title": "Ajouter un téléviseur PleatView",
+        "description": "Saisissez l'adresse affichée sur l'écran de configuration de PleatView sur le téléviseur.",
+        "data": {
+          "host": "Hôte",
+          "port": "Port"
+        }
+      },
+      "pair": {
+        "title": "Associer {name}",
+        "description": "Saisissez le code PIN à 6 chiffres affiché sur le téléviseur. Ouvrez PleatView sur le téléviseur s'il n'est pas visible ; le code PIN figure aussi dans son menu (appuyez sur Retour). Home Assistant crée alors un utilisateur local uniquement pour le téléviseur, qui se connecte ainsi tout seul. Vous pourrez changer cela plus tard avec Reconfigurer.",
+        "data": {
+          "pin": "Code PIN"
+        }
+      },
+      "reconfigure": {
+        "title": "Connexion",
+        "description": "Choisissez comment le téléviseur se connecte à Home Assistant pour afficher les tableaux de bord.",
+        "data": {
+          "auth_mode": "Connexion",
+          "allow_control": "Autoriser le contrôle des appareils depuis le téléviseur",
+          "ha_token": "Jeton d'accès"
+        },
+        "data_description": {
+          "allow_control": "Pour l'utilisateur dédié. Désactivez pour un affichage en lecture seule : les tableaux de bord se mettent toujours à jour, mais les boutons sur le téléviseur ne peuvent rien changer.",
+          "ha_token": "Pour votre propre jeton. Créez-en un dans votre profil, sous Sécurité."
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Le téléviseur est injoignable. Vérifiez l'adresse et que PleatView est ouvert.",
+      "invalid_pin": "Ce code PIN ne correspond pas à celui du téléviseur.",
+      "too_many_attempts": "Trop de codes PIN erronés. Attendez une minute et utilisez le nouveau code PIN du téléviseur.",
+      "invalid_ha_token": "Home Assistant ne reconnaît pas ce jeton."
+    },
+    "abort": {
+      "already_configured": "Ce téléviseur est déjà configuré.",
+      "cannot_connect": "Le téléviseur est injoignable.",
+      "invalid_discovery_info": "L'appareil découvert ne s'est pas identifié.",
+      "reauth_successful": "Associé à nouveau.",
+      "reconfigure_successful": "Connexion mise à jour. Le téléviseur recharge son tableau de bord."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Réglages d'affichage",
+        "data": {
+          "ha_url": "URL de Home Assistant pour le téléviseur",
+          "home_dashboard": "Tableau de bord d'accueil",
+          "dashboards": "Tableaux de bord",
+          "kiosk": "Mode kiosque",
+          "zoom": "Zoom",
+          "rotate_seconds": "Faire tourner les tableaux de bord toutes les",
+          "return_home_minutes": "Revenir à l'accueil après inactivité",
+          "reopen_minutes": "Revenir depuis d'autres applis après",
+          "reload_minutes": "Recharger la page toutes les",
+          "keep_screen_on": "Garder l'écran allumé",
+          "launch_on_boot": "Ouvrir PleatView au démarrage du téléviseur"
+        },
+        "data_description": {
+          "ha_url": "Laisser vide pour utiliser l'URL interne de Home Assistant.",
+          "home_dashboard": "Chemin tel que /lovelace/0. Vide utilise le premier tableau de bord ci-dessous, ou votre tableau de bord par défaut.",
+          "dashboards": "Un par ligne sous la forme « Titre = /chemin ». Vide liste tous les tableaux de bord. Servent de sources, pour la rotation et pour les touches chaîne +/− de la télécommande.",
+          "zoom": "En dessous de 100 %, plus de cartes tiennent à l'écran.",
+          "rotate_seconds": "0 désactive la rotation.",
+          "return_home_minutes": "Après que quelqu'un a navigué avec la télécommande. 0 ne revient jamais.",
+          "reopen_minutes": "Quand quelqu'un quitte PleatView pour une autre appli, il revient dès que rien n'a joué de son pendant cette durée. 0 ne revient jamais.",
+          "reload_minutes": "Un rechargement complet régulier libère la mémoire sur les écrans allumés longtemps. 0 ne recharge jamais.",
+          "launch_on_boot": "Nécessite l'autorisation « Afficher par-dessus d'autres applis » sur le téléviseur."
+        }
+      }
+    },
+    "error": {
+      "invalid_url": "Saisissez une URL commençant par http:// ou https://."
+    }
+  },
+  "selector": {
+    "kiosk": {
+      "options": {
+        "full": "Masquer la barre latérale et l'en-tête",
+        "sidebar": "Masquer la barre latérale",
+        "off": "Désactivé"
+      }
+    },
+    "mode": {
+      "options": {
+        "fullscreen": "Plein écran",
+        "pip": "Image dans l'image"
+      }
+    },
+    "position": {
+      "options": {
+        "top-left": "En haut à gauche",
+        "top-right": "En haut à droite",
+        "bottom-left": "En bas à gauche",
+        "bottom-right": "En bas à droite",
+        "center": "Au centre"
+      }
+    },
+    "auth_mode": {
+      "options": {
+        "managed": "Utilisateur dédié pour ce téléviseur (recommandé)",
+        "token": "Mon propre jeton d'accès longue durée",
+        "none": "Se connecter sur le téléviseur avec la télécommande"
+      }
+    }
+  },
+  "services": {
+    "show_dashboard": {
+      "name": "Afficher un tableau de bord",
+      "description": "Affiche un tableau de bord sur le téléviseur.",
+      "fields": {
+        "path": {
+          "name": "Chemin",
+          "description": "Chemin du tableau de bord, comme /lovelace/cameras, ou une URL complète."
+        },
+        "duration": {
+          "name": "Durée",
+          "description": "Revenir au tableau de bord d'accueil après ce nombre de secondes. Vide ou 0 reste."
+        }
+      }
+    },
+    "show_url": {
+      "name": "Afficher une page web",
+      "description": "Ouvre une page web par-dessus le tableau de bord.",
+      "fields": {
+        "url": {
+          "name": "URL",
+          "description": "Page à ouvrir."
+        },
+        "mode": {
+          "name": "Mode",
+          "description": "Plein écran ou image dans l'image."
+        },
+        "position": {
+          "name": "Position",
+          "description": "Coin pour l'image dans l'image."
+        },
+        "size": {
+          "name": "Taille",
+          "description": "Largeur de l'image dans l'image, en pourcentage de l'écran."
+        },
+        "duration": {
+          "name": "Durée",
+          "description": "Fermer après ce nombre de secondes. Vide ou 0 reste jusqu'à l'arrêt."
+        }
+      }
+    },
+    "show_camera": {
+      "name": "Afficher une caméra",
+      "description": "Affiche le flux en direct d'une caméra, par défaut en image dans l'image par-dessus le tableau de bord.",
+      "fields": {
+        "camera": {
+          "name": "Caméra",
+          "description": "Caméra à afficher."
+        },
+        "mode": {
+          "name": "Mode",
+          "description": "Plein écran ou image dans l'image."
+        },
+        "position": {
+          "name": "Position",
+          "description": "Coin pour l'image dans l'image."
+        },
+        "size": {
+          "name": "Taille",
+          "description": "Largeur de l'image dans l'image, en pourcentage de l'écran."
+        },
+        "duration": {
+          "name": "Durée",
+          "description": "Fermer après ce nombre de secondes. Vide ou 0 reste jusqu'à l'arrêt."
+        },
+        "title": {
+          "name": "Titre",
+          "description": "Affiché dans Home Assistant pendant la lecture du flux. Par défaut, le nom de la caméra."
+        }
+      }
+    },
+    "notify": {
+      "name": "Afficher une notification",
+      "description": "Affiche une carte de notification sur le téléviseur, aussi par-dessus d'autres applis quand PleatView peut s'y superposer.",
+      "fields": {
+        "message": {
+          "name": "Message",
+          "description": "Texte de la notification."
+        },
+        "title": {
+          "name": "Titre",
+          "description": "Première ligne en gras."
+        },
+        "image": {
+          "name": "Image",
+          "description": "URL d'image, chemin Home Assistant (/local/…) ou identifiant de source multimédia."
+        },
+        "camera": {
+          "name": "Instantané de caméra",
+          "description": "Joindre un instantané actuel de cette caméra."
+        },
+        "duration": {
+          "name": "Durée",
+          "description": "Secondes avant que la carte disparaisse. 10 par défaut."
+        },
+        "position": {
+          "name": "Position",
+          "description": "Coin de l'écran."
+        }
+      }
+    },
+    "home": {
+      "name": "Revenir à l'accueil",
+      "description": "Arrête les médias, ferme les superpositions et affiche le tableau de bord d'accueil."
+    },
+    "reload": {
+      "name": "Recharger le tableau de bord",
+      "description": "Recharge la page du tableau de bord."
+    },
+    "forget_sign_ins": {
+      "name": "Oublier les connexions",
+      "description": "Oublie les noms d'utilisateur et mots de passe que le téléviseur a enregistrés pour les tableaux de bord qui en demandent.",
+      "fields": {
+        "site": {
+          "name": "Site",
+          "description": "Seulement ce site, tel que la page téléphone du téléviseur le liste. Vide oublie tout."
+        }
+      }
+    }
+  },
+  "issues": {
+    "old_home_assistant": {
+      "title": "Mettez à jour Home Assistant pour vos tableaux de bord sur téléviseur",
+      "description": "Home Assistant {version} a des failles de sécurité connues dans les cartes de tableau de bord, corrigées dans {safe_version}. Un téléviseur affiche son tableau de bord toute la journée, connecté, donc une carte malveillante pourrait agir en tant qu'utilisateur du téléviseur. Mettez à jour Home Assistant vers {safe_version} ou une version ultérieure."
+    }
+  }
+}

@@ -1,0 +1,239 @@
+{
+  "config": {
+    "flow_title": "{name}",
+    "step": {
+      "user": {
+        "title": "Adicionar uma TV com PleatView",
+        "description": "Digite o endereço mostrado na tela de configuração do PleatView na TV.",
+        "data": {
+          "host": "Host",
+          "port": "Porta"
+        }
+      },
+      "pair": {
+        "title": "Parear com {name}",
+        "description": "Digite o PIN de 6 dígitos mostrado na TV. Abra o PleatView na TV se ele não aparecer; o PIN também está no menu (aperte Voltar). O Home Assistant então cria um usuário só local para a TV, para que ela entre sozinha. Você pode mudar isso depois com Reconfigurar.",
+        "data": {
+          "pin": "PIN"
+        }
+      },
+      "reconfigure": {
+        "title": "Login",
+        "description": "Escolha como a TV entra no Home Assistant para mostrar dashboards.",
+        "data": {
+          "auth_mode": "Login",
+          "allow_control": "Permitir controlar dispositivos pela TV",
+          "ha_token": "Token de acesso"
+        },
+        "data_description": {
+          "allow_control": "Para o usuário dedicado. Desligue para uma tela só de leitura: os dashboards continuam atualizando, mas os botões na TV não podem mudar nada.",
+          "ha_token": "Para o seu próprio token. Crie um no seu perfil, em Segurança."
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Não foi possível conectar à TV. Confira o endereço e se o PleatView está aberto.",
+      "invalid_pin": "Esse PIN não corresponde ao da TV.",
+      "too_many_attempts": "PINs errados demais. Espere um minuto e use o novo PIN da TV.",
+      "invalid_ha_token": "O Home Assistant não reconhece este token."
+    },
+    "abort": {
+      "already_configured": "Esta TV já está configurada.",
+      "cannot_connect": "Não foi possível conectar à TV.",
+      "invalid_discovery_info": "O dispositivo descoberto não se identificou.",
+      "reauth_successful": "Pareada de novo.",
+      "reconfigure_successful": "Login atualizado. A TV recarrega o dashboard."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Configurações de exibição",
+        "data": {
+          "ha_url": "URL do Home Assistant para a TV",
+          "home_dashboard": "Dashboard inicial",
+          "dashboards": "Dashboards",
+          "kiosk": "Modo quiosque",
+          "zoom": "Zoom",
+          "rotate_seconds": "Alternar dashboards a cada",
+          "return_home_minutes": "Voltar ao início após inatividade",
+          "reopen_minutes": "Voltar de outros apps após",
+          "reload_minutes": "Recarregar a página a cada",
+          "keep_screen_on": "Manter a tela ligada",
+          "launch_on_boot": "Abrir o PleatView quando a TV ligar"
+        },
+        "data_description": {
+          "ha_url": "Deixe vazio para usar a URL interna do Home Assistant.",
+          "home_dashboard": "Caminho como /lovelace/0. Vazio usa o primeiro dashboard abaixo, ou o seu dashboard padrão.",
+          "dashboards": "Um por linha como \"Título = /caminho\". Vazio lista todos os dashboards. Usados como fontes, na rotação e em canal para cima/para baixo no controle remoto.",
+          "zoom": "Abaixo de 100% cabem mais cards na tela.",
+          "rotate_seconds": "0 desliga a rotação.",
+          "return_home_minutes": "Depois que alguém navegar com o controle remoto. 0 nunca volta.",
+          "reopen_minutes": "Quando alguém sai do PleatView para outro app, ele volta assim que nada tocar som por esse tempo. 0 nunca volta.",
+          "reload_minutes": "Recarregar tudo de tempos em tempos libera memória em telas que ficam ligadas por muito tempo. 0 nunca recarrega.",
+          "launch_on_boot": "Precisa da permissão \"Sobrepor a outros apps\" na TV."
+        }
+      }
+    },
+    "error": {
+      "invalid_url": "Digite uma URL que comece com http:// ou https://."
+    }
+  },
+  "selector": {
+    "kiosk": {
+      "options": {
+        "full": "Ocultar barra lateral e cabeçalho",
+        "sidebar": "Ocultar barra lateral",
+        "off": "Desligado"
+      }
+    },
+    "mode": {
+      "options": {
+        "fullscreen": "Tela cheia",
+        "pip": "Picture-in-picture"
+      }
+    },
+    "position": {
+      "options": {
+        "top-left": "Canto superior esquerdo",
+        "top-right": "Canto superior direito",
+        "bottom-left": "Canto inferior esquerdo",
+        "bottom-right": "Canto inferior direito",
+        "center": "Centro"
+      }
+    },
+    "auth_mode": {
+      "options": {
+        "managed": "Usuário dedicado para esta TV (recomendado)",
+        "token": "Meu próprio token de acesso de longa duração",
+        "none": "Entrar na TV com o controle remoto"
+      }
+    }
+  },
+  "services": {
+    "show_dashboard": {
+      "name": "Mostrar dashboard",
+      "description": "Mostra um dashboard na TV.",
+      "fields": {
+        "path": {
+          "name": "Caminho",
+          "description": "Caminho do dashboard, como /lovelace/cameras, ou uma URL completa."
+        },
+        "duration": {
+          "name": "Duração",
+          "description": "Voltar ao dashboard inicial após estes segundos. Vazio ou 0 fica."
+        }
+      }
+    },
+    "show_url": {
+      "name": "Mostrar página web",
+      "description": "Abre uma página web sobre o dashboard.",
+      "fields": {
+        "url": {
+          "name": "URL",
+          "description": "Página a abrir."
+        },
+        "mode": {
+          "name": "Modo",
+          "description": "Tela cheia ou picture-in-picture."
+        },
+        "position": {
+          "name": "Posição",
+          "description": "Canto para o picture-in-picture."
+        },
+        "size": {
+          "name": "Tamanho",
+          "description": "Largura do picture-in-picture em porcentagem da tela."
+        },
+        "duration": {
+          "name": "Duração",
+          "description": "Fechar após estes segundos. Vazio ou 0 fica até ser parado."
+        }
+      }
+    },
+    "show_camera": {
+      "name": "Mostrar câmera",
+      "description": "Mostra a imagem ao vivo de uma câmera, por padrão como picture-in-picture sobre o dashboard.",
+      "fields": {
+        "camera": {
+          "name": "Câmera",
+          "description": "Câmera a mostrar."
+        },
+        "mode": {
+          "name": "Modo",
+          "description": "Tela cheia ou picture-in-picture."
+        },
+        "position": {
+          "name": "Posição",
+          "description": "Canto para o picture-in-picture."
+        },
+        "size": {
+          "name": "Tamanho",
+          "description": "Largura do picture-in-picture em porcentagem da tela."
+        },
+        "duration": {
+          "name": "Duração",
+          "description": "Fechar após estes segundos. Vazio ou 0 fica até ser parado."
+        },
+        "title": {
+          "name": "Título",
+          "description": "Mostrado no Home Assistant enquanto a imagem é exibida. Por padrão, o nome da câmera."
+        }
+      }
+    },
+    "notify": {
+      "name": "Mostrar notificação",
+      "description": "Mostra um card de notificação na TV, também sobre outros apps quando o PleatView pode se sobrepor a eles.",
+      "fields": {
+        "message": {
+          "name": "Mensagem",
+          "description": "Texto da notificação."
+        },
+        "title": {
+          "name": "Título",
+          "description": "Primeira linha em negrito."
+        },
+        "image": {
+          "name": "Imagem",
+          "description": "URL da imagem, caminho do Home Assistant (/local/…) ou ID de fonte de mídia."
+        },
+        "camera": {
+          "name": "Foto da câmera",
+          "description": "Anexar uma foto atual desta câmera."
+        },
+        "duration": {
+          "name": "Duração",
+          "description": "Segundos até o card sumir. Padrão: 10."
+        },
+        "position": {
+          "name": "Posição",
+          "description": "Canto da tela."
+        }
+      }
+    },
+    "home": {
+      "name": "Ir para o início",
+      "description": "Para a mídia, fecha as sobreposições e mostra o dashboard inicial."
+    },
+    "reload": {
+      "name": "Recarregar dashboard",
+      "description": "Recarrega a página do dashboard."
+    },
+    "forget_sign_ins": {
+      "name": "Esquecer logins",
+      "description": "Esquece os nomes de usuário e senhas que a TV salvou para dashboards que os pedem.",
+      "fields": {
+        "site": {
+          "name": "Site",
+          "description": "Só este site, como a página de celular da TV o lista. Vazio esquece todos."
+        }
+      }
+    }
+  },
+  "issues": {
+    "old_home_assistant": {
+      "title": "Atualize o Home Assistant para os dashboards da sua TV",
+      "description": "O Home Assistant {version} tem falhas de segurança conhecidas nos cards de dashboard, corrigidas na {safe_version}. Uma TV mostra o dashboard o dia todo, conectada, então um card malicioso poderia agir como o usuário da TV. Atualize o Home Assistant para a {safe_version} ou mais recente."
+    }
+  }
+}

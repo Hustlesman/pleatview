@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Phones, tablets and Chromebooks; values-de-television has the TV wording. -->
+<resources>
+    <string name="setup_tagline">Home-Assistant-Dashboards und Medien auf diesem Bildschirm</string>
+    <string name="setup_step_discover">Öffne in Home Assistant Einstellungen → Geräte &amp; Dienste. Dieses Gerät sollte dort als entdecktes PleatView-Gerät erscheinen. Falls nicht, füge die PleatView-Integration mit dieser Adresse hinzu:</string>
+    <string name="setup_step_pin">Wenn Home Assistant nach einer PIN fragt, gib diese ein:</string>
+    <string name="setup_manual">Keine Integration? Scanne den Code oder öffne %1$s auf deinem Handy.</string>
+    <string name="setup_qr_caption">Mit einem Handy scannen, um dieses Gerät ohne Tippen zu Home Assistant hinzuzufügen</string>
+    <string name="setup_device">%1$s · v%2$s · Hilfe: pleatview.hustlesman.com</string>
+    <string name="setup_no_network">Nicht mit einem Netzwerk verbunden</string>
+    <string name="menu_open">Menü</string>
+    <string name="menu_home">Start-Dashboard</string>
+    <string name="menu_reload">Neu laden</string>
+    <string name="menu_exit">Beenden</string>
+    <string name="menu_support">PleatView unterstützen</string>
+    <string name="support_text">PleatView ist kostenlos, und jede Funktion bleibt für alle kostenlos. Wenn es dir nützt, kannst du etwas zu Testgeräten und App-Store-Gebühren beitragen: Scanne den Code mit deinem Handy. Fehlerberichte und Ideen helfen genauso.</string>
+    <string name="support_back">Zurück zum Menü</string>
+    <string name="menu_info">%1$s · %2$s · PIN %3$s · v%4$s</string>
+    <string name="menu_overlay_missing">Home Assistant kann PleatView erst nach vorne holen oder Benachrichtigungen über anderen Apps zeigen, wenn du „Über anderen Apps einblenden“ erlaubst. Öffnet sich eine Liste von Apps, wähle PleatView und schalte es ein.</string>
+    <string name="menu_overlay_missing_notifications">Benachrichtigungen aus Home Assistant erscheinen erst über anderen Apps, wenn du PleatView „Über anderen Apps einblenden“ erlaubst. Öffnet sich eine Liste von Apps, wähle PleatView und schalte es ein.</string>
+    <string name="signin_title">Bei %1$s anmelden</string>
+    <string name="signin_body">Dieses Dashboard fragt nach Benutzername und Passwort. Gib sie hier ein oder scanne den Code mit deinem Handy. PleatView speichert die Anmeldung nur auf diesem Gerät.</string>
+    <string name="signin_failed">Benutzername oder Passwort stimmen nicht. Versuche es noch einmal.</string>
+    <string name="signin_qr_caption">Scannen, um dich mit dem Handy anzumelden</string>
+    <string name="signin_enter_here">Hier eingeben</string>
+    <string name="signin_not_now">Nicht jetzt</string>
+    <string name="signin_username">Benutzername</string>
+    <string name="signin_password">Passwort</string>
+    <string name="signin_remember">Auf diesem Gerät angemeldet bleiben</string>
+    <string name="signin_submit">Anmelden</string>
+    <string name="menu_forget_signins">Gespeicherte Anmeldungen vergessen (%1$d)</string>
+    <string name="signins_forgotten">Gespeicherte Anmeldungen vergessen</string>
+    <string name="menu_allow_overlay">Über anderen Apps einblenden erlauben</string>
+    <string name="overlay_settings_missing">Dieses Gerät hat dafür keine Einstellung. Unter pleatview.hustlesman.com/support steht die Lösung in einer Zeile.</string>
+    <string name="status_unreachable">Home Assistant ist nicht erreichbar (%1$s). Neuer Versuch in %2$d s …</string>
+    <string name="status_auth_failed">Home Assistant hat das Zugriffstoken abgelehnt. Richte es in Home Assistant oder auf der Einrichtungsseite neu ein.</string>
+    <string name="status_no_webview">Android System WebView ist nicht verfügbar. Installiere oder aktualisiere es im Play Store.</string>
+    <string name="playback_failed">Wiedergabe fehlgeschlagen: %1$s</string>
+    <string name="notification_channel">Verbindung zu Home Assistant</string>
+    <string name="notification_text">Wartet auf Home Assistant an Port %1$d</string>
+</resources>

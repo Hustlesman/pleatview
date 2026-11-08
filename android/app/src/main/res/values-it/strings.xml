@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Phones, tablets and Chromebooks; values-it-television has the TV wording. -->
+<resources>
+    <string name="setup_tagline">Plance e contenuti multimediali di Home Assistant su questo schermo</string>
+    <string name="setup_step_discover">In Home Assistant, apri Impostazioni → Dispositivi e servizi. Questo dispositivo dovrebbe comparire come dispositivo PleatView rilevato. Se non compare, aggiungi l\'integrazione PleatView con questo indirizzo:</string>
+    <string name="setup_step_pin">Quando Home Assistant chiede un PIN, inserisci:</string>
+    <string name="setup_manual">Nessuna integrazione? Scansiona il codice o apri %1$s sul telefono.</string>
+    <string name="setup_qr_caption">Scansiona con un telefono per aggiungere questo dispositivo a Home Assistant senza digitare</string>
+    <string name="setup_device">%1$s · v%2$s · Aiuto: pleatview.hustlesman.com</string>
+    <string name="setup_no_network">Non connesso a una rete</string>
+    <string name="menu_open">Menu</string>
+    <string name="menu_home">Plancia iniziale</string>
+    <string name="menu_reload">Ricarica</string>
+    <string name="menu_exit">Esci</string>
+    <string name="menu_support">Sostieni PleatView</string>
+    <string name="support_text">PleatView è gratuito, e ogni funzione resta gratuita per tutti. Se ti è utile, puoi contribuire ai dispositivi di prova e ai costi degli store di app: scansiona il codice con il telefono. Segnalazioni di bug e idee aiutano altrettanto.</string>
+    <string name="support_back">Torna al menu</string>
+    <string name="menu_info">%1$s · %2$s · PIN %3$s · v%4$s</string>
+    <string name="menu_overlay_missing">Home Assistant non può portare PleatView in primo piano né mostrare notifiche sopra altre app finché non gli permetti di mostrarsi sopra altre app. Se si apre un elenco di app, scegli PleatView e attivalo.</string>
+    <string name="menu_overlay_missing_notifications">Le notifiche di Home Assistant compaiono sopra altre app solo dopo che hai permesso a PleatView di mostrarsi sopra altre app. Se si apre un elenco di app, scegli PleatView e attivalo.</string>
+    <string name="signin_title">Accedi a %1$s</string>
+    <string name="signin_body">Questa plancia chiede nome utente e password. Inseriscili qui o scansiona il codice con il telefono. PleatView conserva l\'accesso solo su questo dispositivo.</string>
+    <string name="signin_failed">Nome utente o password non validi. Riprova.</string>
+    <string name="signin_qr_caption">Scansiona per accedere con il telefono</string>
+    <string name="signin_enter_here">Inserisci qui</string>
+    <string name="signin_not_now">Non ora</string>
+    <string name="signin_username">Nome utente</string>
+    <string name="signin_password">Password</string>
+    <string name="signin_remember">Resta connesso su questo dispositivo</string>
+    <string name="signin_submit">Accedi</string>
+    <string name="menu_forget_signins">Dimentica gli accessi salvati (%1$d)</string>
+    <string name="signins_forgotten">Accessi salvati dimenticati</string>
+    <string name="menu_allow_overlay">Consenti la visualizzazione sopra altre app</string>
+    <string name="overlay_settings_missing">Questo dispositivo non ha un\'impostazione per questo. Vedi pleatview.hustlesman.com/support per la soluzione in una riga.</string>
+    <string name="status_unreachable">Home Assistant non è raggiungibile (%1$s). Nuovo tentativo tra %2$d s…</string>
+    <string name="status_auth_failed">Home Assistant ha rifiutato il token di accesso. Impostalo di nuovo da Home Assistant o dalla pagina di configurazione.</string>
+    <string name="status_no_webview">Android System WebView non è disponibile. Installalo o aggiornalo dal Play Store.</string>
+    <string name="playback_failed">Riproduzione non riuscita: %1$s</string>
+    <string name="notification_channel">Connessione a Home Assistant</string>
+    <string name="notification_text">In ascolto di Home Assistant sulla porta %1$d</string>
+</resources>

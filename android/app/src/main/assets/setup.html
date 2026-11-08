@@ -45,116 +45,841 @@
 <body>
 <main>
   <h1>PleatView</h1>
-  <p class="sub" id="device">Connecting…</p>
+  <p class="sub" id="device" data-t="connecting">Connecting…</p>
 
   <section id="signin" hidden>
-    <h2>Sign in to <span id="signin-title"></span></h2>
-    <p class="to" id="signin-to" hidden>Sent only to <strong id="signin-address"></strong></p>
-    <p class="note">The TV asks for this dashboard's username and password. They stay on the TV, and only this dashboard gets them.</p>
+    <h2 data-t="signin_title">Sign in to <span id="signin-title"></span></h2>
+    <p class="to" id="signin-to" data-t="signin_to" hidden>Sent only to <strong id="signin-address"></strong></p>
+    <p class="note" data-t="signin_note">The TV asks for this dashboard's username and password. They stay on the TV, and only this dashboard gets them.</p>
     <form id="signin-form">
-      <label>Username
+      <label><span data-t="username">Username</span>
         <input id="signin-username" name="username" autocomplete="username" autocapitalize="none" spellcheck="false">
       </label>
-      <label>Password
+      <label><span data-t="password">Password</span>
         <input id="signin-password" name="password" type="password" autocomplete="current-password" required>
       </label>
-      <label class="check"><input type="checkbox" id="signin-remember" checked> Keep me signed in on this TV</label>
-      <button>Sign in</button>
+      <label class="check"><input type="checkbox" id="signin-remember" checked> <span data-t="remember">Keep me signed in on this TV</span></label>
+      <button data-t="signin_submit">Sign in</button>
       <p class="error" id="signin-error"></p>
     </form>
-    <p class="ok" id="signin-done" hidden>Sent to the TV. If the site accepts it, the dashboard appears; if not, the TV asks again.</p>
+    <p class="ok" id="signin-done" data-t="signin_done" hidden>Sent to the TV. If the site accepts it, the dashboard appears; if not, the TV asks again.</p>
   </section>
 
   <section id="start" hidden>
-    <h2>Add this TV to Home Assistant</h2>
+    <h2 data-t="start_title">Add this TV to Home Assistant</h2>
     <ol>
-      <li><a class="button" href="https://my.home-assistant.io/redirect/integrations/">Open Devices &amp; services</a></li>
-      <li>Under <em>Discovered</em>, choose <strong>Add</strong> next to this TV.</li>
-      <li>Enter the PIN <span class="pin" id="start-pin"></span><button type="button" class="secondary" id="copy-pin">Copy</button></li>
+      <li><a class="button" href="https://my.home-assistant.io/redirect/integrations/" data-t="start_open">Open Devices &amp; services</a></li>
+      <li data-t="start_add">Under <em>Discovered</em>, choose <strong>Add</strong> next to this TV.</li>
+      <li><span data-t="start_pin">Enter the PIN</span> <span class="pin" id="start-pin"></span><button type="button" class="secondary" id="copy-pin" data-t="copy">Copy</button></li>
     </ol>
-    <p class="note">Not listed? Choose <em>Add integration → PleatView</em> with host <strong id="start-host"></strong> and port <strong id="start-port"></strong>.</p>
-    <p class="note">No PleatView integration in Home Assistant? <a href="#" id="setup-here">Set up this TV here instead</a>.</p>
+    <p class="note" data-t="start_manual">Not listed? Choose <em>Add integration → PleatView</em> with host <strong id="start-host"></strong> and port <strong id="start-port"></strong>.</p>
+    <p class="note"><span data-t="start_no_integration">No PleatView integration in Home Assistant?</span> <a href="#" id="setup-here" data-t="start_here">Set up this TV here instead</a>.</p>
   </section>
 
   <section id="pair" hidden>
     <form id="pair-form">
-      <label>PIN shown on the TV
+      <label><span data-t="pair_pin">PIN shown on the TV</span>
         <input id="pin" inputmode="numeric" autocomplete="one-time-code" maxlength="7" placeholder="000 000" required>
       </label>
-      <button>Connect</button>
+      <button data-t="pair_connect">Connect</button>
       <p class="error" id="pair-error"></p>
     </form>
   </section>
 
   <div id="settings" hidden>
-    <p class="note" id="managed" hidden>This TV is managed by the PleatView integration in Home Assistant. Settings saved here are replaced the next time Home Assistant connects; change them in the integration's options instead.</p>
+    <p class="note" id="managed" data-t="managed" hidden>This TV is managed by the PleatView integration in Home Assistant. Settings saved here are replaced the next time Home Assistant connects; change them in the integration's options instead.</p>
     <section>
       <form id="config-form">
-        <label>TV name <input name="device_name" placeholder="Uses the TV's device name"></label>
-        <label>Home Assistant URL
+        <label><span data-t="tv_name">TV name</span> <input name="device_name" placeholder="Uses the TV's device name" data-t-placeholder="tv_name_hint"></label>
+        <label><span data-t="ha_url">Home Assistant URL</span>
           <input name="ha_url" type="url" placeholder="http://homeassistant.local:8123">
         </label>
-        <label>Long-lived access token
-          <input name="ha_token" type="password" autocomplete="off" placeholder="Leave empty to keep the current token">
+        <label><span data-t="token">Long-lived access token</span>
+          <input name="ha_token" type="password" autocomplete="off" placeholder="Leave empty to keep the current token" data-t-placeholder="token_keep">
           <small id="token-state"></small>
-          <small>Create one in Home Assistant: your profile → Security → Long-lived access tokens. Without a token you sign in on the TV with the remote. A new Home Assistant URL needs a new token: the TV forgets the old one.</small>
+          <small data-t="token_help">Create one in Home Assistant: your profile → Security → Long-lived access tokens. Without a token you sign in on the TV with the remote. A new Home Assistant URL needs a new token: the TV forgets the old one.</small>
         </label>
-        <label>Home dashboard
-          <input name="home_dashboard" placeholder="/lovelace/0 (empty = Home Assistant default)">
+        <label><span data-t="home_dashboard">Home dashboard</span>
+          <input name="home_dashboard" placeholder="/lovelace/0 (empty = Home Assistant default)" data-t-placeholder="home_dashboard_hint">
         </label>
-        <label>Dashboards
-          <textarea name="dashboards" rows="4" placeholder="Overview = /lovelace/0&#10;Cameras = /dashboard-cameras/0"></textarea>
-          <small>One per line as <code>Title = /path</code>. Used for rotation, the TV menu and channel up/down.</small>
+        <label><span data-t="dashboards">Dashboards</span>
+          <textarea name="dashboards" rows="4" placeholder="Overview = /lovelace/0&#10;Cameras = /dashboard-cameras/0" data-t-placeholder="dashboards_hint"></textarea>
+          <small data-t="dashboards_help">One per line as <code>Title = /path</code>. Used for rotation, the TV menu and channel up/down.</small>
         </label>
         <div class="row">
-          <label>Kiosk mode
+          <label><span data-t="kiosk">Kiosk mode</span>
             <select name="kiosk">
-              <option value="full">Hide sidebar and header</option>
-              <option value="sidebar">Hide sidebar</option>
-              <option value="off">Off</option>
+              <option value="full" data-t="kiosk_full">Hide sidebar and header</option>
+              <option value="sidebar" data-t="kiosk_sidebar">Hide sidebar</option>
+              <option value="off" data-t="kiosk_off">Off</option>
             </select>
           </label>
-          <label>Zoom (%)
+          <label><span data-t="zoom">Zoom (%)</span>
             <input name="zoom" type="number" min="25" max="400" step="5">
-            <small>Below 100 fits more cards on screen.</small>
+            <small data-t="zoom_help">Below 100 fits more cards on screen.</small>
           </label>
         </div>
         <div class="row">
-          <label>Rotate dashboards (seconds) <input name="rotate_seconds" type="number" min="0"><small>0 = off</small></label>
-          <label>Return home after (idle minutes) <input name="return_home_minutes" type="number" min="0"><small>0 = never</small></label>
-          <label>Come back from other apps after (minutes) <input name="reopen_minutes" type="number" min="0"><small>0 = never</small></label>
-          <label>Reload every (minutes) <input name="reload_minutes" type="number" min="0"><small>0 = never</small></label>
+          <label><span data-t="rotate">Rotate dashboards (seconds)</span> <input name="rotate_seconds" type="number" min="0"><small data-t="zero_off">0 = off</small></label>
+          <label><span data-t="return_home">Return home after (idle minutes)</span> <input name="return_home_minutes" type="number" min="0"><small data-t="zero_never">0 = never</small></label>
+          <label><span data-t="reopen">Come back from other apps after (minutes)</span> <input name="reopen_minutes" type="number" min="0"><small data-t="zero_never">0 = never</small></label>
+          <label><span data-t="reload_every">Reload every (minutes)</span> <input name="reload_minutes" type="number" min="0"><small data-t="zero_never">0 = never</small></label>
         </div>
-        <label class="check"><input type="checkbox" name="keep_screen_on"> Keep the screen on</label>
-        <label class="check"><input type="checkbox" name="launch_on_boot"> Open PleatView when the TV starts</label>
-        <button>Save</button><span class="ok" id="saved"></span>
+        <label class="check"><input type="checkbox" name="keep_screen_on"> <span data-t="keep_screen_on">Keep the screen on</span></label>
+        <label class="check"><input type="checkbox" name="launch_on_boot"> <span data-t="launch_on_boot">Open PleatView when the TV starts</span></label>
+        <button data-t="save">Save</button><span class="ok" id="saved"></span>
         <p class="error" id="config-error"></p>
       </form>
     </section>
 
-    <h2>Sign-ins saved on this TV</h2>
+    <h2 data-t="signins_title">Sign-ins saved on this TV</h2>
     <section>
-      <p class="note" id="signins-empty">None yet. When a dashboard asks for a username and password, the TV shows a code to sign in with your phone.</p>
+      <p class="note" id="signins-empty" data-t="signins_empty">None yet. When a dashboard asks for a username and password, the TV shows a code to sign in with your phone.</p>
       <ul id="signins"></ul>
       <p class="error" id="signins-error"></p>
     </section>
 
-    <h2>Try it</h2>
+    <h2 data-t="try_it">Try it</h2>
     <section>
       <div class="actions">
-        <button class="secondary" data-command="home">Home dashboard</button>
-        <button class="secondary" data-command="reload">Reload</button>
-        <button class="secondary" data-command="next_dashboard">Next dashboard</button>
-        <button class="secondary" data-command="notify">Test notification</button>
+        <button class="secondary" data-command="home" data-t="cmd_home">Home dashboard</button>
+        <button class="secondary" data-command="reload" data-t="cmd_reload">Reload</button>
+        <button class="secondary" data-command="next_dashboard" data-t="cmd_next">Next dashboard</button>
+        <button class="secondary" data-command="notify" data-t="cmd_notify">Test notification</button>
       </div>
       <p class="error" id="action-error"></p>
     </section>
   </div>
-  <footer>Help and documentation: <a href="https://pleatview.hustlesman.com">pleatview.hustlesman.com</a></footer>
+  <footer><span data-t="help">Help and documentation:</span> <a href="https://pleatview.hustlesman.com">pleatview.hustlesman.com</a></footer>
 </main>
+<script>
+// Translations of this page. The English is in the markup and the t() calls; a language without a
+// string shows the English one. Entries replace an element's contents, so they keep its markup.
+const TRANSLATIONS = {
+  cs: {
+    connecting: "Připojování…",
+    signin_title: "Přihlásit se k <span id=\"signin-title\"></span>",
+    signin_to: "Odesílá se jen na <strong id=\"signin-address\"></strong>",
+    signin_note: "Televize žádá uživatelské jméno a heslo k tomuto panelu. Zůstanou v televizi a dostane je jen tento panel.",
+    username: "Uživatelské jméno",
+    password: "Heslo",
+    remember: "Zůstat přihlášen v této televizi",
+    signin_submit: "Přihlásit se",
+    signin_done: "Odesláno do televize. Pokud je stránka přijme, objeví se panel; pokud ne, televize se zeptá znovu.",
+    start_title: "Přidat tuto televizi do Home Assistant",
+    start_open: "Otevřít Zařízení a služby",
+    start_add: "V části <em>Zjištěno</em> zvolte u této televize <strong>Přidat</strong>.",
+    start_pin: "Zadejte PIN",
+    copy: "Kopírovat",
+    start_manual: "Není v seznamu? Zvolte <em>Přidat integraci → PleatView</em> s hostitelem <strong id=\"start-host\"></strong> a portem <strong id=\"start-port\"></strong>.",
+    start_no_integration: "Nemáte v Home Assistant integraci PleatView?",
+    start_here: "Nastavte tuto televizi raději zde",
+    pair_pin: "PIN zobrazený na televizi",
+    pair_connect: "Připojit",
+    managed: "Tuto televizi spravuje integrace PleatView v Home Assistant. Nastavení uložená zde se nahradí, až se Home Assistant příště připojí; měňte je raději v možnostech integrace.",
+    tv_name: "Název televize",
+    ha_url: "URL Home Assistant",
+    token: "Token s dlouhou životností",
+    token_help: "Vytvořte ho v Home Assistant: váš profil → Zabezpečení → Tokeny s dlouhou životností. Bez tokenu se na televizi přihlašujete dálkovým ovladačem. Nová URL Home Assistant potřebuje nový token: televize zapomene ten starý.",
+    home_dashboard: "Úvodní panel",
+    dashboards: "Ovládací panely",
+    dashboards_help: "Jeden na řádek ve tvaru <code>Název = /cesta</code>. Používají se pro střídání, nabídku televize a přepínání kanálů nahoru/dolů.",
+    kiosk: "Režim kiosku",
+    kiosk_full: "Skrýt postranní panel a záhlaví",
+    kiosk_sidebar: "Skrýt postranní panel",
+    kiosk_off: "Vypnuto",
+    zoom: "Přiblížení (%)",
+    zoom_help: "Pod 100 se na obrazovku vejde víc karet.",
+    rotate: "Střídat panely (sekundy)",
+    zero_off: "0 = vypnuto",
+    return_home: "Vrátit se na úvod po (minuty nečinnosti)",
+    zero_never: "0 = nikdy",
+    reopen: "Vrátit se z jiných aplikací po (minuty)",
+    reload_every: "Načíst znovu každých (minuty)",
+    keep_screen_on: "Nechat obrazovku zapnutou",
+    launch_on_boot: "Otevřít PleatView po zapnutí televize",
+    save: "Uložit",
+    signins_title: "Přihlášení uložená v této televizi",
+    signins_empty: "Zatím žádná. Když panel požádá o uživatelské jméno a heslo, televize ukáže kód, kterým se přihlásíte telefonem.",
+    try_it: "Vyzkoušet",
+    cmd_home: "Úvodní panel",
+    cmd_reload: "Načíst znovu",
+    cmd_next: "Další panel",
+    cmd_notify: "Zkušební oznámení",
+    help: "Nápověda a dokumentace:",
+    tv_name_hint: "Použije název zařízení televize",
+    token_keep: "Nechte prázdné, aby zůstal současný token",
+    home_dashboard_hint: "/lovelace/0 (prázdné = výchozí z Home Assistant)",
+    dashboards_hint: "Přehled = /lovelace/0\nKamery = /dashboard-cameras/0",
+    page_title: "Nastavení PleatView",
+    pairing_expired: "Spárování vypršelo. Zadejte PIN znovu.",
+    signin_invalid_pin: "Platnost kódu vypršela. Naskenujte kód na televizi znovu.",
+    signin_too_many: "Příliš mnoho pokusů. Počkejte minutu a pak naskenujte kód na televizi znovu.",
+    signin_not_pending: "Televize už o přihlášení nežádá.",
+    forget: "Zapomenout",
+    copied: "Zkopírováno",
+    token_stored: "V televizi je uložen token.",
+    token_none: "Zatím není uložen žádný token.",
+    pair_invalid_pin: "Tento PIN neodpovídá PINu na televizi.",
+    pair_too_many: "Příliš mnoho pokusů. Počkejte minutu a použijte nový PIN z televize.",
+    saved: "Uloženo",
+    test_message: "Zde se zobrazují oznámení z Home Assistant.",
+    cant_reach: "Televize není dostupná.",
+  },
+  da: {
+    connecting: "Forbinder…",
+    signin_title: "Log ind på <span id=\"signin-title\"></span>",
+    signin_to: "Sendes kun til <strong id=\"signin-address\"></strong>",
+    signin_note: "Tv'et beder om brugernavn og adgangskode til dette betjeningspanel. De bliver på tv'et, og kun dette panel får dem.",
+    username: "Brugernavn",
+    password: "Adgangskode",
+    remember: "Forbliv logget ind på dette tv",
+    signin_submit: "Log ind",
+    signin_done: "Sendt til tv'et. Hvis siden accepterer det, vises panelet; ellers spørger tv'et igen.",
+    start_title: "Føj dette tv til Home Assistant",
+    start_open: "Åbn Enheder &amp; tjenester",
+    start_add: "Vælg <strong>Tilføj</strong> ud for dette tv under <em>Fundet</em>.",
+    start_pin: "Indtast pinkoden",
+    copy: "Kopiér",
+    start_manual: "Står det der ikke? Vælg <em>Tilføj integration → PleatView</em> med vært <strong id=\"start-host\"></strong> og port <strong id=\"start-port\"></strong>.",
+    start_no_integration: "Ingen PleatView-integration i Home Assistant?",
+    start_here: "Opsæt dette tv her i stedet",
+    pair_pin: "Pinkode vist på tv'et",
+    pair_connect: "Forbind",
+    managed: "Dette tv styres af PleatView-integrationen i Home Assistant. Indstillinger, der gemmes her, erstattes, næste gang Home Assistant forbinder; ret dem i stedet i integrationens indstillinger.",
+    tv_name: "Tv'ets navn",
+    ha_url: "Home Assistant-URL",
+    token: "Langlivet adgangstoken",
+    token_help: "Opret et i Home Assistant: din profil → Sikkerhed → Langlivede adgangstokens. Uden token logger du ind på tv'et med fjernbetjeningen. En ny Home Assistant-URL kræver et nyt token: tv'et glemmer det gamle.",
+    home_dashboard: "Startpanel",
+    dashboards: "Betjeningspaneler",
+    dashboards_help: "Ét pr. linje som <code>Titel = /sti</code>. Bruges til rotation, tv'ets menu og kanal op/ned.",
+    kiosk: "Kiosktilstand",
+    kiosk_full: "Skjul sidepanel og overskrift",
+    kiosk_sidebar: "Skjul sidepanel",
+    kiosk_off: "Fra",
+    zoom: "Zoom (%)",
+    zoom_help: "Under 100 kan der være flere kort på skærmen.",
+    rotate: "Skift mellem paneler (sekunder)",
+    zero_off: "0 = fra",
+    return_home: "Tilbage til start efter (minutter uden brug)",
+    zero_never: "0 = aldrig",
+    reopen: "Kom tilbage fra andre apps efter (minutter)",
+    reload_every: "Genindlæs hvert (minutter)",
+    keep_screen_on: "Hold skærmen tændt",
+    launch_on_boot: "Åbn PleatView, når tv'et tænder",
+    save: "Gem",
+    signins_title: "Logins gemt på dette tv",
+    signins_empty: "Ingen endnu. Når et panel beder om brugernavn og adgangskode, viser tv'et en kode, så du kan logge ind med telefonen.",
+    try_it: "Prøv det",
+    cmd_home: "Startpanel",
+    cmd_reload: "Genindlæs",
+    cmd_next: "Næste panel",
+    cmd_notify: "Testnotifikation",
+    help: "Hjælp og dokumentation:",
+    tv_name_hint: "Bruger tv'ets enhedsnavn",
+    token_keep: "Lad stå tomt for at beholde det nuværende token",
+    home_dashboard_hint: "/lovelace/0 (tomt = Home Assistants standard)",
+    dashboards_hint: "Overblik = /lovelace/0\nKameraer = /dashboard-cameras/0",
+    page_title: "Opsætning af PleatView",
+    pairing_expired: "Parringen er udløbet. Indtast pinkoden igen.",
+    signin_invalid_pin: "Denne kode er udløbet. Scan koden på tv'et igen.",
+    signin_too_many: "For mange forsøg. Vent et minut, og scan så koden på tv'et igen.",
+    signin_not_pending: "Tv'et beder ikke længere om et login.",
+    forget: "Glem",
+    copied: "Kopieret",
+    token_stored: "Der er gemt et token på tv'et.",
+    token_none: "Intet token gemt endnu.",
+    pair_invalid_pin: "Den pinkode passer ikke med den på tv'et.",
+    pair_too_many: "For mange forsøg. Vent et minut, og brug den nye pinkode på tv'et.",
+    saved: "Gemt",
+    test_message: "Notifikationer fra Home Assistant vises her.",
+    cant_reach: "Kan ikke nå tv'et.",
+  },
+  de: {
+    connecting: "Verbinde …",
+    signin_title: "Bei <span id=\"signin-title\"></span> anmelden",
+    signin_to: "Wird nur an <strong id=\"signin-address\"></strong> gesendet",
+    signin_note: "Der Fernseher fragt nach Benutzername und Passwort für dieses Dashboard. Sie bleiben auf dem Fernseher, und nur dieses Dashboard bekommt sie.",
+    username: "Benutzername",
+    password: "Passwort",
+    remember: "Auf diesem Fernseher angemeldet bleiben",
+    signin_submit: "Anmelden",
+    signin_done: "An den Fernseher gesendet. Akzeptiert die Seite die Anmeldung, erscheint das Dashboard; sonst fragt der Fernseher erneut.",
+    start_title: "Diesen Fernseher zu Home Assistant hinzufügen",
+    start_open: "Geräte &amp; Dienste öffnen",
+    start_add: "Wähle unter <em>Entdeckt</em> bei diesem Fernseher <strong>Hinzufügen</strong>.",
+    start_pin: "Gib die PIN ein:",
+    copy: "Kopieren",
+    start_manual: "Nicht aufgeführt? Wähle <em>Integration hinzufügen → PleatView</em> mit Host <strong id=\"start-host\"></strong> und Port <strong id=\"start-port\"></strong>.",
+    start_no_integration: "Keine PleatView-Integration in Home Assistant?",
+    start_here: "Richte diesen Fernseher stattdessen hier ein",
+    pair_pin: "PIN auf dem Fernseher",
+    pair_connect: "Verbinden",
+    managed: "Dieser Fernseher wird von der PleatView-Integration in Home Assistant verwaltet. Hier gespeicherte Einstellungen werden ersetzt, sobald Home Assistant sich das nächste Mal verbindet; ändere sie stattdessen in den Optionen der Integration.",
+    tv_name: "Name des Fernsehers",
+    ha_url: "Home-Assistant-URL",
+    token: "Langlebiges Zugriffstoken",
+    token_help: "Erstelle eines in Home Assistant: dein Profil → Sicherheit → Langlebige Zugriffstoken. Ohne Token meldest du dich am Fernseher mit der Fernbedienung an. Eine neue Home-Assistant-URL braucht ein neues Token: Der Fernseher vergisst das alte.",
+    home_dashboard: "Start-Dashboard",
+    dashboards: "Dashboards",
+    dashboards_help: "Eines pro Zeile als <code>Titel = /pfad</code>. Für die Rotation, das Menü des Fernsehers und Kanal hoch/runter.",
+    kiosk: "Kioskmodus",
+    kiosk_full: "Seitenleiste und Kopfzeile ausblenden",
+    kiosk_sidebar: "Seitenleiste ausblenden",
+    kiosk_off: "Aus",
+    zoom: "Zoom (%)",
+    zoom_help: "Unter 100 passen mehr Karten auf den Bildschirm.",
+    rotate: "Dashboards wechseln (Sekunden)",
+    zero_off: "0 = aus",
+    return_home: "Zurück zum Start nach (Minuten ohne Bedienung)",
+    zero_never: "0 = nie",
+    reopen: "Aus anderen Apps zurückkehren nach (Minuten)",
+    reload_every: "Neu laden alle (Minuten)",
+    keep_screen_on: "Bildschirm eingeschaltet lassen",
+    launch_on_boot: "PleatView beim Einschalten des Fernsehers öffnen",
+    save: "Speichern",
+    signins_title: "Auf diesem Fernseher gespeicherte Anmeldungen",
+    signins_empty: "Noch keine. Wenn ein Dashboard nach Benutzername und Passwort fragt, zeigt der Fernseher einen Code, mit dem du dich auf dem Handy anmeldest.",
+    try_it: "Ausprobieren",
+    cmd_home: "Start-Dashboard",
+    cmd_reload: "Neu laden",
+    cmd_next: "Nächstes Dashboard",
+    cmd_notify: "Testbenachrichtigung",
+    help: "Hilfe und Dokumentation:",
+    tv_name_hint: "Verwendet den Gerätenamen des Fernsehers",
+    token_keep: "Leer lassen, um das aktuelle Token zu behalten",
+    home_dashboard_hint: "/lovelace/0 (leer = Standard von Home Assistant)",
+    dashboards_hint: "Übersicht = /lovelace/0\nKameras = /dashboard-cameras/0",
+    page_title: "PleatView einrichten",
+    pairing_expired: "Die Kopplung ist abgelaufen. Gib die PIN erneut ein.",
+    signin_invalid_pin: "Dieser Code ist abgelaufen. Scanne den Code auf dem Fernseher erneut.",
+    signin_too_many: "Zu viele Versuche. Warte eine Minute und scanne dann den Code auf dem Fernseher erneut.",
+    signin_not_pending: "Der Fernseher fragt nicht mehr nach einer Anmeldung.",
+    forget: "Vergessen",
+    copied: "Kopiert",
+    token_stored: "Auf dem Fernseher ist ein Token gespeichert.",
+    token_none: "Noch kein Token gespeichert.",
+    pair_invalid_pin: "Diese PIN stimmt nicht mit der auf dem Fernseher überein.",
+    pair_too_many: "Zu viele Versuche. Warte eine Minute und verwende die neue PIN auf dem Fernseher.",
+    saved: "Gespeichert",
+    test_message: "Hier erscheinen Benachrichtigungen aus Home Assistant.",
+    cant_reach: "Der Fernseher ist nicht erreichbar.",
+  },
+  es: {
+    connecting: "Conectando…",
+    signin_title: "Iniciar sesión en <span id=\"signin-title\"></span>",
+    signin_to: "Se envía solo a <strong id=\"signin-address\"></strong>",
+    signin_note: "La TV pide el nombre de usuario y la contraseña de este panel. Se quedan en la TV, y solo este panel los recibe.",
+    username: "Nombre de usuario",
+    password: "Contraseña",
+    remember: "Mantener la sesión iniciada en esta TV",
+    signin_submit: "Iniciar sesión",
+    signin_done: "Enviado a la TV. Si el sitio lo acepta, aparece el panel; si no, la TV vuelve a pedirlo.",
+    start_title: "Añadir esta TV a Home Assistant",
+    start_open: "Abrir Dispositivos y servicios",
+    start_add: "En <em>Descubierto</em>, elige <strong>Añadir</strong> junto a esta TV.",
+    start_pin: "Introduce el PIN",
+    copy: "Copiar",
+    start_manual: "¿No aparece? Elige <em>Añadir integración → PleatView</em> con el host <strong id=\"start-host\"></strong> y el puerto <strong id=\"start-port\"></strong>.",
+    start_no_integration: "¿No tienes la integración PleatView en Home Assistant?",
+    start_here: "Configura esta TV aquí",
+    pair_pin: "PIN que muestra la TV",
+    pair_connect: "Conectar",
+    managed: "Esta TV la gestiona la integración PleatView de Home Assistant. Los ajustes guardados aquí se sustituyen la próxima vez que Home Assistant se conecte; cámbialos mejor en las opciones de la integración.",
+    tv_name: "Nombre de la TV",
+    ha_url: "URL de Home Assistant",
+    token: "Token de acceso de larga duración",
+    token_help: "Crea uno en Home Assistant: tu perfil → Seguridad → Tokens de acceso de larga duración. Sin token, inicias sesión en la TV con el mando. Una nueva URL de Home Assistant necesita un token nuevo: la TV olvida el anterior.",
+    home_dashboard: "Panel de inicio",
+    dashboards: "Paneles",
+    dashboards_help: "Uno por línea como <code>Título = /ruta</code>. Se usan para la rotación, el menú de la TV y canal arriba/abajo.",
+    kiosk: "Modo quiosco",
+    kiosk_full: "Ocultar la barra lateral y la cabecera",
+    kiosk_sidebar: "Ocultar la barra lateral",
+    kiosk_off: "Desactivado",
+    zoom: "Zoom (%)",
+    zoom_help: "Por debajo de 100 caben más tarjetas en la pantalla.",
+    rotate: "Rotar paneles (segundos)",
+    zero_off: "0 = desactivado",
+    return_home: "Volver al inicio tras (minutos sin uso)",
+    zero_never: "0 = nunca",
+    reopen: "Volver desde otras apps tras (minutos)",
+    reload_every: "Recargar cada (minutos)",
+    keep_screen_on: "Mantener la pantalla encendida",
+    launch_on_boot: "Abrir PleatView al encender la TV",
+    save: "Guardar",
+    signins_title: "Inicios de sesión guardados en esta TV",
+    signins_empty: "Ninguno todavía. Cuando un panel pide un nombre de usuario y una contraseña, la TV muestra un código para iniciar sesión con tu teléfono.",
+    try_it: "Pruébalo",
+    cmd_home: "Panel de inicio",
+    cmd_reload: "Recargar",
+    cmd_next: "Panel siguiente",
+    cmd_notify: "Notificación de prueba",
+    help: "Ayuda y documentación:",
+    tv_name_hint: "Usa el nombre de dispositivo de la TV",
+    token_keep: "Déjalo vacío para conservar el token actual",
+    home_dashboard_hint: "/lovelace/0 (vacío = el predeterminado de Home Assistant)",
+    dashboards_hint: "Vista general = /lovelace/0\nCámaras = /dashboard-cameras/0",
+    page_title: "Configuración de PleatView",
+    pairing_expired: "La vinculación ha caducado. Vuelve a introducir el PIN.",
+    signin_invalid_pin: "Este código ha caducado. Vuelve a escanear el código de la TV.",
+    signin_too_many: "Demasiados intentos. Espera un minuto y vuelve a escanear el código de la TV.",
+    signin_not_pending: "La TV ya no está pidiendo un inicio de sesión.",
+    forget: "Olvidar",
+    copied: "Copiado",
+    token_stored: "Hay un token guardado en la TV.",
+    token_none: "Todavía no hay ningún token guardado.",
+    pair_invalid_pin: "Ese PIN no coincide con el de la TV.",
+    pair_too_many: "Demasiados intentos. Espera un minuto y usa el nuevo PIN de la TV.",
+    saved: "Guardado",
+    test_message: "Las notificaciones de Home Assistant aparecen aquí.",
+    cant_reach: "No se puede conectar con la TV.",
+  },
+  fr: {
+    connecting: "Connexion…",
+    signin_title: "Se connecter à <span id=\"signin-title\"></span>",
+    signin_to: "Envoyé uniquement à <strong id=\"signin-address\"></strong>",
+    signin_note: "Le téléviseur demande le nom d'utilisateur et le mot de passe de ce tableau de bord. Ils restent sur le téléviseur, et seul ce tableau de bord les reçoit.",
+    username: "Nom d'utilisateur",
+    password: "Mot de passe",
+    remember: "Rester connecté sur ce téléviseur",
+    signin_submit: "Se connecter",
+    signin_done: "Envoyé au téléviseur. Si le site l'accepte, le tableau de bord apparaît ; sinon, le téléviseur redemande.",
+    start_title: "Ajouter ce téléviseur à Home Assistant",
+    start_open: "Ouvrir Appareils et services",
+    start_add: "Sous <em>Découvertes</em>, choisissez <strong>Ajouter</strong> à côté de ce téléviseur.",
+    start_pin: "Saisissez le code PIN",
+    copy: "Copier",
+    start_manual: "Pas dans la liste ? Choisissez <em>Ajouter une intégration → PleatView</em> avec l'hôte <strong id=\"start-host\"></strong> et le port <strong id=\"start-port\"></strong>.",
+    start_no_integration: "Pas d'intégration PleatView dans Home Assistant ?",
+    start_here: "Configurer plutôt ce téléviseur ici",
+    pair_pin: "Code PIN affiché sur le téléviseur",
+    pair_connect: "Connecter",
+    managed: "Ce téléviseur est géré par l'intégration PleatView dans Home Assistant. Les réglages enregistrés ici sont remplacés à la prochaine connexion de Home Assistant ; modifiez-les plutôt dans les options de l'intégration.",
+    tv_name: "Nom du téléviseur",
+    ha_url: "URL de Home Assistant",
+    token: "Jeton d'accès longue durée",
+    token_help: "Créez-en un dans Home Assistant : votre profil → Sécurité → Jetons d'accès longue durée. Sans jeton, vous vous connectez sur le téléviseur avec la télécommande. Une nouvelle URL de Home Assistant demande un nouveau jeton : le téléviseur oublie l'ancien.",
+    home_dashboard: "Tableau de bord d'accueil",
+    dashboards: "Tableaux de bord",
+    dashboards_help: "Un par ligne sous la forme <code>Titre = /chemin</code>. Sert à la rotation, au menu du téléviseur et aux touches chaîne +/−.",
+    kiosk: "Mode kiosque",
+    kiosk_full: "Masquer la barre latérale et l'en-tête",
+    kiosk_sidebar: "Masquer la barre latérale",
+    kiosk_off: "Désactivé",
+    zoom: "Zoom (%)",
+    zoom_help: "En dessous de 100, plus de cartes tiennent à l'écran.",
+    rotate: "Faire tourner les tableaux de bord (secondes)",
+    zero_off: "0 = désactivé",
+    return_home: "Revenir à l'accueil après (minutes d'inactivité)",
+    zero_never: "0 = jamais",
+    reopen: "Revenir depuis d'autres applis après (minutes)",
+    reload_every: "Recharger toutes les (minutes)",
+    keep_screen_on: "Garder l'écran allumé",
+    launch_on_boot: "Ouvrir PleatView au démarrage du téléviseur",
+    save: "Enregistrer",
+    signins_title: "Connexions enregistrées sur ce téléviseur",
+    signins_empty: "Aucune pour l'instant. Quand un tableau de bord demande un nom d'utilisateur et un mot de passe, le téléviseur affiche un code pour vous connecter avec votre téléphone.",
+    try_it: "Essayer",
+    cmd_home: "Tableau de bord d'accueil",
+    cmd_reload: "Recharger",
+    cmd_next: "Tableau de bord suivant",
+    cmd_notify: "Notification de test",
+    help: "Aide et documentation :",
+    tv_name_hint: "Utilise le nom d'appareil du téléviseur",
+    token_keep: "Laisser vide pour garder le jeton actuel",
+    home_dashboard_hint: "/lovelace/0 (vide = celui de Home Assistant par défaut)",
+    dashboards_hint: "Vue d'ensemble = /lovelace/0\nCaméras = /dashboard-cameras/0",
+    page_title: "Configuration de PleatView",
+    pairing_expired: "L'association a expiré. Saisissez à nouveau le code PIN.",
+    signin_invalid_pin: "Ce code a expiré. Scannez à nouveau le code sur le téléviseur.",
+    signin_too_many: "Trop de tentatives. Attendez une minute, puis scannez à nouveau le code sur le téléviseur.",
+    signin_not_pending: "Le téléviseur ne demande plus de connexion.",
+    forget: "Oublier",
+    copied: "Copié",
+    token_stored: "Un jeton est enregistré sur le téléviseur.",
+    token_none: "Aucun jeton enregistré pour l'instant.",
+    pair_invalid_pin: "Ce code PIN ne correspond pas à celui du téléviseur.",
+    pair_too_many: "Trop de tentatives. Attendez une minute et utilisez le nouveau code PIN du téléviseur.",
+    saved: "Enregistré",
+    test_message: "Les notifications de Home Assistant s'affichent ici.",
+    cant_reach: "Le téléviseur est injoignable.",
+  },
+  it: {
+    connecting: "Connessione…",
+    signin_title: "Accedi a <span id=\"signin-title\"></span>",
+    signin_to: "Inviato solo a <strong id=\"signin-address\"></strong>",
+    signin_note: "La TV chiede nome utente e password di questa plancia. Restano sulla TV, e solo questa plancia li riceve.",
+    username: "Nome utente",
+    password: "Password",
+    remember: "Resta connesso su questa TV",
+    signin_submit: "Accedi",
+    signin_done: "Inviato alla TV. Se il sito lo accetta, compare la plancia; altrimenti la TV lo chiede di nuovo.",
+    start_title: "Aggiungi questa TV a Home Assistant",
+    start_open: "Apri Dispositivi e servizi",
+    start_add: "Sotto <em>Rilevato</em>, scegli <strong>Aggiungi</strong> accanto a questa TV.",
+    start_pin: "Inserisci il PIN",
+    copy: "Copia",
+    start_manual: "Non è in elenco? Scegli <em>Aggiungi integrazione → PleatView</em> con host <strong id=\"start-host\"></strong> e porta <strong id=\"start-port\"></strong>.",
+    start_no_integration: "Nessuna integrazione PleatView in Home Assistant?",
+    start_here: "Configura invece questa TV qui",
+    pair_pin: "PIN mostrato sulla TV",
+    pair_connect: "Connetti",
+    managed: "Questa TV è gestita dall'integrazione PleatView in Home Assistant. Le impostazioni salvate qui vengono sostituite la prossima volta che Home Assistant si connette; cambiale invece nelle opzioni dell'integrazione.",
+    tv_name: "Nome della TV",
+    ha_url: "URL di Home Assistant",
+    token: "Token di accesso a lungo termine",
+    token_help: "Creane uno in Home Assistant: il tuo profilo → Sicurezza → Token di accesso a lungo termine. Senza token accedi sulla TV con il telecomando. Un nuovo URL di Home Assistant richiede un nuovo token: la TV dimentica quello vecchio.",
+    home_dashboard: "Plancia iniziale",
+    dashboards: "Plance",
+    dashboards_help: "Una per riga come <code>Titolo = /percorso</code>. Usate per la rotazione, il menu della TV e canale su/giù.",
+    kiosk: "Modalità kiosk",
+    kiosk_full: "Nascondi barra laterale e intestazione",
+    kiosk_sidebar: "Nascondi barra laterale",
+    kiosk_off: "Disattivata",
+    zoom: "Zoom (%)",
+    zoom_help: "Sotto 100 entrano più schede sullo schermo.",
+    rotate: "Ruota le plance (secondi)",
+    zero_off: "0 = disattivata",
+    return_home: "Torna all'inizio dopo (minuti di inattività)",
+    zero_never: "0 = mai",
+    reopen: "Torna dalle altre app dopo (minuti)",
+    reload_every: "Ricarica ogni (minuti)",
+    keep_screen_on: "Tieni lo schermo acceso",
+    launch_on_boot: "Apri PleatView all'accensione della TV",
+    save: "Salva",
+    signins_title: "Accessi salvati su questa TV",
+    signins_empty: "Ancora nessuno. Quando una plancia chiede nome utente e password, la TV mostra un codice per accedere con il telefono.",
+    try_it: "Prova",
+    cmd_home: "Plancia iniziale",
+    cmd_reload: "Ricarica",
+    cmd_next: "Plancia successiva",
+    cmd_notify: "Notifica di prova",
+    help: "Aiuto e documentazione:",
+    tv_name_hint: "Usa il nome del dispositivo della TV",
+    token_keep: "Lascia vuoto per tenere il token attuale",
+    home_dashboard_hint: "/lovelace/0 (vuoto = predefinita di Home Assistant)",
+    dashboards_hint: "Panoramica = /lovelace/0\nTelecamere = /dashboard-cameras/0",
+    page_title: "Configurazione di PleatView",
+    pairing_expired: "L'abbinamento è scaduto. Inserisci di nuovo il PIN.",
+    signin_invalid_pin: "Questo codice è scaduto. Scansiona di nuovo il codice sulla TV.",
+    signin_too_many: "Troppi tentativi. Aspetta un minuto, poi scansiona di nuovo il codice sulla TV.",
+    signin_not_pending: "La TV non sta più chiedendo un accesso.",
+    forget: "Dimentica",
+    copied: "Copiato",
+    token_stored: "Sulla TV è salvato un token.",
+    token_none: "Nessun token salvato.",
+    pair_invalid_pin: "Questo PIN non corrisponde a quello sulla TV.",
+    pair_too_many: "Troppi tentativi. Aspetta un minuto e usa il nuovo PIN sulla TV.",
+    saved: "Salvato",
+    test_message: "Le notifiche di Home Assistant compaiono qui.",
+    cant_reach: "La TV non è raggiungibile.",
+  },
+  nl: {
+    connecting: "Verbinden…",
+    signin_title: "Inloggen bij <span id=\"signin-title\"></span>",
+    signin_to: "Alleen verstuurd naar <strong id=\"signin-address\"></strong>",
+    signin_note: "De tv vraagt om de gebruikersnaam en het wachtwoord van dit dashboard. Ze blijven op de tv, en alleen dit dashboard krijgt ze.",
+    username: "Gebruikersnaam",
+    password: "Wachtwoord",
+    remember: "Ingelogd blijven op deze tv",
+    signin_submit: "Inloggen",
+    signin_done: "Naar de tv gestuurd. Accepteert de site het, dan verschijnt het dashboard; zo niet, dan vraagt de tv het opnieuw.",
+    start_title: "Deze tv aan Home Assistant toevoegen",
+    start_open: "Apparaten en diensten openen",
+    start_add: "Kies onder <em>Ontdekt</em> <strong>Voeg toe</strong> naast deze tv.",
+    start_pin: "Voer de pincode in:",
+    copy: "Kopiëren",
+    start_manual: "Staat hij er niet bij? Kies <em>Voeg integratie toe → PleatView</em> met host <strong id=\"start-host\"></strong> en poort <strong id=\"start-port\"></strong>.",
+    start_no_integration: "Geen PleatView-integratie in Home Assistant?",
+    start_here: "Stel deze tv dan hier in",
+    pair_pin: "Pincode op de tv",
+    pair_connect: "Verbinden",
+    managed: "Deze tv wordt beheerd door de PleatView-integratie in Home Assistant. Instellingen die je hier opslaat, worden vervangen zodra Home Assistant weer verbinding maakt; wijzig ze in plaats daarvan in de opties van de integratie.",
+    tv_name: "Naam van de tv",
+    ha_url: "Home Assistant-URL",
+    token: "Toegangstoken met lange levensduur",
+    token_help: "Maak er een aan in Home Assistant: je profiel → Beveiliging → Toegangstokens met lange levensduur. Zonder token log je op de tv in met de afstandsbediening. Een nieuwe Home Assistant-URL heeft een nieuw token nodig: de tv vergeet het oude.",
+    home_dashboard: "Startdashboard",
+    dashboards: "Dashboards",
+    dashboards_help: "Eén per regel als <code>Titel = /pad</code>. Gebruikt voor het rouleren, het menu van de tv en kanaal omhoog/omlaag.",
+    kiosk: "Kioskmodus",
+    kiosk_full: "Zijbalk en kopbalk verbergen",
+    kiosk_sidebar: "Zijbalk verbergen",
+    kiosk_off: "Uit",
+    zoom: "Zoom (%)",
+    zoom_help: "Onder de 100 passen er meer kaarten op het scherm.",
+    rotate: "Dashboards rouleren (seconden)",
+    zero_off: "0 = uit",
+    return_home: "Terug naar start na (minuten niets gedaan)",
+    zero_never: "0 = nooit",
+    reopen: "Terugkomen uit andere apps na (minuten)",
+    reload_every: "Herladen elke (minuten)",
+    keep_screen_on: "Scherm aan laten",
+    launch_on_boot: "PleatView openen als de tv aangaat",
+    save: "Opslaan",
+    signins_title: "Inlogs bewaard op deze tv",
+    signins_empty: "Nog geen. Als een dashboard om een gebruikersnaam en wachtwoord vraagt, toont de tv een code om met je telefoon in te loggen.",
+    try_it: "Probeer het",
+    cmd_home: "Startdashboard",
+    cmd_reload: "Herladen",
+    cmd_next: "Volgend dashboard",
+    cmd_notify: "Testmelding",
+    help: "Hulp en documentatie:",
+    tv_name_hint: "Gebruikt de apparaatnaam van de tv",
+    token_keep: "Leeg laten om het huidige token te houden",
+    home_dashboard_hint: "/lovelace/0 (leeg = standaard van Home Assistant)",
+    dashboards_hint: "Overzicht = /lovelace/0\nCamera's = /dashboard-cameras/0",
+    page_title: "PleatView instellen",
+    pairing_expired: "De koppeling is verlopen. Voer de pincode opnieuw in.",
+    signin_invalid_pin: "Deze code is verlopen. Scan de code op de tv opnieuw.",
+    signin_too_many: "Te veel pogingen. Wacht een minuut en scan dan de code op de tv opnieuw.",
+    signin_not_pending: "De tv vraagt niet meer om in te loggen.",
+    forget: "Vergeten",
+    copied: "Gekopieerd",
+    token_stored: "Er is een token op de tv opgeslagen.",
+    token_none: "Nog geen token opgeslagen.",
+    pair_invalid_pin: "Die pincode komt niet overeen met die op de tv.",
+    pair_too_many: "Te veel pogingen. Wacht een minuut en gebruik de nieuwe pincode op de tv.",
+    saved: "Opgeslagen",
+    test_message: "Meldingen van Home Assistant verschijnen hier.",
+    cant_reach: "De tv is niet bereikbaar.",
+  },
+  pl: {
+    connecting: "Łączenie…",
+    signin_title: "Zaloguj się do <span id=\"signin-title\"></span>",
+    signin_to: "Wysyłane tylko do <strong id=\"signin-address\"></strong>",
+    signin_note: "Telewizor prosi o nazwę użytkownika i hasło do tego panelu. Zostają na telewizorze i dostaje je tylko ten panel.",
+    username: "Nazwa użytkownika",
+    password: "Hasło",
+    remember: "Nie wylogowuj mnie na tym telewizorze",
+    signin_submit: "Zaloguj się",
+    signin_done: "Wysłano do telewizora. Jeśli strona to przyjmie, pojawi się panel; jeśli nie, telewizor zapyta ponownie.",
+    start_title: "Dodaj ten telewizor do Home Assistant",
+    start_open: "Otwórz Urządzenia oraz usługi",
+    start_add: "W sekcji <em>Wykryte</em> wybierz <strong>Dodaj</strong> przy tym telewizorze.",
+    start_pin: "Wpisz PIN",
+    copy: "Kopiuj",
+    start_manual: "Nie ma go na liście? Wybierz <em>Dodaj integrację → PleatView</em> z hostem <strong id=\"start-host\"></strong> i portem <strong id=\"start-port\"></strong>.",
+    start_no_integration: "Nie masz integracji PleatView w Home Assistant?",
+    start_here: "Skonfiguruj ten telewizor tutaj",
+    pair_pin: "PIN widoczny na telewizorze",
+    pair_connect: "Połącz",
+    managed: "Tym telewizorem zarządza integracja PleatView w Home Assistant. Zapisane tu ustawienia zostaną zastąpione przy następnym połączeniu Home Assistant; zmieniaj je raczej w opcjach integracji.",
+    tv_name: "Nazwa telewizora",
+    ha_url: "Adres URL Home Assistant",
+    token: "Długotrwały token dostępu",
+    token_help: "Utwórz go w Home Assistant: twój profil → Bezpieczeństwo → Długotrwałe tokeny dostępu. Bez tokena logujesz się na telewizorze pilotem. Nowy adres URL Home Assistant wymaga nowego tokena: telewizor zapomina stary.",
+    home_dashboard: "Panel startowy",
+    dashboards: "Panele",
+    dashboards_help: "Jeden w wierszu jako <code>Tytuł = /ścieżka</code>. Używane do rotacji, w menu telewizora i do przełączania kanałów w górę/w dół.",
+    kiosk: "Tryb kiosku",
+    kiosk_full: "Ukryj pasek boczny i nagłówek",
+    kiosk_sidebar: "Ukryj pasek boczny",
+    kiosk_off: "Wyłączony",
+    zoom: "Powiększenie (%)",
+    zoom_help: "Poniżej 100 na ekranie mieści się więcej kart.",
+    rotate: "Zmieniaj panele (sekundy)",
+    zero_off: "0 = wyłączone",
+    return_home: "Wróć do startu po (minuty bezczynności)",
+    zero_never: "0 = nigdy",
+    reopen: "Wracaj z innych aplikacji po (minuty)",
+    reload_every: "Odświeżaj co (minuty)",
+    keep_screen_on: "Nie wyłączaj ekranu",
+    launch_on_boot: "Otwieraj PleatView po włączeniu telewizora",
+    save: "Zapisz",
+    signins_title: "Logowania zapisane na tym telewizorze",
+    signins_empty: "Jeszcze żadnych. Gdy panel poprosi o nazwę użytkownika i hasło, telewizor pokaże kod do zalogowania się telefonem.",
+    try_it: "Wypróbuj",
+    cmd_home: "Panel startowy",
+    cmd_reload: "Odśwież",
+    cmd_next: "Następny panel",
+    cmd_notify: "Powiadomienie testowe",
+    help: "Pomoc i dokumentacja:",
+    tv_name_hint: "Używa nazwy urządzenia telewizora",
+    token_keep: "Zostaw puste, aby zachować obecny token",
+    home_dashboard_hint: "/lovelace/0 (puste = domyślny z Home Assistant)",
+    dashboards_hint: "Przegląd = /lovelace/0\nKamery = /dashboard-cameras/0",
+    page_title: "Konfiguracja PleatView",
+    pairing_expired: "Parowanie wygasło. Wpisz PIN ponownie.",
+    signin_invalid_pin: "Ten kod wygasł. Zeskanuj ponownie kod z telewizora.",
+    signin_too_many: "Zbyt wiele prób. Odczekaj minutę, a potem zeskanuj ponownie kod z telewizora.",
+    signin_not_pending: "Telewizor nie prosi już o zalogowanie.",
+    forget: "Zapomnij",
+    copied: "Skopiowano",
+    token_stored: "Na telewizorze zapisany jest token.",
+    token_none: "Nie zapisano jeszcze tokena.",
+    pair_invalid_pin: "Ten PIN nie zgadza się z PIN-em na telewizorze.",
+    pair_too_many: "Zbyt wiele prób. Odczekaj minutę i użyj nowego PIN-u z telewizora.",
+    saved: "Zapisano",
+    test_message: "Tutaj pojawiają się powiadomienia z Home Assistant.",
+    cant_reach: "Brak połączenia z telewizorem.",
+  },
+  pt: {
+    connecting: "Conectando…",
+    signin_title: "Entrar em <span id=\"signin-title\"></span>",
+    signin_to: "Enviado apenas para <strong id=\"signin-address\"></strong>",
+    signin_note: "A TV está pedindo o nome de usuário e a senha deste dashboard. Eles ficam na TV, e só este dashboard os recebe.",
+    username: "Nome de usuário",
+    password: "Senha",
+    remember: "Manter conectado nesta TV",
+    signin_submit: "Entrar",
+    signin_done: "Enviado para a TV. Se o site aceitar, o dashboard aparece; se não, a TV pede de novo.",
+    start_title: "Adicionar esta TV ao Home Assistant",
+    start_open: "Abrir Dispositivos &amp; serviços",
+    start_add: "Em <em>Descoberto</em>, escolha <strong>Adicionar</strong> ao lado desta TV.",
+    start_pin: "Digite o PIN",
+    copy: "Copiar",
+    start_manual: "Não aparece? Escolha <em>Adicionar integração → PleatView</em> com o host <strong id=\"start-host\"></strong> e a porta <strong id=\"start-port\"></strong>.",
+    start_no_integration: "Não tem a integração PleatView no Home Assistant?",
+    start_here: "Configure esta TV aqui mesmo",
+    pair_pin: "PIN mostrado na TV",
+    pair_connect: "Conectar",
+    managed: "Esta TV é gerenciada pela integração PleatView no Home Assistant. As configurações salvas aqui são substituídas na próxima vez que o Home Assistant se conectar; altere-as nas opções da integração.",
+    tv_name: "Nome da TV",
+    ha_url: "URL do Home Assistant",
+    token: "Token de acesso de longa duração",
+    token_help: "Crie um no Home Assistant: seu perfil → Segurança → Tokens de acesso de longa duração. Sem token, você entra na TV com o controle remoto. Uma nova URL do Home Assistant precisa de um novo token: a TV esquece o antigo.",
+    home_dashboard: "Dashboard inicial",
+    dashboards: "Dashboards",
+    dashboards_help: "Um por linha como <code>Título = /caminho</code>. Usados na rotação, no menu da TV e em canal para cima/para baixo.",
+    kiosk: "Modo quiosque",
+    kiosk_full: "Ocultar barra lateral e cabeçalho",
+    kiosk_sidebar: "Ocultar barra lateral",
+    kiosk_off: "Desligado",
+    zoom: "Zoom (%)",
+    zoom_help: "Abaixo de 100 cabem mais cards na tela.",
+    rotate: "Alternar dashboards (segundos)",
+    zero_off: "0 = desligado",
+    return_home: "Voltar ao início após (minutos sem uso)",
+    zero_never: "0 = nunca",
+    reopen: "Voltar de outros apps após (minutos)",
+    reload_every: "Recarregar a cada (minutos)",
+    keep_screen_on: "Manter a tela ligada",
+    launch_on_boot: "Abrir o PleatView quando a TV ligar",
+    save: "Salvar",
+    signins_title: "Logins salvos nesta TV",
+    signins_empty: "Nenhum ainda. Quando um dashboard pede nome de usuário e senha, a TV mostra um código para você entrar pelo celular.",
+    try_it: "Experimente",
+    cmd_home: "Dashboard inicial",
+    cmd_reload: "Recarregar",
+    cmd_next: "Próximo dashboard",
+    cmd_notify: "Notificação de teste",
+    help: "Ajuda e documentação:",
+    tv_name_hint: "Usa o nome de dispositivo da TV",
+    token_keep: "Deixe vazio para manter o token atual",
+    home_dashboard_hint: "/lovelace/0 (vazio = padrão do Home Assistant)",
+    dashboards_hint: "Visão geral = /lovelace/0\nCâmeras = /dashboard-cameras/0",
+    page_title: "Configuração do PleatView",
+    pairing_expired: "O pareamento expirou. Digite o PIN de novo.",
+    signin_invalid_pin: "Este código expirou. Escaneie o código da TV de novo.",
+    signin_too_many: "Tentativas demais. Espere um minuto e escaneie o código da TV de novo.",
+    signin_not_pending: "A TV não está mais pedindo um login.",
+    forget: "Esquecer",
+    copied: "Copiado",
+    token_stored: "Há um token salvo na TV.",
+    token_none: "Nenhum token salvo ainda.",
+    pair_invalid_pin: "Esse PIN não corresponde ao da TV.",
+    pair_too_many: "Tentativas demais. Espere um minuto e use o novo PIN da TV.",
+    saved: "Salvo",
+    test_message: "As notificações do Home Assistant aparecem aqui.",
+    cant_reach: "Não foi possível conectar à TV.",
+  },
+  sv: {
+    connecting: "Ansluter…",
+    signin_title: "Logga in på <span id=\"signin-title\"></span>",
+    signin_to: "Skickas bara till <strong id=\"signin-address\"></strong>",
+    signin_note: "Tv:n ber om användarnamn och lösenord för den här panelen. De stannar på tv:n, och bara den här panelen får dem.",
+    username: "Användarnamn",
+    password: "Lösenord",
+    remember: "Håll mig inloggad på den här tv:n",
+    signin_submit: "Logga in",
+    signin_done: "Skickat till tv:n. Om webbplatsen godtar det visas panelen; annars frågar tv:n igen.",
+    start_title: "Lägg till den här tv:n i Home Assistant",
+    start_open: "Öppna Enheter och tjänster",
+    start_add: "Under <em>Upptäckta</em> väljer du <strong>Lägg till</strong> bredvid den här tv:n.",
+    start_pin: "Ange PIN-koden",
+    copy: "Kopiera",
+    start_manual: "Finns den inte med? Välj <em>Lägg till integration → PleatView</em> med värd <strong id=\"start-host\"></strong> och port <strong id=\"start-port\"></strong>.",
+    start_no_integration: "Ingen PleatView-integration i Home Assistant?",
+    start_here: "Ställ in den här tv:n här i stället",
+    pair_pin: "PIN-kod som visas på tv:n",
+    pair_connect: "Anslut",
+    managed: "Den här tv:n hanteras av PleatView-integrationen i Home Assistant. Inställningar som sparas här ersätts nästa gång Home Assistant ansluter; ändra dem i stället i integrationens alternativ.",
+    tv_name: "Tv:ns namn",
+    ha_url: "Home Assistant-URL",
+    token: "Långlivad åtkomsttoken",
+    token_help: "Skapa en i Home Assistant: din profil → Säkerhet → Långlivade åtkomsttokens. Utan token loggar du in på tv:n med fjärrkontrollen. En ny Home Assistant-URL behöver en ny token: tv:n glömmer den gamla.",
+    home_dashboard: "Startpanel",
+    dashboards: "Kontrollpaneler",
+    dashboards_help: "En per rad som <code>Titel = /sökväg</code>. Används för rotation, tv:ns meny och kanal upp/ner.",
+    kiosk: "Kioskläge",
+    kiosk_full: "Dölj sidofält och sidhuvud",
+    kiosk_sidebar: "Dölj sidofält",
+    kiosk_off: "Av",
+    zoom: "Zoom (%)",
+    zoom_help: "Under 100 får fler kort plats på skärmen.",
+    rotate: "Rotera paneler (sekunder)",
+    zero_off: "0 = av",
+    return_home: "Tillbaka till start efter (minuter utan aktivitet)",
+    zero_never: "0 = aldrig",
+    reopen: "Kom tillbaka från andra appar efter (minuter)",
+    reload_every: "Ladda om med intervallet (minuter)",
+    keep_screen_on: "Håll skärmen på",
+    launch_on_boot: "Öppna PleatView när tv:n startar",
+    save: "Spara",
+    signins_title: "Inloggningar sparade på den här tv:n",
+    signins_empty: "Inga än. När en panel ber om användarnamn och lösenord visar tv:n en kod så att du kan logga in med telefonen.",
+    try_it: "Prova",
+    cmd_home: "Startpanel",
+    cmd_reload: "Ladda om",
+    cmd_next: "Nästa panel",
+    cmd_notify: "Testavisering",
+    help: "Hjälp och dokumentation:",
+    tv_name_hint: "Använder tv:ns enhetsnamn",
+    token_keep: "Lämna tomt för att behålla nuvarande token",
+    home_dashboard_hint: "/lovelace/0 (tomt = Home Assistants standard)",
+    dashboards_hint: "Översikt = /lovelace/0\nKameror = /dashboard-cameras/0",
+    page_title: "Ställ in PleatView",
+    pairing_expired: "Kopplingen har gått ut. Ange PIN-koden igen.",
+    signin_invalid_pin: "Den här koden har gått ut. Skanna koden på tv:n igen.",
+    signin_too_many: "För många försök. Vänta en minut och skanna sedan koden på tv:n igen.",
+    signin_not_pending: "Tv:n ber inte längre om en inloggning.",
+    forget: "Glöm",
+    copied: "Kopierad",
+    token_stored: "En token är sparad på tv:n.",
+    token_none: "Ingen token sparad än.",
+    pair_invalid_pin: "PIN-koden stämmer inte med den på tv:n.",
+    pair_too_many: "För många försök. Vänta en minut och använd den nya PIN-koden på tv:n.",
+    saved: "Sparat",
+    test_message: "Aviseringar från Home Assistant visas här.",
+    cant_reach: "Kan inte nå tv:n.",
+  },
+};
+</script>
 <script>
 "use strict";
 const $ = (selector) => document.querySelector(selector);
+const strings = (() => {
+  for (const tag of navigator.languages || [navigator.language]) {
+    const language = String(tag).toLowerCase().split("-")[0];
+    if (language === "en") break;
+    if (TRANSLATIONS[language]) {
+      document.documentElement.lang = language;
+      return TRANSLATIONS[language];
+    }
+  }
+  return {};
+})();
+const t = (key, english) => strings[key] || english;
+document.querySelectorAll("[data-t]").forEach((element) => {
+  if (strings[element.dataset.t]) element.innerHTML = strings[element.dataset.t];
+});
+document.querySelectorAll("[data-t-placeholder]").forEach((element) => {
+  if (strings[element.dataset.tPlaceholder]) element.placeholder = strings[element.dataset.tPlaceholder];
+});
+document.title = t("page_title", document.title);
 let token = sessionStorage.getItem("pleatview-token");
 // The TV's QR codes carry its PIN, and for a sign-in the dashboard's name and the address the
 // password goes to, in the URL fragment, which never leaves the phone.
@@ -173,7 +898,7 @@ async function api(path, options = {}) {
     token = null;
     sessionStorage.removeItem("pleatview-token");
     showPairing();
-    throw new Error("The pairing expired. Enter the PIN again.");
+    throw new Error(t("pairing_expired", "The pairing expired. Enter the PIN again."));
   }
   if (!response.ok) throw new Error(body.error || response.statusText);
   return body;
@@ -220,9 +945,9 @@ $("#signin-form").addEventListener("submit", async (event) => {
     $("#signin-done").hidden = false;
   } catch (error) {
     const messages = {
-      invalid_pin: "This code has expired. Scan the code on the TV again.",
-      too_many_attempts: "Too many attempts. Wait a minute, then scan the code on the TV again.",
-      no_sign_in_pending: "The TV isn't asking for a sign-in any more.",
+      invalid_pin: t("signin_invalid_pin", "This code has expired. Scan the code on the TV again."),
+      too_many_attempts: t("signin_too_many", "Too many attempts. Wait a minute, then scan the code on the TV again."),
+      no_sign_in_pending: t("signin_not_pending", "The TV isn't asking for a sign-in any more."),
     };
     $("#signin-error").textContent = messages[error.message] || error.message;
   }
@@ -237,7 +962,7 @@ async function showSignIns() {
     const forget = document.createElement("button");
     forget.type = "button";
     forget.className = "secondary";
-    forget.textContent = "Forget";
+    forget.textContent = t("forget", "Forget");
     forget.addEventListener("click", async () => {
       try {
         await api("/api/signins", { method: "DELETE", body: JSON.stringify({ site: item.site }) });
@@ -260,7 +985,7 @@ $("#copy-pin").addEventListener("click", () => {
   field.select();
   const copied = document.execCommand("copy");
   field.remove();
-  $("#copy-pin").textContent = copied ? "Copied" : "Copy";
+  $("#copy-pin").textContent = copied ? t("copied", "Copied") : t("copy", "Copy");
 });
 
 $("#setup-here").addEventListener("click", (event) => {
@@ -295,7 +1020,8 @@ async function showSettings() {
   form.elements.launch_on_boot.checked = config.launch_on_boot;
   form.elements.dashboards.value = dashboardsToText(config.dashboards || []);
   form.elements.ha_token.value = "";
-  $("#token-state").textContent = config.ha_token_set ? "A token is stored on the TV." : "No token stored yet.";
+  $("#token-state").textContent = config.ha_token_set
+    ? t("token_stored", "A token is stored on the TV.") : t("token_none", "No token stored yet.");
   $("#managed").hidden = !config.rev;
   $("#pair").hidden = true;
   $("#start").hidden = true;
@@ -315,7 +1041,10 @@ $("#pair-form").addEventListener("submit", async (event) => {
     sessionStorage.setItem("pleatview-token", token);
     await showSettings();
   } catch (error) {
-    const messages = { invalid_pin: "That PIN doesn't match the one on the TV.", too_many_attempts: "Too many attempts. Wait a minute and use the new PIN on the TV." };
+    const messages = {
+      invalid_pin: t("pair_invalid_pin", "That PIN doesn't match the one on the TV."),
+      too_many_attempts: t("pair_too_many", "Too many attempts. Wait a minute and use the new PIN on the TV."),
+    };
     $("#pair-error").textContent = messages[error.message] || error.message;
   }
 });
@@ -342,7 +1071,7 @@ $("#config-form").addEventListener("submit", async (event) => {
   if (form.ha_token.value.trim()) update.ha_token = form.ha_token.value.trim();
   try {
     await api("/api/config", { method: "POST", body: JSON.stringify(update) });
-    $("#saved").textContent = "Saved";
+    $("#saved").textContent = t("saved", "Saved");
     await showSettings();
   } catch (error) {
     $("#config-error").textContent = error.message;
@@ -354,7 +1083,7 @@ document.querySelectorAll("[data-command]").forEach((button) => {
     $("#action-error").textContent = "";
     const command = button.dataset.command;
     const body = command === "notify"
-      ? { command, title: "PleatView", message: "Notifications from Home Assistant appear here." }
+      ? { command, title: "PleatView", message: t("test_message", "Notifications from Home Assistant appear here.") }
       : { command };
     try {
       await api("/api/command", { method: "POST", body: JSON.stringify(body) });
@@ -369,7 +1098,7 @@ document.querySelectorAll("[data-command]").forEach((button) => {
     const info = await api("/api/info");
     $("#device").textContent = info.name + " · PleatView " + info.app_version;
   } catch (error) {
-    $("#device").textContent = "Can't reach the TV.";
+    $("#device").textContent = t("cant_reach", "Can't reach the TV.");
   }
   if (signInTitle) return showSignIn();
   if (token) {

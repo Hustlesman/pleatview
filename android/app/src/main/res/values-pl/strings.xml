@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Phones, tablets and Chromebooks; values-pl-television has the TV wording. -->
+<resources>
+    <string name="setup_tagline">Panele i multimedia Home Assistant na tym ekranie</string>
+    <string name="setup_step_discover">W Home Assistant otwórz Ustawienia → Urządzenia oraz usługi. To urządzenie powinno się tam pojawić jako wykryte urządzenie PleatView. Jeśli go nie ma, dodaj integrację PleatView z tym adresem:</string>
+    <string name="setup_step_pin">Gdy Home Assistant poprosi o PIN, wpisz:</string>
+    <string name="setup_manual">Brak integracji? Zeskanuj kod lub otwórz %1$s na telefonie.</string>
+    <string name="setup_qr_caption">Zeskanuj telefonem, aby dodać to urządzenie do Home Assistant bez pisania</string>
+    <string name="setup_device">%1$s · v%2$s · Pomoc: pleatview.hustlesman.com</string>
+    <string name="setup_no_network">Brak połączenia z siecią</string>
+    <string name="menu_open">Menu</string>
+    <string name="menu_home">Panel startowy</string>
+    <string name="menu_reload">Odśwież</string>
+    <string name="menu_exit">Zamknij</string>
+    <string name="menu_support">Wesprzyj PleatView</string>
+    <string name="support_text">PleatView jest bezpłatny i każda funkcja pozostaje bezpłatna dla wszystkich. Jeśli ci się przydaje, możesz dorzucić się do urządzeń testowych i opłat w sklepach z aplikacjami: zeskanuj kod telefonem. Zgłoszenia błędów i pomysły pomagają tak samo.</string>
+    <string name="support_back">Wróć do menu</string>
+    <string name="menu_info">%1$s · %2$s · PIN %3$s · v%4$s</string>
+    <string name="menu_overlay_missing">Home Assistant nie może przywołać PleatView na pierwszy plan ani pokazywać powiadomień nad innymi aplikacjami, dopóki nie zezwolisz na wyświetlanie nad innymi aplikacjami. Jeśli otworzy się lista aplikacji, wybierz PleatView i włącz.</string>
+    <string name="menu_overlay_missing_notifications">Powiadomienia z Home Assistant pojawiają się nad innymi aplikacjami dopiero, gdy zezwolisz PleatView na wyświetlanie nad innymi aplikacjami. Jeśli otworzy się lista aplikacji, wybierz PleatView i włącz.</string>
+    <string name="signin_title">Zaloguj się do %1$s</string>
+    <string name="signin_body">Ten panel prosi o nazwę użytkownika i hasło. Wpisz je tutaj albo zeskanuj kod telefonem. PleatView przechowuje logowanie tylko na tym urządzeniu.</string>
+    <string name="signin_failed">Ta nazwa użytkownika lub hasło nie zadziałały. Spróbuj ponownie.</string>
+    <string name="signin_qr_caption">Zeskanuj, aby zalogować się telefonem</string>
+    <string name="signin_enter_here">Wpisz tutaj</string>
+    <string name="signin_not_now">Nie teraz</string>
+    <string name="signin_username">Nazwa użytkownika</string>
+    <string name="signin_password">Hasło</string>
+    <string name="signin_remember">Nie wylogowuj mnie na tym urządzeniu</string>
+    <string name="signin_submit">Zaloguj się</string>
+    <string name="menu_forget_signins">Zapomnij zapisane logowania (%1$d)</string>
+    <string name="signins_forgotten">Zapisane logowania zapomniane</string>
+    <string name="menu_allow_overlay">Zezwól na wyświetlanie nad innymi aplikacjami</string>
+    <string name="overlay_settings_missing">To urządzenie nie ma takiego ustawienia. Rozwiązanie w jednej linii znajdziesz na pleatview.hustlesman.com/support.</string>
+    <string name="status_unreachable">Brak połączenia z Home Assistant (%1$s). Ponowna próba za %2$d s…</string>
+    <string name="status_auth_failed">Home Assistant odrzucił token dostępu. Ustaw go ponownie w Home Assistant lub na stronie konfiguracji.</string>
+    <string name="status_no_webview">Android System WebView jest niedostępny. Zainstaluj go lub zaktualizuj w Sklepie Play.</string>
+    <string name="playback_failed">Odtwarzanie nie powiodło się: %1$s</string>
+    <string name="notification_channel">Połączenie z Home Assistant</string>
+    <string name="notification_text">Czeka na Home Assistant na porcie %1$d</string>
+</resources>
