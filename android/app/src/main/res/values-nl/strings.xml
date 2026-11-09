@@ -38,4 +38,20 @@
     <string name="playback_failed">Afspelen mislukt: %1$s</string>
     <string name="notification_channel">Verbinding met Home Assistant</string>
     <string name="notification_text">Wacht op Home Assistant op poort %1$d</string>
+    <string name="setup_demo">Probeer de demo</string>
+    <string name="demo_label">Demo</string>
+    <string name="demo_overview">Overzicht</string>
+    <string name="demo_energy">Energie</string>
+    <string name="demo_cameras">Camera\'s</string>
+    <string name="demo_intro">Een voorbeeldhuis. Met Home Assistant staan hier je eigen dashboards, en je automatiseringen kunnen er dingen bovenop tonen, zoals deze.</string>
+    <string name="demo_notify_caption">Een melding, bijvoorbeeld als de wasmachine klaar is.</string>
+    <string name="demo_notify_title">Wasmachine</string>
+    <string name="demo_notify_message">De was is klaar. Tijd om hem op te hangen.</string>
+    <string name="demo_camera_caption">Een camera in een hoek, bijvoorbeeld als er iemand aanbelt.</string>
+    <string name="demo_dashboard_caption">Even een ander dashboard: hier het energiedashboard, 15 seconden lang.</string>
+    <string name="demo_video_caption">Ook video\'s en muziek, zoals deze clip uit %1$s.</string>
+    <string name="demo_end">Dat was de rondleiding. Tik op de voorbeeldlampen en -sloten om ze te proberen. Voor andere dashboards, de rondleiding nog eens of om de demo te stoppen: tik op het scherm en dan op ⋮.</string>
+    <string name="menu_demo_info">Een voorbeeldhuis. Voeg dit apparaat met de pincode hierboven toe aan Home Assistant om je eigen dashboards te tonen.</string>
+    <string name="menu_demo_end">Demo stoppen</string>
+    <string name="menu_demo_tour">Rondleiding opnieuw bekijken</string>
 </resources>

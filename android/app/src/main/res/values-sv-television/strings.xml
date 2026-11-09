@@ -8,4 +8,6 @@
     <string name="signin_enter_here">Ange på tv:n</string>
     <string name="signin_remember">Håll mig inloggad på den här tv:n</string>
     <string name="overlay_settings_missing">Den här tv:n har ingen inställning för det. Se pleatview.hustlesman.com/support för lösningen på en rad.</string>
+    <string name="demo_end">Det var rundturen. Prova exempellamporna och låsen med pilarna och OK. Tryck på Tillbaka för menyn: andra paneler, rundturen igen eller ”Avsluta demon”.</string>
+    <string name="menu_demo_info">Ett exempelhem. Lägg till den här tv:n i Home Assistant med PIN-koden ovan för att visa dina egna paneler.</string>
 </resources>

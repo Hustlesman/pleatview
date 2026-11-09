@@ -8,4 +8,6 @@
     <string name="signin_enter_here">Invoeren op de tv</string>
     <string name="signin_remember">Ingelogd blijven op deze tv</string>
     <string name="overlay_settings_missing">Deze tv heeft daar geen instelling voor. Zie pleatview.hustlesman.com/support voor de oplossing van één regel.</string>
+    <string name="demo_end">Dat was de rondleiding. Probeer de voorbeeldlampen en -sloten met de pijltjes en OK. Druk op Terug voor het menu: andere dashboards, de rondleiding nog eens of ‘Demo stoppen’.</string>
+    <string name="menu_demo_info">Een voorbeeldhuis. Voeg deze tv met de pincode hierboven toe aan Home Assistant om je eigen dashboards te tonen.</string>
 </resources>

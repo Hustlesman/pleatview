@@ -20,6 +20,7 @@ import android.view.WindowManager
 import android.widget.Button
 import android.widget.CheckBox
 import android.widget.EditText
+import android.widget.FrameLayout
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
@@ -29,7 +30,7 @@ import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 
-class MainActivity : Activity(), Hub.Display, DashboardController.Callbacks, MediaController.Callbacks {
+class MainActivity : Activity(), Hub.Display, DashboardController.Callbacks, MediaController.Callbacks, DemoTour.Stage {
     private lateinit var app: PleatApp
     private lateinit var dashboard: DashboardController
     private lateinit var media: MediaController
@@ -42,6 +43,8 @@ class MainActivity : Activity(), Hub.Display, DashboardController.Callbacks, Med
     private lateinit var curtain: View
     private lateinit var signInCard: View
     private lateinit var touchMenu: View
+    private lateinit var caption: View
+    private lateinit var captionText: TextView
 
     private val main = Handler(Looper.getMainLooper())
     private var visible = false
@@ -52,13 +55,19 @@ class MainActivity : Activity(), Hub.Display, DashboardController.Callbacks, Med
     /** True after remote-control navigation; the idle timer then returns to the home dashboard. */
     private var userBrowsing = false
 
-    private val config: Config get() = app.settings.config
+    /** The demo, while it runs instead of Home Assistant's dashboards. */
+    private var demo: DemoTour? = null
+
+    private val config: Config get() = demo?.config ?: app.settings.config
     private val menuVisible: Boolean get() = menuOverlay.visibility == View.VISIBLE
     private val signInVisible: Boolean get() = signInCard.visibility == View.VISIBLE
 
     private val revertRunnable = Runnable { dashboard.navigate(config.homePath) }
     private val hideTouchMenu = Runnable {
         touchMenu.animate().alpha(0f).withEndAction { touchMenu.visibility = View.GONE }
+    }
+    private val hideCaption = Runnable {
+        caption.animate().alpha(0f).withEndAction { caption.visibility = View.GONE }
     }
     private val setupRefresh = object : Runnable {
         override fun run() {
@@ -120,6 +129,9 @@ class MainActivity : Activity(), Hub.Display, DashboardController.Callbacks, Med
             hideTouchMenu.run()
             openMenu()
         }
+        caption = findViewById(R.id.demo_caption)
+        captionText = findViewById(R.id.demo_caption_text)
+        findViewById<Button>(R.id.setup_demo).setOnClickListener { startDemo() }
         fitLayouts()
 
         if (Build.VERSION.SDK_INT >= 33) {
@@ -153,10 +165,12 @@ class MainActivity : Activity(), Hub.Display, DashboardController.Callbacks, Med
         }
         app.hub.uiShown()
         drainPending()
+        demo?.takeIf { !it.finished }?.start() // the tour starts again after another app
     }
 
     override fun onStop() {
         visible = false
+        demo?.stop()
         media.stop()
         webOverlay.close()
         closeMenu()
@@ -169,6 +183,7 @@ class MainActivity : Activity(), Hub.Display, DashboardController.Callbacks, Med
 
     override fun onDestroy() {
         if (app.hub.display === this) app.hub.display = null
+        demo?.stop() // its steps run on their own handler
         main.removeCallbacksAndMessages(null)
         media.release()
         webOverlay.close()
@@ -223,6 +238,23 @@ class MainActivity : Activity(), Hub.Display, DashboardController.Callbacks, Med
     }
 
     override fun onConfigChanged(old: Config, new: Config) = applyConfig(old, new)
+
+    override fun caption(text: String?, seconds: Int, top: Boolean) {
+        main.removeCallbacks(hideCaption)
+        caption.animate().cancel()
+        if (text == null) {
+            caption.visibility = View.GONE
+            return
+        }
+        captionText.text = text
+        caption.layoutParams = (caption.layoutParams as FrameLayout.LayoutParams).apply {
+            gravity = (if (top) Gravity.TOP else Gravity.BOTTOM) or Gravity.START
+        }
+        caption.alpha = 0f
+        caption.visibility = View.VISIBLE
+        caption.animate().alpha(1f).setDuration(200)
+        main.postDelayed(hideCaption, seconds * 1000L)
+    }
 
     override fun beforeShow() = applyLockScreen()
 
@@ -323,7 +355,10 @@ class MainActivity : Activity(), Hub.Display, DashboardController.Callbacks, Med
         username.requestFocus()
     }
 
-    override fun onMediaClosed() = onLayerClosed()
+    override fun onMediaClosed() {
+        demo?.mediaClosed()
+        onLayerClosed()
+    }
 
     override fun onMediaError(message: String) {
         toasts.show(Command.Notify(null, getString(R.string.playback_failed, message), null, 8, Command.Position.TOP_RIGHT))
@@ -336,6 +371,10 @@ class MainActivity : Activity(), Hub.Display, DashboardController.Callbacks, Med
     // ---- Configuration ----------------------------------------------------------------
 
     private fun applyConfig(old: Config?, new: Config) {
+        if (demo != null) {
+            if (!new.isConfigured) return // the demo carries on until Home Assistant takes over
+            endDemo()
+        }
         showSetup(!new.isConfigured)
         if (new.isConfigured) {
             if (!started || old == null) {
@@ -358,7 +397,10 @@ class MainActivity : Activity(), Hub.Display, DashboardController.Callbacks, Med
     private fun showSetup(show: Boolean) {
         setupScreen.visibility = if (show) View.VISIBLE else View.GONE
         main.removeCallbacks(setupRefresh)
-        if (show) main.post(setupRefresh)
+        if (show) {
+            main.post(setupRefresh)
+            findViewById<View>(R.id.setup_demo).requestFocus() // a TV remote's OK starts the demo
+        }
         app.hub.update { view = if (show) StateModel.VIEW_SETUP else StateModel.VIEW_DASHBOARD }
     }
 
@@ -385,6 +427,35 @@ class MainActivity : Activity(), Hub.Display, DashboardController.Callbacks, Med
             getString(R.string.setup_manual, if (ip != null) "http://$ip:$port" else "http://<address>:$port")
         findViewById<TextView>(R.id.setup_device).text =
             getString(R.string.setup_device, app.settings.deviceName, BuildConfig.VERSION_NAME)
+    }
+
+    // ---- Demo ---------------------------------------------------------------------------
+
+    private fun startDemo() {
+        if (demo != null || app.settings.config.isConfigured) return
+        val tour = DemoTour(this, this)
+        demo = tour
+        showSetup(false)
+        dashboard.start(tour.config)
+        started = true
+        applyKeepScreenOn()
+        restartRotation()
+        tour.start()
+    }
+
+    /** Ends the demo; [applyConfig] then shows the setup screen, or Home Assistant's dashboards. */
+    private fun endDemo() {
+        val tour = demo ?: return
+        demo = null
+        tour.stop()
+        main.removeCallbacks(revertRunnable)
+        closeMenu()
+        media.stop()
+        webOverlay.close()
+        toasts.clear()
+        dashboard.destroy()
+        started = false
+        userBrowsing = false
     }
 
     private fun applyKeepScreenOn() {
@@ -591,6 +662,7 @@ class MainActivity : Activity(), Hub.Display, DashboardController.Callbacks, Med
     // ---- Menu -------------------------------------------------------------------------
 
     private fun openMenu() {
+        demo?.cancel() // the tour's next steps would close the menu
         menuItems.removeAllViews()
         val ip = NetUtil.localIpv4() ?: "?"
         val info = getString(
@@ -598,15 +670,31 @@ class MainActivity : Activity(), Hub.Display, DashboardController.Callbacks, Med
             formatPin(app.pairing.pin), BuildConfig.VERSION_NAME,
         )
         menuItems.addView(menuText(info, 15f))
+        if (demo != null) menuItems.addView(menuText(getString(R.string.menu_demo_info), 13f))
         if (config.isConfigured) menuItems.addView(menuText(config.haUrl, 13f))
-        if (!app.hub.canDrawOverlays()) {
+        if (demo == null && !app.hub.canDrawOverlays()) {
             val missing = if (app.hub.canOpenFromBackground()) R.string.menu_overlay_missing_notifications else R.string.menu_overlay_missing
             menuItems.addView(menuText(getString(missing), 13f))
             addMenuButton(getString(R.string.menu_allow_overlay)) { requestOverlayPermission() }
         }
 
         var first: Button? = null
-        if (config.isConfigured) {
+        if (demo != null) {
+            first = addMenuButton(getString(R.string.menu_demo_end)) {
+                endDemo()
+                applyConfig(null, config)
+            }
+            config.dashboards.forEach { d ->
+                addMenuButton(d.title) {
+                    userBrowsing = true
+                    dashboard.navigate(d.path)
+                }
+            }
+            addMenuButton(getString(R.string.menu_demo_tour)) {
+                endDemo()
+                startDemo()
+            }
+        } else if (config.isConfigured) {
             first = addMenuButton(getString(R.string.menu_home)) { goHome() }
             config.dashboards.forEach { d ->
                 addMenuButton(d.title) {

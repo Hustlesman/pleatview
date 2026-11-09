@@ -8,4 +8,6 @@
     <string name="signin_enter_here">Am Fernseher eingeben</string>
     <string name="signin_remember">Auf diesem Fernseher angemeldet bleiben</string>
     <string name="overlay_settings_missing">Dieser Fernseher hat dafür keine Einstellung. Unter pleatview.hustlesman.com/support steht die Lösung in einer Zeile.</string>
+    <string name="demo_end">Das war die Tour. Probiere die Beispiel-Lampen und -Schlösser mit den Pfeiltasten und OK aus. Mit Zurück öffnest du das Menü: andere Dashboards, die Tour noch einmal oder „Demo beenden“.</string>
+    <string name="menu_demo_info">Ein Beispielzuhause. Um deine eigenen Dashboards zu zeigen, füge diesen Fernseher mit der PIN oben zu Home Assistant hinzu.</string>
 </resources>

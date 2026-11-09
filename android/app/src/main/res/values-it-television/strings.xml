@@ -8,4 +8,6 @@
     <string name="signin_enter_here">Inserisci sulla TV</string>
     <string name="signin_remember">Resta connesso su questa TV</string>
     <string name="overlay_settings_missing">Questa TV non ha un\'impostazione per questo. Vedi pleatview.hustlesman.com/support per la soluzione in una riga.</string>
+    <string name="demo_end">Il tour è finito. Prova le luci e le serrature di esempio con le frecce e OK. Premi Indietro per il menu: altre plance, rivedere il tour o «Chiudi la demo».</string>
+    <string name="menu_demo_info">Una casa di esempio. Per mostrare le tue plance, aggiungi questo televisore a Home Assistant con il PIN qui sopra.</string>
 </resources>

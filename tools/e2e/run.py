@@ -464,7 +464,8 @@ def view_bounds(view_id: str) -> tuple[int, int, int, int] | None:
     relative to the view's parent, which for the views asked about fills the screen.
     """
     dump = adb("shell", "dumpsys", "activity", f"{PACKAGE}/.MainActivity", check=False)
-    match = re.search(r"\{\w+ V\S* \S+ (-?\d+),(-?\d+)-(-?\d+),(-?\d+) #\w+ app:id/" + view_id + r"\}", dump)
+    # Focusable views add their accessibility id: "… app:id/setup_demo aid=1073741824}".
+    match = re.search(r"\{\w+ V\S* \S+ (-?\d+),(-?\d+)-(-?\d+),(-?\d+) #\w+ app:id/" + view_id + r"(?: [^}]*)?\}", dump)
     return tuple(int(n) for n in match.groups()) if match else None
 
 
@@ -698,6 +699,44 @@ def checks(r: Run, report: Report, apk: Path) -> None:
         if status != 200 or 'id="start"' not in page:
             raise AssertionError(f"the phone page doesn't offer adding the TV ({status})")
         return f"PIN and QR code shown ({code.split('#')[0]})"
+
+    def demo():
+        # For people without Home Assistant, and app reviewers: a sample home and a tour of
+        # what Home Assistant can send, which ends back at the setup screen.
+        pid = adb("shell", "pidof", PACKAGE).strip()
+        touch = r.args.form_factor != "tv"
+        wait_for("the demo button", lambda: view_bounds("setup_demo"), timeout=15)
+
+        def press(label: str) -> None:
+            # On a TV the button is already focused; touch screens tap it.
+            if touch:
+                x, y = wait_for(f"the {label} button", lambda: text_center(label, screen_texts()), timeout=30)
+                adb("shell", "input", "tap", str(x), str(y))
+            else:
+                adb("shell", "input", "keyevent", "KEYCODE_DPAD_CENTER")
+
+        press("Try the demo")
+        # The sample pages' clocks tick every second, so UI dumps rarely settle while the
+        # dashboard shows: these waits look at PleatView's own views instead.
+        wait_for("the demo's first caption", lambda: view_bounds("demo_caption"), timeout=40, interval=1)
+        report.screenshot("01-demo")
+        wait_for("the demo's notification", lambda: view_bounds("toast_card"), timeout=30, interval=1)
+        wait_for("the demo's door camera", lambda: view_bounds("web_overlay_container"), timeout=30, interval=1)
+        time.sleep(2)  # the camera's page draws a moment after its corner appears
+        report.screenshot("01-demo-camera")
+        # Back closes the camera first, as it would one from Home Assistant; then it opens the menu.
+        adb("shell", "input", "keyevent", "KEYCODE_BACK")
+        wait_for("Back to close the door camera", lambda: not view_bounds("web_overlay_container"), timeout=10, interval=1)
+        adb("shell", "input", "keyevent", "KEYCODE_BACK")
+        # The overlay, not the panel: a view in a hidden layer still calls itself visible.
+        wait_for("the demo's menu", lambda: view_bounds("menu_overlay"), timeout=15, interval=1)
+        press("End the demo")
+        pin = wait_for("the setup screen again", read_pin, timeout=30)
+        if adb("shell", "pidof", PACKAGE).strip() != pid:
+            raise AssertionError("PleatView restarted during the demo")
+        if pin != entity["pin"]:
+            raise AssertionError(f"the PIN changed from {entity['pin']} to {pin}")
+        return "sample home, notification and door camera; End the demo went back to the setup screen"
 
     def pairing():
         # A TV that was set up before (a real one keeps its ID across reinstalls) would abort
@@ -1401,6 +1440,7 @@ def checks(r: Run, report: Report, apk: Path) -> None:
 
     report.check("Setup screen shows a PIN", setup_screen)
     if "pin" in entity:
+        report.check("The demo shows a sample home and a tour, then ends", demo)
         report.check("Wrong PIN rejected, right PIN finishes setup", pairing)
     for name, fn in [
         ("Dashboard signs in automatically", signed_in),

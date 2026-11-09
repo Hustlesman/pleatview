@@ -38,4 +38,20 @@
     <string name="playback_failed">Falha na reprodução: %1$s</string>
     <string name="notification_channel">Conexão com o Home Assistant</string>
     <string name="notification_text">Aguardando o Home Assistant na porta %1$d</string>
+    <string name="setup_demo">Experimentar a demo</string>
+    <string name="demo_label">Demo</string>
+    <string name="demo_overview">Visão geral</string>
+    <string name="demo_energy">Energia</string>
+    <string name="demo_cameras">Câmeras</string>
+    <string name="demo_intro">Uma casa de exemplo. Com o Home Assistant, seus próprios dashboards aparecem aqui, e suas automações podem mostrar coisas sobre eles, como estas.</string>
+    <string name="demo_notify_caption">Uma notificação, por exemplo quando a máquina de lavar termina.</string>
+    <string name="demo_notify_title">Máquina de lavar</string>
+    <string name="demo_notify_message">A lavagem terminou. Hora de estender a roupa.</string>
+    <string name="demo_camera_caption">Uma câmera num canto, por exemplo quando alguém toca a campainha.</string>
+    <string name="demo_dashboard_caption">Outro dashboard por um tempo: aqui o de energia, por 15 segundos.</string>
+    <string name="demo_video_caption">Vídeos e música também, como este trecho de %1$s.</string>
+    <string name="demo_end">Fim do tour. Toque nas luzes e fechaduras de exemplo para testá-las. Para outros dashboards, ver o tour de novo ou sair da demo, toque na tela e depois em ⋮.</string>
+    <string name="menu_demo_info">Uma casa de exemplo. Para mostrar seus próprios dashboards, adicione este dispositivo ao Home Assistant com o PIN acima.</string>
+    <string name="menu_demo_end">Sair da demo</string>
+    <string name="menu_demo_tour">Ver o tour de novo</string>
 </resources>

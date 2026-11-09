@@ -38,4 +38,20 @@
     <string name="playback_failed">Afspilningen mislykkedes: %1$s</string>
     <string name="notification_channel">Forbindelse til Home Assistant</string>
     <string name="notification_text">Venter på Home Assistant på port %1$d</string>
+    <string name="setup_demo">Prøv demoen</string>
+    <string name="demo_label">Demo</string>
+    <string name="demo_overview">Oversigt</string>
+    <string name="demo_energy">Energi</string>
+    <string name="demo_cameras">Kameraer</string>
+    <string name="demo_intro">Et eksempelhjem. Med Home Assistant vises dine egne betjeningspaneler her, og dine automatiseringer kan vise ting oven på dem, som disse.</string>
+    <string name="demo_notify_caption">En notifikation, for eksempel når vaskemaskinen er færdig.</string>
+    <string name="demo_notify_title">Vaskemaskine</string>
+    <string name="demo_notify_message">Vasken er færdig. Tid til at hænge den op.</string>
+    <string name="demo_camera_caption">Et kamera i et hjørne, for eksempel når nogen ringer på døren.</string>
+    <string name="demo_dashboard_caption">Et andet betjeningspanel et stykke tid: her energipanelet, i 15 sekunder.</string>
+    <string name="demo_video_caption">Også video og musik, som dette klip fra %1$s.</string>
+    <string name="demo_end">Det var rundturen. Tryk på eksempellamperne og -låsene for at prøve dem. For andre betjeningspaneler, rundturen igen eller for at afslutte demoen: tryk på skærmen og derefter på ⋮.</string>
+    <string name="menu_demo_info">Et eksempelhjem. Tilføj denne enhed til Home Assistant med pinkoden ovenfor for at vise dine egne betjeningspaneler.</string>
+    <string name="menu_demo_end">Afslut demoen</string>
+    <string name="menu_demo_tour">Se rundturen igen</string>
 </resources>

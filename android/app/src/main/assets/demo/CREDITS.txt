@@ -1,0 +1,16 @@
+The demo's sample home. Everything in it is made up.
+
+Photos, all CC0 (public domain dedication) from Wikimedia Commons, cropped, with house
+numbers blurred:
+  front-door.webp   137 Marshall Avenue, Perry Hilltop, 2025-04-26, porch and front door.jpg
+                    https://commons.wikimedia.org/wiki/File:137_Marshall_Avenue,_Perry_Hilltop,_2025-04-26,_porch_and_front_door.jpg
+  driveway.webp     View of driveway and house and tree in hill near San Jose California.JPG
+                    https://commons.wikimedia.org/wiki/File:View_of_driveway_and_house_and_tree_in_hill_near_San_Jose_California.JPG
+  garden.webp       Backyard wild flowers (Unsplash).jpg
+                    https://commons.wikimedia.org/wiki/File:Backyard_wild_flowers_(Unsplash).jpg
+  living-room.webp  Living room (Unsplash).jpg
+                    https://commons.wikimedia.org/wiki/File:Living_room_(Unsplash).jpg
+
+Video: clip.mp4 is 12 seconds of "Caminandes: Gran Dillama", (c) 2013 Blender Foundation,
+caminandes.com, licensed CC BY 3.0 (https://creativecommons.org/licenses/by/3.0/),
+re-encoded at 960 x 540. The tour's caption names it while it plays.

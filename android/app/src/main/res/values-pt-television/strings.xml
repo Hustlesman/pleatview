@@ -8,4 +8,6 @@
     <string name="signin_enter_here">Digitar na TV</string>
     <string name="signin_remember">Manter conectado nesta TV</string>
     <string name="overlay_settings_missing">Esta TV não tem essa configuração. Veja pleatview.hustlesman.com/support para a solução de uma linha.</string>
+    <string name="demo_end">Fim do tour. Experimente as luzes e fechaduras de exemplo com as setas e OK. Pressione Voltar para o menu: outros dashboards, o tour de novo ou “Sair da demo”.</string>
+    <string name="menu_demo_info">Uma casa de exemplo. Para mostrar seus próprios dashboards, adicione esta TV ao Home Assistant com o PIN acima.</string>
 </resources>

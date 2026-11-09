@@ -29,6 +29,9 @@ Raspberry Pi ([PleatView for Linux](linux/README.md)). Made by Hustlesman.
   phone, and the TV keeps the sign-in, encrypted, on the TV only.
 - **Small.** The release APK is about 1.2 MB, with no Google Play services and no
   cloud. Everything stays on your LAN.
+- **A demo, no server needed.** *Try the demo* on the setup screen shows a sample home and
+  a 90-second tour of what Home Assistant can show on top of it: a notification, a doorbell
+  camera in a corner, another dashboard for a while and a video. It's built into the app.
 - **In your language.** The TV app, its phone page and the integration's settings are in
   English, German, Dutch, French, Italian, Spanish, Polish, Swedish, Portuguese, Czech and
   Danish. If you're a native speaker and something reads oddly, please open an issue.
@@ -417,4 +420,6 @@ menu; the store versions leave it out.
 
 [MIT](LICENSE). PleatView is not affiliated with Home Assistant, Nabu Casa, Google,
 Amazon, Raspberry Pi, Canonical, LG or Samsung; their names are used only to describe
-compatibility.
+compatibility. The demo's video clip is *Caminandes: Gran Dillama*, © 2013 Blender
+Foundation, [CC BY 3.0](https://creativecommons.org/licenses/by/3.0/); its photos are CC0
+([credits](android/app/src/main/assets/demo/CREDITS.txt)).

@@ -8,4 +8,6 @@
     <string name="signin_enter_here">Zadat na televizi</string>
     <string name="signin_remember">Zůstat přihlášen v této televizi</string>
     <string name="overlay_settings_missing">Tato televize takové nastavení nemá. Řešení na jeden řádek najdete na pleatview.hustlesman.com/support.</string>
+    <string name="demo_end">To je konec prohlídky. Vyzkoušejte ukázková světla a zámky šipkami a tlačítkem OK. Stisknutím Zpět otevřete nabídku: další panely, prohlídka znovu nebo „Ukončit demo“.</string>
+    <string name="menu_demo_info">Ukázková domácnost. Chcete-li zobrazit vlastní panely, přidejte tuto televizi do Home Assistant pomocí PIN výše.</string>
 </resources>
