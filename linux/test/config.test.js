@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { Config, normalizeBaseUrl, originOf, pathOf } from "../src/config.js";
+import { Config, isFrontendPath, normalizeBaseUrl, originOf, pathOf } from "../src/config.js";
 
 test("merge applies a partial update and keeps Home Assistant's revision only when it sends one", () => {
   const c = new Config().merge({ ha_url: "http://HA.local:8123/lovelace/0", zoom: "80", rev: "abc" });
@@ -43,4 +43,13 @@ test("URL helpers", () => {
   assert.equal(originOf("ftp://x"), null);
   assert.equal(pathOf("http://ha:8123/lovelace/0?edit=1#a"), "/lovelace/0?edit=1#a");
   assert.equal(normalizeBaseUrl(" https://ha.example.com/ "), "https://ha.example.com");
+});
+
+test("files Home Assistant serves itself aren't frontend pages", () => {
+  assert.equal(isFrontendPath("/lovelace/0"), true);
+  assert.equal(isFrontendPath("/dashboard-streams/live?kiosk"), true);
+  assert.equal(isFrontendPath("/media-browser"), true);
+  assert.equal(isFrontendPath("/local/streams.html?v=a,b"), false);
+  assert.equal(isFrontendPath("/hacsfiles/card/card.js"), false);
+  assert.equal(isFrontendPath("/api/camera_proxy_stream/camera.door"), false);
 });

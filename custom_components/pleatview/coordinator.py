@@ -14,6 +14,7 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.network import NoURLAvailableError, get_url
+from yarl import URL
 
 from .api import (
     InvalidAuth,
@@ -43,6 +44,17 @@ _LOGGER = logging.getLogger(__name__)
 
 RECONNECT_MIN = 1
 RECONNECT_MAX = 30
+# Older apps switch to any Home Assistant path inside the frontend, which shows the
+# default dashboard for a page such as /local/streams.html.
+APP_OPENS_LOCAL_PAGES = (1, 0, 12)
+
+
+def app_version(value: str | None) -> tuple[int, ...]:
+    """1.0.12 as (1, 0, 12), ignoring a suffix such as -debug; (0,) if unreadable."""
+    try:
+        return tuple(int(part) for part in (value or "").split("-")[0].split("."))
+    except ValueError:
+        return (0,)
 
 type PleatViewConfigEntry = ConfigEntry[PleatViewDevice]
 
@@ -91,9 +103,28 @@ class PleatViewDevice:
 
         return remove
 
+    @property
+    def ha_url(self) -> str:
+        """The address the TV uses for Home Assistant."""
+        return self.entry.options.get(CONF_HA_URL) or default_ha_url(self.hass)
+
     def target(self, path: str) -> str:
         """What the TV loads for a dashboard path: the site itself for Webpage dashboards."""
-        return self.webpages.get(path.rstrip("/"), path)
+        url = self.webpages.get(path.rstrip("/"), path)
+        if url != path and self._on_home_assistant(url):
+            version = self.state.get("app_version") or self.info.get("app_version")
+            if app_version(version) < APP_OPENS_LOCAL_PAGES:
+                return path  # in Home Assistant's frame, which every version shows correctly
+        return url
+
+    def _on_home_assistant(self, url: str) -> bool:
+        """Whether a Webpage dashboard shows a page Home Assistant serves, such as /local/x.html."""
+        if url.startswith("/"):
+            return True
+        try:
+            return URL(url).origin() == URL(self.ha_url).origin()
+        except ValueError:
+            return False
 
     async def async_refresh_dashboards(self) -> bool:
         """Re-read Home Assistant's dashboards; returns whether the list changed."""
@@ -140,7 +171,7 @@ class PleatViewDevice:
         """Configuration Home Assistant manages on the TV, tagged with a revision."""
         options = {**DEFAULT_OPTIONS, **self.entry.options}
         config: dict[str, Any] = {
-            "ha_url": options.get(CONF_HA_URL) or default_ha_url(self.hass),
+            "ha_url": self.ha_url,
             "home_dashboard": self.target(options.get(CONF_HOME_DASHBOARD) or ""),
             "dashboards": self.dashboards,
             "kiosk": options[CONF_KIOSK],
@@ -190,6 +221,7 @@ class PleatViewDevice:
     @callback
     def _handle_state(self, state: dict[str, Any]) -> None:
         first = not self._received
+        updated = state.get("app_version") != self.state.get("app_version")
         self._received = True
         self.state = state
         self.available = True
@@ -198,7 +230,16 @@ class PleatViewDevice:
             self.entry.async_create_background_task(
                 self.hass, self._async_resync(), "pleatview config sync"
             )
+        if updated:
+            # A newer app may open Webpage dashboards it couldn't before (see target()).
+            self.entry.async_create_background_task(
+                self.hass, self._async_app_updated(), "pleatview dashboards"
+            )
         self._notify()
+
+    async def _async_app_updated(self) -> None:
+        if await self.async_refresh_dashboards():
+            await self._async_resync()
 
     async def _async_resync(self) -> None:
         try:
@@ -288,7 +329,8 @@ async def async_webpages(hass: HomeAssistant) -> dict[str, str]:
     """Map the paths of Home Assistant's Webpage dashboards to the sites they show.
 
     Home Assistant shows those sites in a frame, which many sites refuse or where they
-    lose their sign-in cookie. The TV opens the site itself instead.
+    lose their sign-in cookie. The TV opens the site itself instead, and also a page of
+    Home Assistant's own, such as /local/streams.html, without the frontend underneath.
     """
     data = hass.data.get("lovelace")
     # A dict in older Home Assistant versions (2025.1), a dataclass in newer ones.
@@ -303,6 +345,9 @@ async def async_webpages(hass: HomeAssistant) -> dict[str, str]:
             continue  # a new dashboard without a configuration yet
         strategy = config.get("strategy") if isinstance(config, dict) else None
         url = strategy.get("url") if isinstance(strategy, dict) and strategy.get("type") == "iframe" else None
-        if isinstance(url, str) and url.strip().startswith(("http://", "https://")):
-            webpages[f"/{url_path}"] = url.strip()
+        if not isinstance(url, str):
+            continue
+        url = url.strip()
+        if url.startswith(("http://", "https://")) or (url.startswith("/") and not url.startswith("//")):
+            webpages[f"/{url_path}"] = url
     return webpages

@@ -32,6 +32,12 @@ export function originOf(url) {
   }
 }
 
+/** Home Assistant serves these itself, outside its frontend: files in www, HACS, the API. */
+const SERVED_PATHS = ["/local/", "/hacsfiles/", "/api/", "/auth/", "/static/", "/media/"];
+
+/** A page of Home Assistant's frontend, which it can switch to without a page load. */
+export const isFrontendPath = (path) => !SERVED_PATHS.some((prefix) => path.startsWith(prefix));
+
 /** Path, query and fragment of a URL, e.g. `/lovelace/0?edit=1`. */
 export function pathOf(url) {
   try {

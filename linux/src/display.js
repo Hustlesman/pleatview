@@ -6,7 +6,7 @@ import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { needsDisplay } from "./command.js";
-import { pathOf } from "./config.js";
+import { isFrontendPath, pathOf } from "./config.js";
 import { displayPower } from "./power.js";
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -430,11 +430,14 @@ export class Display {
     this.navigate(config.resolve(config.homePath));
   }
 
-  /** Within Home Assistant, the frontend switches dashboards itself, without reloading. */
+  /**
+   * Within Home Assistant, the frontend switches dashboards itself, without reloading. A file
+   * such as /local/streams.html isn't a frontend route: it gets a real page load.
+   */
   navigate(url) {
     const config = this.config();
     const wc = this.dashboard.webContents;
-    if (config.isHaUrl(url) && config.isHaUrl(wc.getURL()) && !wc.isLoading()) {
+    if (config.isHaUrl(url) && config.isHaUrl(wc.getURL()) && !wc.isLoading() && isFrontendPath(pathOf(url))) {
       const js = `window.__pleatview?(window.__pleatview.navigate(${JSON.stringify(pathOf(url))}),true):false`;
       wc.executeJavaScript(js).then((done) => done || wc.loadURL(url), () => wc.loadURL(url));
     } else {
