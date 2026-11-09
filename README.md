@@ -386,10 +386,8 @@ without the key) and checksums. Keep the key safe: Android only updates an insta
 signed with the same key. For a signed local build, set `PLEATVIEW_KEYSTORE` (a path anywhere on
 disk), `PLEATVIEW_KEYSTORE_PASSWORD`, `PLEATVIEW_KEY_ALIAS` and `PLEATVIEW_KEY_PASSWORD`
 before running `tools/build-apk.sh assembleRelease`. Without them, release builds fall
-back to the local debug key. App bundles are for the stores, so they need
-`-Ppleatview.distribution=store`, which leaves *Support PleatView* out of the menu and lists
-the app for TVs only:
-`tools/build-apk.sh bundleRelease -Ppleatview.distribution=store`.
+back to the local debug key. The app bundle for Google Play is
+`tools/build-apk.sh bundleRelease`.
 
 ## Limitations
 
@@ -416,8 +414,7 @@ privately as described in [SECURITY.md](SECURITY.md).
 PleatView is free and open source, and every feature stays free for everyone. If it's
 useful to you, you can [chip in](https://donate.stripe.com/cNifZg4Wudug46O4X38Ra00) towards test devices and app-store fees
 (payments go through Stripe and appear as Hustlesman). Bug reports and ideas help just as
-much. The TV app from GitHub has the same link as a QR code under *Support PleatView* in its
-menu; the store versions leave it out.
+much. The app has the same link as a QR code under *Support PleatView* in its menu.
 
 ## License
 

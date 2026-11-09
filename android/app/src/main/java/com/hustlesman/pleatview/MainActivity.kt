@@ -712,7 +712,7 @@ class MainActivity : Activity(), Hub.Display, DashboardController.Callbacks, Med
                 toasts.show(Command.Notify(null, getString(R.string.signins_forgotten), null, 6, Command.Position.TOP_RIGHT))
             }
         }
-        if (Support.offered(BuildConfig.DONATE_URL, Support.installer(this))) {
+        if (BuildConfig.DONATE_URL.isNotEmpty()) {
             addMenuButton(getString(R.string.menu_support)) { showSupport() }
         }
         val exit = addMenuButton(getString(R.string.menu_exit)) { finish() }

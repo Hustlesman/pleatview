@@ -40,7 +40,7 @@ checklist below and tick what passed. Anything that fails gets its own issue.
 - [ ] Rotation cycles dashboards while nobody uses the remote, and pauses while someone does
 - [ ] Back closes Home Assistant dialogs, then goes to the home dashboard, then opens the menu
 - [ ] The menu shows address, PIN and version, and its dashboard buttons work
-- [ ] The GitHub download's menu has *Support PleatView*, whose QR code opens the donation page; a store build has no such item **(auto: GitHub build)**
+- [ ] The menu has *Support PleatView*, whose QR code opens the donation page, in the GitHub download and the store versions alike **(auto)**
 - [ ] Phones, tablets and Chromebooks: a touch shows the menu button for a few seconds, and it opens the menu, which fits the screen **(auto: phone and tablet emulators)**; a tap wakes the screen from standby; the setup screen and the sign-in card fit in portrait, with the QR code under the text
 - [ ] Phones and tablets get battery and charging sensors that follow plugging in and out; TVs get none **(auto: present or absent)**
 - [ ] Phones and tablets with a PIN: a cast doesn't wake the screen or show the dashboard over the lock screen; without a lock it wakes and shows it **(auto)**
