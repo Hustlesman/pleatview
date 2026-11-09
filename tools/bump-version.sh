@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
-# Sets the version for the next release in the Android app, the integration and the Linux app, and
-# increments the app's versionCode (which Google Play requires to grow every upload).
+# Sets the version for the next release in the Android app, the integration, the Linux app and the
+# renderer add-on, and increments the app's versionCode (which Google Play requires to grow every
+# upload).
 #
 #   tools/bump-version.sh 0.2.0
 set -euo pipefail
@@ -32,5 +33,8 @@ update(f"{root}/linux/package.json", lambda p: p.update(version=version))
 update(f"{root}/linux/package-lock.json",
        lambda lock: (lock.update(version=version), lock["packages"][""].update(version=version)))
 PY
+
+sed -i -E "s/^version: \"[^\"]+\"/version: \"$version\"/" "$root/renderer/config.yaml"
+sed -i -E "s/^VERSION = \"[^\"]+\"/VERSION = \"$version\"/" "$root/renderer/pleatview_renderer/server.py"
 
 echo "Version $version (versionCode $((code + 1))). After merging, tag the commit: git tag v$version"
