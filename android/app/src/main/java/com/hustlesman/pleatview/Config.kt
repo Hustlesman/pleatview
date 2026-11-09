@@ -24,6 +24,8 @@ data class Config(
     val rotateSeconds: Int = 0,
     val returnHomeMinutes: Int = 0,
     val reopenMinutes: Int = 10,
+    /** A live stream of the TV's dashboards, rendered by Home Assistant; empty: the TV renders them. */
+    val renderStream: String = "",
     val rev: String = "",
 ) {
     val isConfigured: Boolean get() = haUrl.isNotEmpty()
@@ -62,6 +64,7 @@ data class Config(
         put("rotate_seconds", rotateSeconds)
         put("return_home_minutes", returnHomeMinutes)
         put("reopen_minutes", reopenMinutes)
+        put("render_stream", renderStream)
         put("rev", rev)
     }
 
@@ -91,6 +94,9 @@ data class Config(
                 "rotate_seconds" -> c.copy(rotateSeconds = intIn(update, key, 0, 24 * 60 * 60))
                 "return_home_minutes" -> c.copy(returnHomeMinutes = intIn(update, key, 0, 24 * 60))
                 "reopen_minutes" -> c.copy(reopenMinutes = intIn(update, key, 0, 24 * 60))
+                "render_stream" -> c.copy(renderStream = update.getString(key).trim().also {
+                    require(it.isEmpty() || isHttpUrl(it)) { "render_stream must start with http:// or https://" }
+                })
                 "rev" -> c.copy(rev = update.getString(key).take(64))
                 "ha_token_set" -> c // read-only, echoed back by clients that round-trip GET /api/config
                 else -> if (strict) throw IllegalArgumentException("unknown config key: $key") else c

@@ -60,7 +60,8 @@
           "reopen_minutes": "Kom tillbaka från andra appar efter",
           "reload_minutes": "Ladda om sidan var",
           "keep_screen_on": "Håll skärmen på",
-          "launch_on_boot": "Öppna PleatView när tv:n startar"
+          "launch_on_boot": "Öppna PleatView när tv:n startar",
+          "render_url": "Rendera på Home Assistant"
         },
         "data_description": {
           "ha_url": "Lämna tomt för att använda Home Assistants interna URL.",
@@ -71,7 +72,8 @@
           "return_home_minutes": "Efter att någon har bläddrat med fjärrkontrollen. 0 går aldrig tillbaka.",
           "reopen_minutes": "När någon lämnar PleatView för en annan app kommer den tillbaka när inget har spelat ljud så länge. 0 kommer aldrig tillbaka.",
           "reload_minutes": "En regelbunden fullständig omladdning frigör minne på skärmar som är på länge. 0 laddar aldrig om.",
-          "launch_on_boot": "Kräver behörigheten \"Visa ovanpå andra appar\" på tv:n."
+          "launch_on_boot": "Kräver behörigheten \"Visa ovanpå andra appar\" på tv:n.",
+          "render_url": "Adress till PleatView Renderer, t.ex. http://localhost:8780. Datorn med Home Assistant kör då den här tv:ns kontrollpaneler och skickar en video av dem till tv:n, för tv-apparater som är för långsamma för tunga kontrollpaneler eller videoväggar. Tomt: tv:n kör dem själv."
         }
       }
     },

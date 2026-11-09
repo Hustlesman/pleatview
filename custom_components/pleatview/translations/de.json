@@ -60,7 +60,8 @@
           "reopen_minutes": "Aus anderen Apps zurückkehren nach",
           "reload_minutes": "Seite neu laden alle",
           "keep_screen_on": "Bildschirm eingeschaltet lassen",
-          "launch_on_boot": "PleatView beim Einschalten des Fernsehers öffnen"
+          "launch_on_boot": "PleatView beim Einschalten des Fernsehers öffnen",
+          "render_url": "Auf Home Assistant darstellen"
         },
         "data_description": {
           "ha_url": "Leer lassen, um die interne URL von Home Assistant zu verwenden.",
@@ -71,7 +72,8 @@
           "return_home_minutes": "Nachdem jemand mit der Fernbedienung herumgeblättert hat. 0 kehrt nie zurück.",
           "reopen_minutes": "Wenn jemand PleatView für eine andere App verlässt, kommt es zurück, sobald so lange nichts Ton abgespielt hat. 0 kommt nie zurück.",
           "reload_minutes": "Ein regelmäßiges vollständiges Neuladen gibt bei lange laufenden Anzeigen Speicher frei. 0 lädt nie neu.",
-          "launch_on_boot": "Braucht auf dem Fernseher die Berechtigung „Über anderen Apps einblenden“."
+          "launch_on_boot": "Braucht auf dem Fernseher die Berechtigung „Über anderen Apps einblenden“.",
+          "render_url": "Adresse des PleatView Renderers, z. B. http://localhost:8780. Der Rechner von Home Assistant führt dann die Dashboards dieses Fernsehers aus und schickt ihm ein Video davon, für Fernseher, die für aufwendige Dashboards oder Videowände zu langsam sind. Leer: Der Fernseher führt sie selbst aus."
         }
       }
     },

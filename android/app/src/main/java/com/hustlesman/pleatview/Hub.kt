@@ -258,6 +258,7 @@ class StateModel {
     var overlayPermission = false
     var signIn: SignInRequest? = null
     var battery: BatteryInfo? = null
+    var screen: ScreenInfo? = null
 
     fun toJson(): JSONObject = JSONObject()
         .put("foreground", foreground)
@@ -276,13 +277,23 @@ class StateModel {
         .put("overlay_permission", overlayPermission)
         .put("sign_in", signIn?.toJson() ?: JSONObject.NULL)
         .put("battery", battery?.toJson() ?: JSONObject.NULL)
+        .put("screen", screen?.toJson() ?: JSONObject.NULL)
+        .put("features", JSONArray(FEATURES))
 
     companion object {
         const val POWER_ON = "on"
         const val POWER_STANDBY = "standby"
         const val VIEW_SETUP = "setup"
         const val VIEW_DASHBOARD = "dashboard"
+
+        /** What this app can do beyond protocol version 1, so Home Assistant only asks for that. */
+        val FEATURES = listOf("render_stream")
     }
+}
+
+/** The screen in pixels, and pixels per CSS pixel: Home Assistant renders dashboards to match. */
+data class ScreenInfo(val width: Int, val height: Int, val density: Float) {
+    fun toJson(): JSONObject = JSONObject().put("width", width).put("height", height).put("density", density.toDouble())
 }
 
 data class OverlayInfo(val kind: String, val url: String, val mode: String) {

@@ -60,7 +60,8 @@
           "reopen_minutes": "Vrátit se z jiných aplikací po",
           "reload_minutes": "Načíst stránku znovu každých",
           "keep_screen_on": "Nechat obrazovku zapnutou",
-          "launch_on_boot": "Otevřít PleatView po zapnutí televize"
+          "launch_on_boot": "Otevřít PleatView po zapnutí televize",
+          "render_url": "Vykreslovat v Home Assistantu"
         },
         "data_description": {
           "ha_url": "Nechte prázdné, aby se použila interní URL Home Assistant.",
@@ -71,7 +72,8 @@
           "return_home_minutes": "Poté, co někdo procházel ovladačem. 0 se nikdy nevrátí.",
           "reopen_minutes": "Když někdo opustí PleatView kvůli jiné aplikaci, vrátí se, jakmile po tuto dobu nic nehrálo zvuk. 0 se nikdy nevrátí.",
           "reload_minutes": "Pravidelné úplné načtení uvolní paměť na dlouho zapnutých obrazovkách. 0 nikdy nenačítá znovu.",
-          "launch_on_boot": "Vyžaduje na televizi oprávnění \"Zobrazení přes ostatní aplikace\"."
+          "launch_on_boot": "Vyžaduje na televizi oprávnění \"Zobrazení přes ostatní aplikace\".",
+          "render_url": "Adresa PleatView Rendereru, např. http://localhost:8780. Počítač s Home Assistantem pak spouští ovládací panely této televize a posílá jí jejich video, pro televize příliš pomalé na náročné panely nebo stěny videí. Prázdné: panely spouští televize sama."
         }
       }
     },

@@ -72,6 +72,8 @@ Events stream that sends the full snapshot on connect and after every change
   "overlay_permission": false,
   "sign_in": null,
   "battery": {"level": 87, "charging": true},
+  "screen": {"width": 1920, "height": 1080, "density": 2.0},
+  "features": ["render_stream"],
   "app_version": "0.1.0"
 }
 ```
@@ -89,6 +91,11 @@ Events stream that sends the full snapshot on connect and after every change
 - `battery`: null on devices without one (TVs), else `level` in percent and `charging`,
   which means plugged in, also when full. Home Assistant shows them as sensors, for
   example to switch a wall tablet's smart plug on and off.
+- `screen`: the whole screen in pixels, and pixels per CSS pixel at zoom 100, so Home
+  Assistant can render dashboards to match (null until the app has been on screen).
+- `features`: what the app can do beyond this version of the protocol. Home Assistant only
+  sends configuration a feature needs to apps that list it. `render_stream`: the app plays
+  `render_stream` (1.0.14 and later; not the Linux app yet).
 
 ## Commands
 
@@ -167,6 +174,7 @@ never sent to Home Assistant.
 | `reload_minutes` | 0 | Periodic full reload |
 | `keep_screen_on` | true | Stop the screensaver while a dashboard is shown |
 | `launch_on_boot` | true | Open after boot (needs `overlay_permission`) |
+| `render_stream` | empty | A live HLS stream of the TV's dashboards, rendered by Home Assistant ([guide](render-on-home-assistant.md)). The app plays it full screen instead of loading pages, and keeps reporting the `url` it would show, which Home Assistant renders. Only for apps with the `render_stream` feature |
 | `rev` | — | Opaque revision set by Home Assistant; any update without `rev` clears it |
 
 `ha_token` belongs to the Home Assistant at `ha_url`: an update that moves `ha_url` to

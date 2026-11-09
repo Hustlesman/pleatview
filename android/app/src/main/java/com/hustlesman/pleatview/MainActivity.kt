@@ -159,9 +159,11 @@ class MainActivity : Activity(), Hub.Display, DashboardController.Callbacks, Med
         dashboard.onResume()
         applyKeepScreenOn()
         val overlays = app.hub.canDrawOverlays()
+        val screen = screenInfo()
         app.hub.update {
             foreground = true
             overlayPermission = overlays
+            this.screen = screen
         }
         app.hub.uiShown()
         drainPending()
@@ -638,6 +640,20 @@ class MainActivity : Activity(), Hub.Display, DashboardController.Callbacks, Med
             }
         }
         return super.dispatchKeyEvent(event)
+    }
+
+    /** The whole screen, so Home Assistant can render dashboards at the TV's own size. */
+    private fun screenInfo(): ScreenInfo {
+        val density = resources.displayMetrics.density
+        return if (Build.VERSION.SDK_INT >= 30) {
+            val bounds = windowManager.maximumWindowMetrics.bounds
+            ScreenInfo(bounds.width(), bounds.height(), density)
+        } else {
+            val metrics = android.util.DisplayMetrics()
+            @Suppress("DEPRECATION")
+            windowManager.defaultDisplay.getRealMetrics(metrics)
+            ScreenInfo(metrics.widthPixels, metrics.heightPixels, density)
+        }
     }
 
     private fun handleBack() {

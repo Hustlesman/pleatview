@@ -80,6 +80,26 @@ jobs:
       - run: pip install -r requirements-test.txt
       - run: python -m pytest -p no:cacheprovider -q
 
+  renderer:
+    name: Renderer
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Build the image
+        run: docker build -t pleatview-renderer renderer
+      - name: Tests, inside the image
+        run: >-
+          docker run --rm --entrypoint python3 -v "$PWD:/repo:ro" -w /repo/renderer pleatview-renderer
+          -m unittest discover -v tests
+      - name: Installed packages, for audits
+        run: docker run --rm --entrypoint cat pleatview-renderer /app-packages.txt | tee renderer-packages.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: renderer-packages
+          path: renderer-packages.txt
+
   hassfest:
     name: hassfest
     runs-on: ubuntu-latest

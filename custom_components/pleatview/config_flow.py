@@ -41,6 +41,7 @@ from .const import (
     CONF_KIOSK,
     CONF_LAUNCH_ON_BOOT,
     CONF_RELOAD_MINUTES,
+    CONF_RENDER_URL,
     CONF_REOPEN_MINUTES,
     CONF_RETURN_HOME_MINUTES,
     CONF_ROTATE_SECONDS,
@@ -265,10 +266,11 @@ class PleatViewOptionsFlow(OptionsFlow):
         """Manage the options."""
         errors: dict[str, str] = {}
         if user_input is not None:
-            url = (user_input.get(CONF_HA_URL) or "").strip()
-            if url and not url.startswith(("http://", "https://")):
-                errors[CONF_HA_URL] = "invalid_url"
-            else:
+            for key in (CONF_HA_URL, CONF_RENDER_URL):
+                url = (user_input.get(key) or "").strip()
+                if url and not url.startswith(("http://", "https://")):
+                    errors[key] = "invalid_url"
+            if not errors:
                 return self.async_create_entry(data=user_input)
 
         options = {**DEFAULT_OPTIONS, **self.config_entry.options, **(user_input or {})}
@@ -308,6 +310,9 @@ class PleatViewOptionsFlow(OptionsFlow):
                 vol.Required(CONF_RELOAD_MINUTES, default=options[CONF_RELOAD_MINUTES]): number(10080, "min"),
                 vol.Required(CONF_KEEP_SCREEN_ON, default=options[CONF_KEEP_SCREEN_ON]): selector.BooleanSelector(),
                 vol.Required(CONF_LAUNCH_ON_BOOT, default=options[CONF_LAUNCH_ON_BOOT]): selector.BooleanSelector(),
+                vol.Optional(
+                    CONF_RENDER_URL, description={"suggested_value": options.get(CONF_RENDER_URL)}
+                ): selector.TextSelector(selector.TextSelectorConfig(type=selector.TextSelectorType.URL)),
             }
         )
         return self.async_show_form(step_id="init", data_schema=schema, errors=errors)

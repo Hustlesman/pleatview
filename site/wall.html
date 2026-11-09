@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<!--
+  A wall of muted YouTube streams: /wall?v=ID,ID,ID,ID
+  The PleatView TV app (1.0.14 and later) shows this address itself, one row of players per
+  renderer process; anywhere else this page shows the same wall.
+-->
+<title>PleatView wall</title>
+<meta name="theme-color" content="#0a0e11">
+<meta name="robots" content="noindex">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="/style.css">
+<style>
+  html, body { height: 100%; }
+  body.wall { margin: 0; background: #000; overflow: hidden; display: grid; gap: 4px; }
+  body.wall iframe { width: 100%; height: 100%; border: 0; }
+  body.help { min-height: 100vh; display: grid; place-items: center; padding: 24px; }
+  main { max-width: 640px; display: grid; gap: 18px; font-size: 20px; }
+  main img { height: 40px; width: auto; }
+  main[hidden] { display: none; }
+</style>
+</head>
+<body>
+<main hidden>
+  <img src="/img/logo.svg" width="208" height="40" alt="PleatView">
+  <p>This page shows YouTube streams side by side, muted. Put their video IDs after <code>?v=</code>, separated by commas:
+  <code>https://pleatview.hustlesman.com/wall?v=ID,ID,ID,ID</code></p>
+  <p>An ID is the part of a video's address after <code>watch?v=</code>, <code>/live/</code> or <code>youtu.be/</code>.
+  The <a href="https://github.com/Hustlesman/pleatview/blob/main/docs/ideas/live-streams.md">live streams guide</a>
+  shows how to put a wall on a TV with PleatView.</p>
+</main>
+<script>
+  const param = new URLSearchParams(location.search).get("v") || "";
+  const ids = param.split(",").map((id) => id.trim()).filter((id) => /^[A-Za-z0-9_-]{11}$/.test(id)).slice(0, 16);
+  if (ids.length === 0) {
+    document.body.className = "help";
+    document.querySelector("main").hidden = false;
+  } else {
+    const columns = Math.ceil(Math.sqrt(ids.length));
+    document.body.className = "wall";
+    document.body.style.gridTemplateColumns = `repeat(${columns}, 1fr)`;
+    document.body.style.gridTemplateRows = `repeat(${Math.ceil(ids.length / columns)}, 1fr)`;
+    for (const id of ids) {
+      const frame = document.createElement("iframe");
+      frame.src = `https://www.youtube-nocookie.com/embed/${id}?autoplay=1&mute=1&controls=0&playsinline=1&rel=0&loop=1&playlist=${id}`;
+      frame.allow = "autoplay; encrypted-media";
+      frame.referrerPolicy = "strict-origin-when-cross-origin";
+      document.body.appendChild(frame);
+    }
+  }
+</script>
+</body>
+</html>

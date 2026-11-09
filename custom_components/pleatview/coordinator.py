@@ -33,12 +33,14 @@ from .const import (
     CONF_KIOSK,
     CONF_LAUNCH_ON_BOOT,
     CONF_RELOAD_MINUTES,
+    CONF_RENDER_URL,
     CONF_REOPEN_MINUTES,
     CONF_RETURN_HOME_MINUTES,
     CONF_ROTATE_SECONDS,
     CONF_ZOOM,
     DEFAULT_OPTIONS,
 )
+from .render import Renderer, Screen, screen_size
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -79,6 +81,8 @@ class PleatViewDevice:
         self.available = True
         self.webpages: dict[str, str] = {}
         self.dashboards = resolve_dashboards(hass, entry.options.get(CONF_DASHBOARDS, ""))
+        render_url = (entry.options.get(CONF_RENDER_URL) or "").strip()
+        self.renderer = Renderer(hass, render_url, entry.entry_id) if render_url else None
         self._listeners: list[Callable[[], None]] = []
         self._received = False
 
@@ -107,6 +111,11 @@ class PleatViewDevice:
     def ha_url(self) -> str:
         """The address the TV uses for Home Assistant."""
         return self.entry.options.get(CONF_HA_URL) or default_ha_url(self.hass)
+
+    @property
+    def rendering(self) -> bool:
+        """Whether the renderer runs this TV's dashboards: set up, and an app that plays them."""
+        return self.renderer is not None and "render_stream" in (self.state.get("features") or [])
 
     def target(self, path: str) -> str:
         """What the TV loads for a dashboard path: the site itself for Webpage dashboards."""
@@ -185,6 +194,9 @@ class PleatViewDevice:
         }
         if self.entry.data.get(CONF_AUTH_MODE) != AUTH_NONE:
             config["ha_token"] = self.entry.data.get(CONF_HA_TOKEN, "")
+        if self.rendering:
+            assert self.renderer
+            config["render_stream"] = self.ha_url.rstrip("/") + self.renderer.stream_path
         digest = hashlib.sha256(json.dumps(config, sort_keys=True).encode()).hexdigest()
         config["rev"] = digest[:16]
         return config
@@ -221,7 +233,9 @@ class PleatViewDevice:
     @callback
     def _handle_state(self, state: dict[str, Any]) -> None:
         first = not self._received
-        updated = state.get("app_version") != self.state.get("app_version")
+        updated = (state.get("app_version"), state.get("features")) != (
+            self.state.get("app_version"), self.state.get("features")
+        )
         self._received = True
         self.state = state
         self.available = True
@@ -231,15 +245,30 @@ class PleatViewDevice:
                 self.hass, self._async_resync(), "pleatview config sync"
             )
         if updated:
-            # A newer app may open Webpage dashboards it couldn't before (see target()).
+            # A newer app may open Webpage dashboards it couldn't before (see target()),
+            # or play dashboards the renderer runs.
             self.entry.async_create_background_task(
                 self.hass, self._async_app_updated(), "pleatview dashboards"
             )
+        if self.rendering:
+            self.entry.async_create_background_task(self.hass, self.async_render(), "pleatview render")
         self._notify()
 
     async def _async_app_updated(self) -> None:
-        if await self.async_refresh_dashboards():
+        if await self.async_refresh_dashboards() or self.renderer:
             await self._async_resync()
+
+    async def async_render(self) -> None:
+        """Has the renderer show what the TV would: its page, at its size and zoom."""
+        if not self.renderer or not (url := self.state.get("url")) or not url.startswith(("http://", "https://")):
+            return
+        options = {**DEFAULT_OPTIONS, **self.entry.options}
+        width, height, density = screen_size(self.state)
+        token = self.entry.data.get(CONF_HA_TOKEN, "") if self.entry.data.get(CONF_AUTH_MODE) != AUTH_NONE else ""
+        await self.renderer.async_show(Screen(
+            url=url, width=width, height=height, scale=round(density * int(options[CONF_ZOOM]) / 100, 3),
+            kiosk=options[CONF_KIOSK], ha_url=self.ha_url, token=token,
+        ))
 
     async def _async_resync(self) -> None:
         try:
