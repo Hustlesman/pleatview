@@ -34,6 +34,14 @@ PleatView is built for a home network you trust. What it does, and what it can't
   dashboard's controls would otherwise work without unlocking. Casts wait until it's
   unlocked. On TVs, and on tablets whose lock is None or Swipe, a cast wakes the screen as
   before. Versions up to 1.0.6 showed the dashboard over any lock screen.
+- **The PleatView Renderer** (optional, [Render on Home Assistant](docs/render-on-home-assistant.md))
+  runs a TV's dashboards in Chromium on the Home Assistant machine, signed in with that
+  TV's token. Its own interface has no sign-in: keep it off the network, as the add-on
+  (Home Assistant's internal network only) and the documented `docker run` (127.0.0.1)
+  do. Chromium runs as an unprivileged user. The stream reaches the TV through Home
+  Assistant, at an address with a secret only that TV gets. The image holds only free
+  software from Debian's main archive on a pinned base; `/api/packages` lists every
+  package and version.
 - **Releases** are built on GitHub from the tagged source, signed with the same key every
   time, and come with build provenance: `gh attestation verify pleatview.apk --repo
   Hustlesman/pleatview`.

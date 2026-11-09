@@ -60,7 +60,8 @@
           "reopen_minutes": "Voltar de outros apps após",
           "reload_minutes": "Recarregar a página a cada",
           "keep_screen_on": "Manter a tela ligada",
-          "launch_on_boot": "Abrir o PleatView quando a TV ligar"
+          "launch_on_boot": "Abrir o PleatView quando a TV ligar",
+          "render_url": "Renderizar no Home Assistant"
         },
         "data_description": {
           "ha_url": "Deixe vazio para usar a URL interna do Home Assistant.",
@@ -71,7 +72,8 @@
           "return_home_minutes": "Depois que alguém navegar com o controle remoto. 0 nunca volta.",
           "reopen_minutes": "Quando alguém sai do PleatView para outro app, ele volta assim que nada tocar som por esse tempo. 0 nunca volta.",
           "reload_minutes": "Recarregar tudo de tempos em tempos libera memória em telas que ficam ligadas por muito tempo. 0 nunca recarrega.",
-          "launch_on_boot": "Precisa da permissão \"Sobrepor a outros apps\" na TV."
+          "launch_on_boot": "Precisa da permissão \"Sobrepor a outros apps\" na TV.",
+          "render_url": "Endereço do PleatView Renderer, como http://localhost:8780. A máquina do Home Assistant passa a executar os dashboards desta TV e envia a ela um vídeo deles, para TVs lentas demais para dashboards pesados ou paredes de vídeos. Vazio: a própria TV os executa."
         }
       }
     },

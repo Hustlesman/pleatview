@@ -84,6 +84,9 @@ class DashboardController(
         Log.w(TAG, problem)
         hub.update { lastError = problem }
     }
+    private val rendered = RenderedScreen(activity, container) { problem ->
+        hub.update { lastError = problem }
+    }
 
     /** The last dashboard PleatView navigated to on its own (not by remote-control browsing). */
     var lastTarget: String = "/"
@@ -125,7 +128,9 @@ class DashboardController(
     fun applyConfig(old: Config, new: Config) {
         config = new
         signInFlow.config = new
-        if (old.haUrl != new.haUrl || old.haToken != new.haToken || old.zoom != new.zoom || old.kiosk != new.kiosk) {
+        if (old.haUrl != new.haUrl || old.haToken != new.haToken || old.zoom != new.zoom || old.kiosk != new.kiosk ||
+            old.renderStream != new.renderStream
+        ) {
             hub.update { authError = false }
             create()
             navigate(new.homePath)
@@ -165,7 +170,9 @@ class DashboardController(
     fun reload() {
         val view = webView ?: return
         val url = currentUrl ?: config.resolve(config.homePath)
-        if (wall.isShown) {
+        if (rendered.isShown) {
+            rendered.restart()
+        } else if (wall.isShown) {
             wall.reload()
         } else if (failed || view.url.isNullOrEmpty() || view.url == BLANK) {
             load(url)
@@ -184,7 +191,7 @@ class DashboardController(
      */
     fun goBack(): Boolean {
         val view = webView ?: return false
-        if (wall.isShown || !view.canGoBack()) return false
+        if (rendered.isShown || wall.isShown || !view.canGoBack()) return false
         val history = view.copyBackForwardList()
         val current = history.currentItem?.url ?: return false
         val previous = history.getItemAtIndex(history.currentIndex - 1)?.url ?: return false
@@ -207,12 +214,14 @@ class DashboardController(
         probeSentAt = 0
         webView?.onResume()
         wall.onResume()
+        rendered.onResume()
     }
 
     fun onPause() {
         paused = true
         webView?.onPause()
         wall.onPause()
+        rendered.onPause()
     }
 
     fun destroy() {
@@ -225,6 +234,7 @@ class DashboardController(
         }
         networkCallback = null
         wall.hide()
+        rendered.hide()
         destroyWebView()
     }
 
@@ -365,7 +375,16 @@ class DashboardController(
         loadStartedAt = SystemClock.elapsedRealtime()
         clearHistoryOnLoad = true
         val streams = Wall.ids(url)
-        if (streams != null) {
+        if (config.renderStream.isNotEmpty()) {
+            // Home Assistant renders the page (it follows the URL published below), and the
+            // TV only plays the result; its own WebView waits blank.
+            if (view.url != BLANK) view.loadUrl(BLANK)
+            view.visibility = View.INVISIBLE
+            wall.hide()
+            rendered.show(config.renderStream)
+            callbacks.onStatus(null)
+        } else if (streams != null) {
+            rendered.hide()
             // The page's WebView waits blank behind the wall, so its renderer is free.
             view.loadUrl(BLANK)
             view.visibility = View.INVISIBLE
@@ -373,6 +392,7 @@ class DashboardController(
             callbacks.onStatus(null)
         } else {
             wall.hide()
+            rendered.hide()
             view.visibility = View.VISIBLE
             view.loadUrl(url)
         }

@@ -1,0 +1,17 @@
+name: PleatView Renderer
+version: "1.0.14"
+slug: pleatview_renderer
+description: Runs PleatView dashboards on this machine and streams them to TVs too slow to run them
+url: https://github.com/Hustlesman/pleatview/blob/main/docs/render-on-home-assistant.md
+arch:
+  - amd64
+  - aarch64
+init: false
+startup: application
+boot: auto
+# The GPU, where there is one, encodes the stream (Intel Quick Sync, AMD).
+video: true
+options:
+  max_screens: 4
+schema:
+  max_screens: int(1,8)

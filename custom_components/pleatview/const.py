@@ -33,6 +33,8 @@ CONF_REOPEN_MINUTES: Final = "reopen_minutes"
 CONF_RELOAD_MINUTES: Final = "reload_minutes"
 CONF_KEEP_SCREEN_ON: Final = "keep_screen_on"
 CONF_LAUNCH_ON_BOOT: Final = "launch_on_boot"
+# Address of the PleatView Renderer that runs this TV's dashboards; empty: the TV runs them.
+CONF_RENDER_URL: Final = "render_url"
 
 KIOSK_MODES: Final = ["full", "sidebar", "off"]
 

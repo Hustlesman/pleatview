@@ -23,6 +23,21 @@ class ConfigTest {
         assertEquals(10, Config.fromJson(Config().toJson(includeSecrets = true)).reopenMinutes)
     }
 
+    @Test
+    fun `a rendered dashboard stream is kept and can be turned off`() {
+        val stream = "http://10.0.0.2:8123/api/pleatview/render/01ABC/s3cr3t/index.m3u8"
+        val rendered = Config().merge(JSONObject().put("render_stream", " $stream "))
+        assertEquals(stream, rendered.renderStream)
+        assertEquals(stream, Config.fromJson(rendered.toJson(includeSecrets = true)).renderStream)
+        assertEquals("", rendered.merge(JSONObject().put("render_stream", "")).renderStream)
+        assertEquals("", Config().renderStream)
+    }
+
+    @Test(expected = IllegalArgumentException::class)
+    fun `a rendered dashboard stream must be a web address`() {
+        Config().merge(JSONObject().put("render_stream", "file:///sdcard/x.m3u8"))
+    }
+
     @Test(expected = IllegalArgumentException::class)
     fun `non http base url is rejected`() {
         Config.normalizeBaseUrl("ftp://ha.local")

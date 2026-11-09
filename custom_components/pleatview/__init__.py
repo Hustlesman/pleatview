@@ -37,12 +37,14 @@ from .const import (
     SAFE_HA_VERSION,
 )
 from .coordinator import PleatViewConfigEntry, PleatViewDevice
+from .render import RenderStreamView
 
 _LOGGER = logging.getLogger(__name__)
 
 LOVELACE_UPDATED = "lovelace_updated"  # fired when a dashboard's configuration is saved
 
 PLATFORMS = [Platform.BINARY_SENSOR, Platform.MEDIA_PLAYER, Platform.NOTIFY, Platform.SENSOR]
+RENDER_VIEW = f"{DOMAIN}_render_view"
 TOKEN_LIFETIME = timedelta(days=3650)
 
 
@@ -70,6 +72,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: PleatViewConfigEntry) ->
         raise ConfigEntryNotReady(f"A different PleatView device answered at {client.base_url}")
 
     await _async_ensure_credentials(hass, entry)
+    if not hass.data.get(RENDER_VIEW):
+        hass.http.register_view(RenderStreamView(hass))
+        hass.data[RENDER_VIEW] = True
 
     device = PleatViewDevice(hass, entry, client, info, state)
     entry.runtime_data = device
@@ -120,6 +125,8 @@ async def _async_options_updated(hass: HomeAssistant, entry: PleatViewConfigEntr
 
 async def async_unload_entry(hass: HomeAssistant, entry: PleatViewConfigEntry) -> bool:
     """Unload a config entry; the event stream task is cancelled with it."""
+    if renderer := entry.runtime_data.renderer:
+        await renderer.async_stop()
     return await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
 
 

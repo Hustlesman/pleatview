@@ -10,12 +10,13 @@ fills the screen, four make two rows of two, nine three of three.
 https://pleatview.hustlesman.com/wall?v=ID,ID,ID,ID
 ```
 
-PleatView 1.0.14 and later show that address themselves, and play each row of the wall in
-a process of its own. A TV box runs a page's scripts on one thread, and every YouTube player
-adds to it: nine players on one page are more than a streaming box's thread keeps up with,
-so the streams keep buffering. Split into rows, they play side by side on the box's
-processor cores. Anywhere else, such as a browser or an older PleatView, the address opens
-a page that shows the same wall.
+PleatView 1.0.14 and later show that address themselves, each row of the wall in a process
+of its own, which spreads the players over the TV's processor cores. Anywhere else, such as
+a browser or an older PleatView, the address opens a page that shows the same wall.
+
+Every stream is a YouTube player that the TV runs and decodes, and a streaming stick
+manages only a few. For more, let [Home Assistant render the wall](../render-on-home-assistant.md):
+its machine runs the players and sends the TV one video, which any TV plays smoothly.
 
 ## 1. The address
 
@@ -46,15 +47,17 @@ every stream at once. PleatView's **Zoom** (*Settings → Devices & services →
 Configure*) makes the players larger in YouTube's eyes: at 67 %, each quarter of a 1080p
 screen asks for 720p instead of 480p. Sharper, but more for the TV to decode.
 
-What we measured, with the live streams in the address above and others like them:
+What we measured, with nine live streams of Amsterdam's station cams and others like them:
 
-| TV | Streams | Zoom | Result |
-| --- | --- | --- | --- |
-| Fire TV Stick (3rd gen, 1 GB) | 4 | 100 % | 360p and 480p, all playing; about one frame in four dropped |
-| Fire TV Stick (3rd gen, 1 GB) | 9 | any | Too many: the stick runs out of memory |
+| TV | Streams | Result |
+| --- | --- | --- |
+| Fire TV Stick (3rd gen, 1 GB), zoom 100 % | 4 | 360p and 480p, all playing; about one frame in four dropped |
+| Fire TV Stick (3rd gen, 1 GB) | 9 | Too many: the stick runs out of memory |
+| Chromecast with Google TV (HD), zoom 67 %, one page | 9 | Buffering most of the time |
+| Chromecast with Google TV (HD), zoom 67 %, wall address | 9 | Playing about two thirds of the time, most frames dropped |
+| Both, **rendered on Home Assistant** | 9 | Every stream moving, about 3 seconds behind live |
 
-A stick with 1 GB of memory manages four streams. Nine need a box with 2 GB, such as a
-Chromecast with Google TV or a Google TV box.
+On the TV itself, keep a wall to about four streams. For more, render it on Home Assistant.
 
 YouTube remembers a device that dropped frames, and used to keep it at low quality for a
 month, even once it would play well. From 1.0.14, PleatView has every player start afresh,

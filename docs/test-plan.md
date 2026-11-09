@@ -56,7 +56,8 @@ checklist below and tick what passed. Anything that fails gets its own issue.
 - [ ] A video cast with `extra: {loop: true}` starts again at the end
 - [ ] A web page opens full screen and as picture-in-picture (`show_url`)
 - [ ] A Webpage dashboard opens the site itself, not Home Assistant's frame, and keeps its sign-in (try one that needs a cookie, such as OpenSearch's playground) **(auto)**
-- [ ] A wall (`https://pleatview.hustlesman.com/wall?v=…` with nine live streams) plays every stream without buffering on a Google TV box, one renderer process per row; Back and other dashboards leave it, and its renderers end
+- [ ] A wall (`https://pleatview.hustlesman.com/wall?v=…`) shows one renderer process per row; Back and other dashboards leave it, and its renderers end
+- [ ] *Render on Home Assistant*: with the renderer's address set for a TV, a wall of nine live streams plays smoothly on a Chromecast HD and a Fire TV Stick; the home dashboard shows signed in, in kiosk mode, at the TV's zoom; the remote's channel keys and `show_dashboard` switch what the renderer shows; restarting the renderer brings the picture back by itself; emptying the address goes back to the TV's own rendering
 - [ ] A dashboard behind a password prompt, and one behind a login form: the TV asks, the phone code signs in, and after a restart the saved sign-in is used without asking **(auto)**
 - [ ] *Not now* on a sign-in card, then going home: Back opens the menu, and the card doesn't come back **(auto)**
 - [ ] With rotation on, a dashboard shown with `show_dashboard` and a duration stays for that duration, then rotation goes on **(auto)**

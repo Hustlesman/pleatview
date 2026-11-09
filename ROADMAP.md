@@ -22,7 +22,7 @@ on their own.
 
 ## Status
 
-Last updated 9 November 2026. **Current milestone: M1** (M0 finished early).
+Last updated 10 November 2026. **Current milestone: M1** (M0 finished early).
 
 | Milestone | Target | Needs first | Status |
 | --- | --- | --- | --- |
@@ -368,6 +368,11 @@ Ideas we'll consider after M6, or between milestones if there's slack:
 - Several Home Assistant servers on one TV
 - Run the end-to-end test in CI every week against the Home Assistant beta (GitHub runners have KVM)
 - A Downloader short code for `pleatview.hustlesman.com/apk` (digits instead of a URL on Fire TV)
+- Rendered dashboards on the Linux app, and a light client for screens that can't run a
+  browser at all (a Raspberry Pi Zero W): it would only play the stream Home Assistant
+  renders ([Render on Home Assistant](docs/render-on-home-assistant.md), 1.0.14)
+- Remote-control browsing on rendered dashboards (the keys sent on to the renderer)
+- Prebuilt renderer images, so the add-on needn't build on each machine
 - A standalone controller for PleatView TVs without Home Assistant: a small program for
   Windows, macOS and Linux with its web page at `localhost`, offering schedules, playlists,
   groups of TVs and a media library. Built on protocol v2, so it covers every PleatView TV,

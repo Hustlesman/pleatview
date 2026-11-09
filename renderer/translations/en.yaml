@@ -1,0 +1,4 @@
+configuration:
+  max_screens:
+    name: Max screens
+    description: How many TVs this add-on renders at once. Each one runs a browser here.
