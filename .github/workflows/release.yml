@@ -90,10 +90,9 @@ jobs:
           PLEATVIEW_KEYSTORE_PASSWORD: ${{ secrets.PLEATVIEW_KEYSTORE_PASSWORD }}
           PLEATVIEW_KEY_ALIAS: ${{ secrets.PLEATVIEW_KEY_ALIAS }}
           PLEATVIEW_KEY_PASSWORD: ${{ secrets.PLEATVIEW_KEY_PASSWORD }}
-        # The bundle goes to Google Play, so it's a store build: no "Support PleatView" in the
-        # menu. The APK is the GitHub download, which has it.
+        # The bundle goes to Google Play; the APK is the GitHub download.
         run: |
-          ./gradlew --no-daemon bundleRelease -Ppleatview.distribution=store
+          ./gradlew --no-daemon bundleRelease
           ./gradlew --no-daemon assembleRelease
 
       - name: Remove the signing key
