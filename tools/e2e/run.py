@@ -722,6 +722,7 @@ def checks(r: Run, report: Report, apk: Path) -> None:
         report.screenshot("01-demo")
         wait_for("the demo's notification", lambda: view_bounds("toast_card"), timeout=30, interval=1)
         wait_for("the demo's door camera", lambda: view_bounds("web_overlay_container"), timeout=30, interval=1)
+        time.sleep(2)  # the camera's page draws a moment after its corner appears
         report.screenshot("01-demo-camera")
         # Back closes the camera first, as it would one from Home Assistant; then it opens the menu.
         adb("shell", "input", "keyevent", "KEYCODE_BACK")
