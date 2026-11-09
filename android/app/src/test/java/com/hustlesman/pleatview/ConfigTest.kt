@@ -78,6 +78,16 @@ class ConfigTest {
     }
 
     @Test
+    fun `files Home Assistant serves itself aren't frontend pages`() {
+        assertTrue(Config.isFrontendPath("/lovelace/0"))
+        assertTrue(Config.isFrontendPath("/dashboard-streams/live?kiosk"))
+        assertTrue(Config.isFrontendPath("/media-browser"))
+        assertFalse(Config.isFrontendPath("/local/streams.html?v=a,b"))
+        assertFalse(Config.isFrontendPath("/hacsfiles/card/card.js"))
+        assertFalse(Config.isFrontendPath("/api/camera_proxy_stream/camera.door"))
+    }
+
+    @Test
     fun `home path falls back to first dashboard then HA default`() {
         assertEquals("/", Config().homePath)
         assertEquals("/a", Config(dashboards = listOf(Dashboard("A", "/a"))).homePath)

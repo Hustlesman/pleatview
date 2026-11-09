@@ -15,6 +15,7 @@ from custom_components.pleatview.const import (
     DOMAIN,
     ISSUE_OLD_HA,
 )
+from custom_components.pleatview.coordinator import app_version
 from homeassistant.auth.const import GROUP_ID_READ_ONLY
 from homeassistant.config_entries import SOURCE_REAUTH, ConfigEntryState
 from homeassistant.core import HomeAssistant
@@ -85,7 +86,31 @@ async def test_webpage_dashboards_open_directly(hass: HomeAssistant, fake_tv: Fa
     # A changed address reaches the TV straight away.
     await save_webpage("https://grafana.example/d/2")
     assert fake_tv.config["dashboards"][1]["path"] == "https://grafana.example/d/2"
+
+    # A page Home Assistant serves itself, such as /local/streams.html, stays in Home
+    # Assistant's frame for apps before 1.0.12: they would show the default dashboard instead.
+    await fake_tv.wait_for_stream()
+    await save_webpage(f"{HA_URL}/local/streams.html?v=a,b")
+    assert entry.runtime_data.dashboards[1]["path"] == "/dashboard-web"
+    await save_webpage("/local/streams.html?v=a,b")
+    assert entry.runtime_data.dashboards[1]["path"] == "/dashboard-web"
+    # Once the TV runs 1.0.12, it opens the page directly, without the frontend around it.
+    await fake_tv.push(app_version="1.0.12")
+    async with asyncio.timeout(5):
+        while fake_tv.config["dashboards"][1]["path"] != "/local/streams.html?v=a,b":
+            await asyncio.sleep(0.02)
+
+    # A protocol-relative address would be another site: it stays in Home Assistant's frame.
+    await save_webpage("//example.com/page")
+    assert entry.runtime_data.dashboards[1]["path"] == "/dashboard-web"
     await hass.config_entries.async_unload(entry.entry_id)
+
+
+def test_app_versions() -> None:
+    assert app_version("1.0.12") == (1, 0, 12)
+    assert app_version("1.0.12-debug") == (1, 0, 12)
+    assert app_version("1.0.9") < (1, 0, 12) < app_version("1.1.0")
+    assert app_version(None) == app_version("dev") == (0,)
 
 
 async def test_managed_user_lifecycle(hass: HomeAssistant, fake_tv: FakeTV, hass_owner_user) -> None:

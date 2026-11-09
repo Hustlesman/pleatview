@@ -143,8 +143,10 @@ class DashboardController(
         signInFlow.target = target
         val url = config.resolve(target)
         val view = webView ?: return
-        if (ready && !failed && config.isHaUrl(url) && config.isHaUrl(view.url)) {
-            val path = Config.pathOf(url)
+        val path = Config.pathOf(url)
+        // A file such as /local/streams.html isn't a frontend route: the frontend would show
+        // its default dashboard instead, so it gets a real page load.
+        if (ready && !failed && config.isHaUrl(url) && config.isHaUrl(view.url) && Config.isFrontendPath(path)) {
             view.evaluateJavascript("window.__pleatview&&window.__pleatview.navigate(${JSONObject.quote(path)})", null)
             currentUrl = url
             view.clearHistory()

@@ -114,6 +114,12 @@ data class Config(
         fun isHttpUrl(value: String): Boolean =
             value.startsWith("http://", ignoreCase = true) || value.startsWith("https://", ignoreCase = true)
 
+        /** Home Assistant serves these itself, outside its frontend: files in www, HACS, the API. */
+        private val SERVED_PATHS = listOf("/local/", "/hacsfiles/", "/api/", "/auth/", "/static/", "/media/")
+
+        /** A page of Home Assistant's frontend, which it can switch to without a page load. */
+        fun isFrontendPath(path: String): Boolean = SERVED_PATHS.none { path.startsWith(it) }
+
         /** Path, query and fragment of a URL, e.g. `/lovelace/0?edit=1`. */
         fun pathOf(url: String): String {
             val uri = runCatching { URI(url) }.getOrNull() ?: return "/"
