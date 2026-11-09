@@ -180,9 +180,13 @@ and get neither.
 Assistant (*Settings → Dashboards → Add dashboard → Webpage*) and it becomes a source. The
 TV opens the site itself rather than inside Home Assistant's frame, so sites that refuse
 frames or need their own sign-in cookie still load, and the zoom applies to them as well.
-A page of your own in `/config/www`, such as `/local/streams.html`, opens the same way
-(from 1.0.12), without Home Assistant's frontend running underneath:
-[a wall of YouTube live streams](docs/ideas/live-streams.md) is one.
+A page of your own in `/config/www`, such as `/local/clock.html`, opens the same way
+(from 1.0.12), without Home Assistant's frontend running underneath.
+
+**A wall of YouTube live streams** is an address, `https://pleatview.hustlesman.com/wall?v=ID,ID,…`,
+as a Webpage dashboard. From 1.0.14 the TV shows it itself and plays each row of streams in
+a process of its own, so a streaming box keeps nine of them playing. See
+[a wall of live streams](docs/ideas/live-streams.md).
 
 **Sites that ask for a sign-in.** When a dashboard shows a login form or a password
 prompt, the TV says "Sign in to *dashboard name*" with a QR code. Scan it, sign in on your
