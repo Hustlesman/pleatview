@@ -38,4 +38,20 @@
     <string name="playback_failed">Playback failed: %1$s</string>
     <string name="notification_channel">Home Assistant connection</string>
     <string name="notification_text">Listening for Home Assistant on port %1$d</string>
+    <string name="setup_demo">Try the demo</string>
+    <string name="demo_label">Demo</string>
+    <string name="demo_overview">Overview</string>
+    <string name="demo_energy">Energy</string>
+    <string name="demo_cameras">Cameras</string>
+    <string name="demo_intro">A sample home. With Home Assistant, your own dashboards show here, and your automations can put things on top of them, like these.</string>
+    <string name="demo_notify_caption">A notification, for example when the washing machine has finished.</string>
+    <string name="demo_notify_title">Washing machine</string>
+    <string name="demo_notify_message">The wash is done. Time to hang it out.</string>
+    <string name="demo_camera_caption">A camera in a corner, for example when someone rings the doorbell.</string>
+    <string name="demo_dashboard_caption">Another dashboard for a while: here the energy dashboard, for 15 seconds.</string>
+    <string name="demo_video_caption">Videos and music too, like this clip from %1$s.</string>
+    <string name="demo_end">That\'s the tour. Tap the sample lights and locks to try them. For other dashboards, the tour again or to end the demo, tap the screen, then ⋮.</string>
+    <string name="menu_demo_info">A sample home. To show your own dashboards, add this device to Home Assistant with the PIN above.</string>
+    <string name="menu_demo_end">End the demo</string>
+    <string name="menu_demo_tour">Watch the tour again</string>
 </resources>

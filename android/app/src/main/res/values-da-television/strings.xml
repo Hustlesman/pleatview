@@ -8,4 +8,6 @@
     <string name="signin_enter_here">Indtast på tv\'et</string>
     <string name="signin_remember">Forbliv logget ind på dette tv</string>
     <string name="overlay_settings_missing">Dette tv har ingen indstilling til det. Se pleatview.hustlesman.com/support for løsningen på én linje.</string>
+    <string name="demo_end">Det var rundturen. Prøv eksempellamperne og -låsene med pilene og OK. Tryk på Tilbage for menuen: andre betjeningspaneler, rundturen igen eller »Afslut demoen«.</string>
+    <string name="menu_demo_info">Et eksempelhjem. Tilføj dette tv til Home Assistant med pinkoden ovenfor for at vise dine egne betjeningspaneler.</string>
 </resources>

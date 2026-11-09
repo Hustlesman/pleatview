@@ -38,4 +38,20 @@
     <string name="playback_failed">Échec de la lecture : %1$s</string>
     <string name="notification_channel">Connexion à Home Assistant</string>
     <string name="notification_text">À l\'écoute de Home Assistant sur le port %1$d</string>
+    <string name="setup_demo">Essayer la démo</string>
+    <string name="demo_label">Démo</string>
+    <string name="demo_overview">Aperçu</string>
+    <string name="demo_energy">Énergie</string>
+    <string name="demo_cameras">Caméras</string>
+    <string name="demo_intro">Une maison d\'exemple. Avec Home Assistant, vos propres tableaux de bord s\'affichent ici, et vos automatisations peuvent afficher des choses par-dessus, comme celles-ci.</string>
+    <string name="demo_notify_caption">Une notification, par exemple quand la machine à laver a terminé.</string>
+    <string name="demo_notify_title">Machine à laver</string>
+    <string name="demo_notify_message">La lessive est terminée. Il est temps de l\'étendre.</string>
+    <string name="demo_camera_caption">Une caméra dans un coin, par exemple quand quelqu\'un sonne à la porte.</string>
+    <string name="demo_dashboard_caption">Un autre tableau de bord pendant un moment : ici celui de l\'énergie, pendant 15 secondes.</string>
+    <string name="demo_video_caption">Des vidéos et de la musique aussi, comme cet extrait de %1$s.</string>
+    <string name="demo_end">C\'est la fin de la visite. Touchez les lampes et les serrures d\'exemple pour les essayer. Pour d\'autres tableaux de bord, revoir la visite ou quitter la démo, touchez l\'écran, puis ⋮.</string>
+    <string name="menu_demo_info">Une maison d\'exemple. Pour afficher vos propres tableaux de bord, ajoutez cet appareil à Home Assistant avec le code PIN ci-dessus.</string>
+    <string name="menu_demo_end">Quitter la démo</string>
+    <string name="menu_demo_tour">Revoir la visite</string>
 </resources>

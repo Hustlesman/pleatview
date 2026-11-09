@@ -215,7 +215,8 @@ class MediaController(
     }
 
     private fun mediaItem(command: Command.PlayMedia): MediaItem {
-        val builder = MediaItem.Builder().setUri(command.url)
+        // The demo's video comes from the app itself.
+        val builder = MediaItem.Builder().setUri(Demo.asset(command.url)?.let { "asset:///$it" } ?: command.url)
         val mime = command.mimeType.orEmpty()
         when {
             mime.contains("mpegurl") -> builder.setMimeType(MimeTypes.APPLICATION_M3U8)

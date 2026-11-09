@@ -27,6 +27,7 @@ checklist below and tick what passed. Anything that fails gets its own issue.
 - [ ] The "Open in HACS" button opens PleatView in HACS; installing it and restarting works
 
 ### Discovery and pairing
+- [ ] *Try the demo* (focused on a TV) shows the sample home and its tour: the notification, the door camera in a corner, the energy dashboard for 15 seconds and the video, each with its caption; Back opens the demo's menu, whose *End the demo* goes back to the setup screen with the same PIN **(auto: up to the camera, then End the demo)**; pairing during the demo replaces it with Home Assistant's dashboards
 - [ ] Home Assistant discovers the TV within a minute of opening PleatView
 - [ ] A wrong PIN is rejected; the right PIN finishes setup with no further questions **(auto)**
 - [ ] The "Set up manually" button with the TV's address also works **(auto: manual address)**

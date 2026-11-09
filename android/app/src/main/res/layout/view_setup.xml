@@ -94,6 +94,14 @@
             android:layout_marginTop="18dp"
             android:textColor="@color/text_secondary"
             android:textSize="13sp" />
+
+        <!-- No Home Assistant yet: a sample home and a tour. Focused on TVs, so OK starts it. -->
+        <Button
+            android:id="@+id/setup_demo"
+            style="@style/PleatView.MenuButton"
+            android:layout_width="wrap_content"
+            android:layout_marginTop="22dp"
+            android:text="@string/setup_demo" />
     </LinearLayout>
 
     <LinearLayout

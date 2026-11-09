@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title data-t="overview">Overview</title>
+<link rel="stylesheet" href="demo.css">
+</head>
+<body>
+<header>
+  <div>
+    <h1 id="greeting">Hello</h1>
+    <p id="date"></p>
+  </div>
+  <div class="top-right">
+    <span class="chip" data-t="demo">Demo</span>
+    <span class="clock" id="clock"></span>
+  </div>
+</header>
+
+<main class="grid">
+  <section class="card">
+    <h2><i data-icon="sun"></i><span data-t="weather">Weather</span></h2>
+    <div class="now">
+      <i data-icon="sun"></i>
+      <div>
+        <div class="temp" data-celsius="21"></div>
+        <div class="muted" data-t="sunny">Sunny</div>
+      </div>
+    </div>
+    <ul class="forecast">
+      <li><span data-day="1"></span><i data-icon="partly"></i><span data-celsius="19"></span></li>
+      <li><span data-day="2"></span><i data-icon="rain" class="rain"></i><span data-celsius="15"></span></li>
+      <li><span data-day="3"></span><i data-icon="cloud"></i><span data-celsius="17"></span></li>
+      <li><span data-day="4"></span><i data-icon="sun"></i><span data-celsius="22"></span></li>
+    </ul>
+  </section>
+
+  <section class="card">
+    <h2><i data-icon="bulb"></i><span data-t="lights">Lights</span></h2>
+    <button class="toggle" data-kind="light" data-on="true"><i data-icon="bulb"></i><span class="name" data-t="living_room">Living room</span><span class="state"></span></button>
+    <button class="toggle" data-kind="light" data-on="false"><i data-icon="bulb"></i><span class="name" data-t="kitchen">Kitchen</span><span class="state"></span></button>
+    <button class="toggle" data-kind="light" data-on="true"><i data-icon="bulb"></i><span class="name" data-t="porch">Porch</span><span class="state"></span></button>
+  </section>
+
+  <section class="card">
+    <h2><i data-icon="thermometer"></i><span data-t="climate">Climate</span></h2>
+    <div class="temp" data-celsius="21.5"></div>
+    <div class="heating" data-t="heating">Heating to <span data-celsius="22"></span></div>
+    <div class="rooms">
+      <div><span data-t="bedroom">Bedroom</span><span data-celsius="19"></span></div>
+      <div><span data-t="outside">Outside</span><span data-celsius="16"></span></div>
+      <div><span data-t="humidity">Humidity</span><span data-percent="48"></span></div>
+    </div>
+  </section>
+
+  <section class="card camera">
+    <img src="front-door.webp" alt="">
+    <span class="live" data-clock="seconds"></span>
+    <span class="label" data-t="front_door">Front door</span>
+  </section>
+
+  <section class="card">
+    <h2><i data-icon="bolt"></i><span data-t="energy">Energy</span></h2>
+    <div class="figures">
+      <div><i data-icon="sun" style="color: var(--warm)"></i><span data-t="solar">Solar</span><b data-kw="3.2"></b></div>
+      <div><i data-icon="home" style="color: var(--accent)"></i><span data-t="home_use">Home</span><b data-kw="1.1"></b></div>
+      <div><i data-icon="bolt" class="muted"></i><span data-t="to_grid">To the grid</span><b data-kw="2.1"></b></div>
+      <div><i data-icon="battery" style="color: var(--good)"></i><span data-t="battery">Battery</span><b data-percent="76"></b></div>
+    </div>
+    <div class="bar"><i style="width: 76%"></i></div>
+  </section>
+
+  <section class="card">
+    <h2><i data-icon="shield"></i><span data-t="doors">Doors and alarm</span></h2>
+    <button class="toggle" data-kind="lock" data-on="true"><i data-icon="lock"></i><span class="name" data-t="front_door">Front door</span><span class="state"></span></button>
+    <button class="toggle" data-kind="garage" data-on="true"><i data-icon="garage"></i><span class="name" data-t="garage">Garage</span><span class="state"></span></button>
+    <button class="toggle" data-kind="alarm" data-on="true"><i data-icon="shield"></i><span class="name" data-t="alarm">Alarm</span><span class="state"></span></button>
+  </section>
+
+  <section class="card">
+    <h2><i data-icon="calendar"></i><span data-t="today">Today</span></h2>
+    <ul class="events">
+      <li><time data-t="all_day">All day</time><span data-t="bins">Bin day: recycling out</span></li>
+      <li><time data-time="16:00"></time><span data-t="swimming">Swimming lessons</span></li>
+      <li><time data-time="18:30"></time><span data-t="dinner">Dinner with Sam</span></li>
+    </ul>
+  </section>
+
+  <section class="card laundry">
+    <h2><i data-icon="washer"></i><span data-t="washing_machine">Washing machine</span></h2>
+    <div class="muted" data-t="cotton">Cotton cycle</div>
+    <div class="status" id="washer" data-seconds="10"></div>
+    <div class="bar"><i id="washer-bar"></i></div>
+  </section>
+</main>
+<script src="translations.js"></script>
+<script src="demo.js"></script>
+</body>
+</html>

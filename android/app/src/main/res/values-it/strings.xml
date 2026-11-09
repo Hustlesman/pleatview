@@ -38,4 +38,20 @@
     <string name="playback_failed">Riproduzione non riuscita: %1$s</string>
     <string name="notification_channel">Connessione a Home Assistant</string>
     <string name="notification_text">In ascolto di Home Assistant sulla porta %1$d</string>
+    <string name="setup_demo">Prova la demo</string>
+    <string name="demo_label">Demo</string>
+    <string name="demo_overview">Panoramica</string>
+    <string name="demo_energy">Energia</string>
+    <string name="demo_cameras">Telecamere</string>
+    <string name="demo_intro">Una casa di esempio. Con Home Assistant qui compaiono le tue plance, e le tue automazioni possono mostrarci sopra delle cose, come queste.</string>
+    <string name="demo_notify_caption">Una notifica, per esempio quando la lavatrice ha finito.</string>
+    <string name="demo_notify_title">Lavatrice</string>
+    <string name="demo_notify_message">Il bucato è pronto. È ora di stenderlo.</string>
+    <string name="demo_camera_caption">Una telecamera in un angolo, per esempio quando qualcuno suona il campanello.</string>
+    <string name="demo_dashboard_caption">Un\'altra plancia per un po\': qui quella dell\'energia, per 15 secondi.</string>
+    <string name="demo_video_caption">Anche video e musica, come questa clip di %1$s.</string>
+    <string name="demo_end">Il tour è finito. Tocca le luci e le serrature di esempio per provarle. Per altre plance, rivedere il tour o chiudere la demo, tocca lo schermo e poi ⋮.</string>
+    <string name="menu_demo_info">Una casa di esempio. Per mostrare le tue plance, aggiungi questo dispositivo a Home Assistant con il PIN qui sopra.</string>
+    <string name="menu_demo_end">Chiudi la demo</string>
+    <string name="menu_demo_tour">Rivedi il tour</string>
 </resources>

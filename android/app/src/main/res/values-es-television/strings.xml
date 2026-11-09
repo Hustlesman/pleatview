@@ -8,4 +8,6 @@
     <string name="signin_enter_here">Introducir en la TV</string>
     <string name="signin_remember">Mantener la sesión iniciada en esta TV</string>
     <string name="overlay_settings_missing">Esta TV no tiene ese ajuste. Consulta pleatview.hustlesman.com/support para la solución de una línea.</string>
+    <string name="demo_end">Fin del recorrido. Prueba las luces y cerraduras de ejemplo con las flechas y OK. Pulsa Atrás para el menú: otros paneles, repetir el recorrido o «Salir de la demo».</string>
+    <string name="menu_demo_info">Una casa de ejemplo. Para mostrar tus propios paneles, añade este televisor a Home Assistant con el PIN de arriba.</string>
 </resources>

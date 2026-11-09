@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title data-t="energy">Energy</title>
+<link rel="stylesheet" href="demo.css">
+</head>
+<body class="energy">
+<header>
+  <div>
+    <h1 data-t="energy">Energy</h1>
+    <p id="date"></p>
+  </div>
+  <div class="top-right">
+    <span class="chip" data-t="demo">Demo</span>
+    <span class="clock" id="clock"></span>
+  </div>
+</header>
+
+<main class="grid">
+  <section class="card chart">
+    <h2><i data-icon="bolt"></i><span data-t="today">Today</span></h2>
+    <div class="legend"><span data-t="solar">Solar</span><span class="home" data-t="home_use">Home</span></div>
+    <svg id="chart" role="img"></svg>
+  </section>
+
+  <div class="stat-column">
+    <section class="card stat">
+      <h2><i data-icon="sun" style="color: var(--warm)"></i><span data-t="solar">Solar</span></h2>
+      <div class="value" id="solar-today"></div>
+    </section>
+    <section class="card stat">
+      <h2><i data-icon="home" style="color: var(--accent)"></i><span data-t="home_use">Home</span></h2>
+      <div class="value" id="home-today"></div>
+    </section>
+    <section class="card stat">
+      <h2><i data-icon="bolt"></i><span data-t="to_grid">To the grid</span></h2>
+      <div class="value" id="exported-today"></div>
+    </section>
+    <section class="card stat">
+      <h2><i data-icon="battery" style="color: var(--good)"></i><span data-t="battery">Battery</span></h2>
+      <div class="value" data-percent="76"></div>
+      <div class="bar"><i style="width: 76%"></i></div>
+    </section>
+  </div>
+</main>
+<script src="translations.js"></script>
+<script src="demo.js"></script>
+</body>
+</html>

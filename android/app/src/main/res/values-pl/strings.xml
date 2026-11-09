@@ -38,4 +38,20 @@
     <string name="playback_failed">Odtwarzanie nie powiodło się: %1$s</string>
     <string name="notification_channel">Połączenie z Home Assistant</string>
     <string name="notification_text">Czeka na Home Assistant na porcie %1$d</string>
+    <string name="setup_demo">Wypróbuj demo</string>
+    <string name="demo_label">Demo</string>
+    <string name="demo_overview">Przegląd</string>
+    <string name="demo_energy">Energia</string>
+    <string name="demo_cameras">Kamery</string>
+    <string name="demo_intro">Przykładowy dom. Z Home Assistant zobaczysz tu własne panele, a twoje automatyzacje mogą wyświetlać na nich różne rzeczy, takie jak te.</string>
+    <string name="demo_notify_caption">Powiadomienie, na przykład gdy pralka skończy pranie.</string>
+    <string name="demo_notify_title">Pralka</string>
+    <string name="demo_notify_message">Pranie skończone. Czas je rozwiesić.</string>
+    <string name="demo_camera_caption">Kamera w rogu ekranu, na przykład gdy ktoś dzwoni do drzwi.</string>
+    <string name="demo_dashboard_caption">Na chwilę inny panel: tutaj panel energii, przez 15 sekund.</string>
+    <string name="demo_video_caption">Także filmy i muzyka, jak ten fragment z %1$s.</string>
+    <string name="demo_end">To koniec prezentacji. Stuknij przykładowe światła i zamki, aby je wypróbować. Aby zobaczyć inne panele, obejrzeć prezentację jeszcze raz lub zakończyć demo, stuknij ekran, a potem ⋮.</string>
+    <string name="menu_demo_info">Przykładowy dom. Aby wyświetlać własne panele, dodaj to urządzenie do Home Assistant, używając PIN-u powyżej.</string>
+    <string name="menu_demo_end">Zakończ demo</string>
+    <string name="menu_demo_tour">Obejrzyj prezentację ponownie</string>
 </resources>

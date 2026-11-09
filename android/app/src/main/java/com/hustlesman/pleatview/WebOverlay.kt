@@ -10,6 +10,7 @@ import android.view.View
 import android.webkit.RenderProcessGoneDetail
 import android.webkit.WebChromeClient
 import android.webkit.WebResourceRequest
+import android.webkit.WebResourceResponse
 import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
@@ -31,6 +32,7 @@ class WebOverlay(
     private val main = Handler(Looper.getMainLooper())
     private var webView: WebView? = null
     private val closeRunnable = Runnable { close() }
+    private val demoPages = Demo.Pages(activity)
 
     var current: Command.ShowWeb? = null
         private set
@@ -101,6 +103,10 @@ class WebOverlay(
                 val scheme = request.url.scheme?.lowercase()
                 return scheme != "http" && scheme != "https"
             }
+
+            // The demo's camera comes from the app itself.
+            override fun shouldInterceptRequest(view: WebView, request: WebResourceRequest): WebResourceResponse? =
+                demoPages.serve(request.url)
 
             override fun onRenderProcessGone(view: WebView, detail: RenderProcessGoneDetail): Boolean {
                 if (view === webView) {

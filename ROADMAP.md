@@ -187,9 +187,13 @@ requires.
 - [ ] The public beta announced on the Home Assistant Community forum and r/homeassistant
 - [ ] GitHub issue templates: bug report (device, OS, Home Assistant version, logs) and
       device report
-- [ ] **Demo for reviewers:** a "Try the demo" option on the setup screen, connected to
-      an isolated, read-only demo Home Assistant (demo data only, never a real home).
-      Store reviewers can't test without a server, and Google reviews beta builds too.
+- [x] **Demo for reviewers:** *Try the demo* on the setup screen shows a sample home and
+      a 90-second tour of what Home Assistant can show on top of it: a notification, a
+      doorbell camera in a corner, another dashboard for a while and a video, each with a
+      caption. Back opens its menu: the sample dashboards, the tour again, or the end of the
+      demo. Store reviewers can't test without a server, and Google reviews beta builds too.
+      Done on 9 Nov, built into the app rather than on a demo Home Assistant, so there's no
+      server to keep running; in 11 languages, and checked by `tools/e2e/run.py`.
 - [ ] **Phones, tablets and Chromebooks.** The same Android app, made for touch: the menu
       opens by touch, setup and the menu work in portrait, and Home Assistant gets battery
       and charging sensors for wall-mounted tablets. Google Play builds install on phones,
@@ -342,7 +346,7 @@ website and in the README.
 | --- | --- |
 | Google Play rejects the background service or the TV app review fails | Choose the service type in M1, prepare the declaration video, and if needed only run the control server while the app is visible on the Play build |
 | A Home Assistant frontend release breaks kiosk mode or sign-in (monthly releases) | Scripted end-to-end test (M1) run against each Home Assistant beta; a fix release within a week |
-| Store reviewers can't test without a Home Assistant server | Demo mode and a public read-only demo instance (M2) |
+| Store reviewers can't test without a Home Assistant server | A demo built into the app: a sample home and a tour of what Home Assistant can send (done in M2) |
 | LG or Samsung store approval takes too long | Meanwhile, the web player works in their TV browsers and sideloading is documented |
 | OLED burn-in on displays that stay on 24/7 | Pixel shift option, dark themes, night standby, guidance in the docs |
 | TV screensavers or energy-saving modes override keep-awake on webOS and Tizen | Use the platforms' keep-awake APIs in M5 and document the TV settings |

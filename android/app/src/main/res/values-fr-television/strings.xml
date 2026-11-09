@@ -8,4 +8,6 @@
     <string name="signin_enter_here">Saisir sur le téléviseur</string>
     <string name="signin_remember">Rester connecté sur ce téléviseur</string>
     <string name="overlay_settings_missing">Ce téléviseur n\'a pas de réglage pour cela. Voir pleatview.hustlesman.com/support pour la solution en une ligne.</string>
+    <string name="demo_end">C\'est la fin de la visite. Essayez les lampes et les serrures d\'exemple avec les flèches et OK. Appuyez sur Retour pour le menu : d\'autres tableaux de bord, revoir la visite ou « Quitter la démo ».</string>
+    <string name="menu_demo_info">Une maison d\'exemple. Pour afficher vos propres tableaux de bord, ajoutez ce téléviseur à Home Assistant avec le code PIN ci-dessus.</string>
 </resources>

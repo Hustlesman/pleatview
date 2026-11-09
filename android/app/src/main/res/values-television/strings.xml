@@ -8,4 +8,6 @@
     <string name="signin_enter_here">Enter on the TV</string>
     <string name="signin_remember">Keep me signed in on this TV</string>
     <string name="overlay_settings_missing">This TV has no setting for it. See pleatview.hustlesman.com/support for the one-line fix.</string>
+    <string name="demo_end">That\'s the tour. Try the sample lights and locks with the arrows and OK. Press Back for the menu: other dashboards, the tour again, or End the demo.</string>
+    <string name="menu_demo_info">A sample home. To show your own dashboards, add this TV to Home Assistant with the PIN above.</string>
 </resources>

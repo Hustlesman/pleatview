@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title data-t="cameras">Cameras</title>
+<link rel="stylesheet" href="demo.css">
+</head>
+<body class="cameras">
+<header>
+  <div>
+    <h1 data-t="cameras">Cameras</h1>
+    <p id="date"></p>
+  </div>
+  <div class="top-right">
+    <span class="chip" data-t="demo">Demo</span>
+    <span class="clock" id="clock"></span>
+  </div>
+</header>
+
+<main class="grid">
+  <section class="card camera">
+    <img src="front-door.webp" alt="">
+    <span class="live" data-clock="seconds"></span>
+    <span class="label" data-t="front_door">Front door</span>
+  </section>
+  <section class="card camera">
+    <img src="driveway.webp" alt="">
+    <span class="live" data-clock="seconds"></span>
+    <span class="label" data-t="driveway">Driveway</span>
+  </section>
+  <section class="card camera">
+    <img src="garden.webp" alt="">
+    <span class="live" data-clock="seconds"></span>
+    <span class="label" data-t="garden">Back garden</span>
+  </section>
+  <section class="card camera">
+    <img src="living-room.webp" alt="">
+    <span class="live" data-clock="seconds"></span>
+    <span class="label" data-t="living_room">Living room</span>
+  </section>
+</main>
+<script src="translations.js"></script>
+<script src="demo.js"></script>
+</body>
+</html>

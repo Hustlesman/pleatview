@@ -38,4 +38,20 @@
     <string name="playback_failed">Uppspelningen misslyckades: %1$s</string>
     <string name="notification_channel">Anslutning till Home Assistant</string>
     <string name="notification_text">Väntar på Home Assistant på port %1$d</string>
+    <string name="setup_demo">Prova demon</string>
+    <string name="demo_label">Demo</string>
+    <string name="demo_overview">Översikt</string>
+    <string name="demo_energy">Energi</string>
+    <string name="demo_cameras">Kameror</string>
+    <string name="demo_intro">Ett exempelhem. Med Home Assistant visas dina egna paneler här, och dina automationer kan visa saker ovanpå dem, som de här.</string>
+    <string name="demo_notify_caption">En avisering, till exempel när tvättmaskinen är klar.</string>
+    <string name="demo_notify_title">Tvättmaskin</string>
+    <string name="demo_notify_message">Tvätten är klar. Dags att hänga upp den.</string>
+    <string name="demo_camera_caption">En kamera i ett hörn, till exempel när någon ringer på dörren.</string>
+    <string name="demo_dashboard_caption">En annan panel en stund: här energipanelen, i 15 sekunder.</string>
+    <string name="demo_video_caption">Även video och musik, som det här klippet ur %1$s.</string>
+    <string name="demo_end">Det var rundturen. Tryck på exempellamporna och låsen för att prova dem. För andra paneler, rundturen igen eller för att avsluta demon: tryck på skärmen och sedan på ⋮.</string>
+    <string name="menu_demo_info">Ett exempelhem. Lägg till den här enheten i Home Assistant med PIN-koden ovan för att visa dina egna paneler.</string>
+    <string name="menu_demo_end">Avsluta demon</string>
+    <string name="menu_demo_tour">Se rundturen igen</string>
 </resources>

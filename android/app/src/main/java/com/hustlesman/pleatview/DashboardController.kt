@@ -73,6 +73,7 @@ class DashboardController(
     private var retryAttempt = 0
     private val forcedAuth = ArrayDeque<Long>()
     private var networkCallback: ConnectivityManager.NetworkCallback? = null
+    private val demoPages = Demo.Pages(activity)
     private val signInFlow = SignInFlow(PleatApp.from(activity).signIns, main) { request ->
         hub.update { this.signIn = request }
         callbacks.onSignIn(request)
@@ -570,6 +571,10 @@ class DashboardController(
             val scheme = request.url.scheme?.lowercase()
             return scheme != "http" && scheme != "https" // no intent://, tel:, market: … on a TV
         }
+
+        // The demo's pages come from the app itself.
+        override fun shouldInterceptRequest(view: WebView, request: WebResourceRequest): WebResourceResponse? =
+            demoPages.serve(request.url)
 
         override fun onPageFinished(view: WebView, url: String?) {
             if (view !== webView || url == BLANK) return

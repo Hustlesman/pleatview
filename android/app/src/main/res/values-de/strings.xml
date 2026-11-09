@@ -38,4 +38,20 @@
     <string name="playback_failed">Wiedergabe fehlgeschlagen: %1$s</string>
     <string name="notification_channel">Verbindung zu Home Assistant</string>
     <string name="notification_text">Wartet auf Home Assistant an Port %1$d</string>
+    <string name="setup_demo">Demo ausprobieren</string>
+    <string name="demo_label">Demo</string>
+    <string name="demo_overview">Übersicht</string>
+    <string name="demo_energy">Energie</string>
+    <string name="demo_cameras">Kameras</string>
+    <string name="demo_intro">Ein Beispielzuhause. Mit Home Assistant erscheinen hier deine eigenen Dashboards, und deine Automatisierungen können Dinge darüber einblenden, so wie diese.</string>
+    <string name="demo_notify_caption">Eine Benachrichtigung, zum Beispiel wenn die Waschmaschine fertig ist.</string>
+    <string name="demo_notify_title">Waschmaschine</string>
+    <string name="demo_notify_message">Die Wäsche ist fertig. Zeit zum Aufhängen.</string>
+    <string name="demo_camera_caption">Eine Kamera in einer Ecke, zum Beispiel wenn jemand an der Tür klingelt.</string>
+    <string name="demo_dashboard_caption">Für eine Weile ein anderes Dashboard: hier das Energie-Dashboard, 15 Sekunden lang.</string>
+    <string name="demo_video_caption">Auch Videos und Musik, wie dieser Ausschnitt aus %1$s.</string>
+    <string name="demo_end">Das war die Tour. Tippe auf die Beispiel-Lampen und -Schlösser, um sie auszuprobieren. Für andere Dashboards, die Tour noch einmal oder um die Demo zu beenden, tippe auf den Bildschirm und dann auf ⋮.</string>
+    <string name="menu_demo_info">Ein Beispielzuhause. Um deine eigenen Dashboards zu zeigen, füge dieses Gerät mit der PIN oben zu Home Assistant hinzu.</string>
+    <string name="menu_demo_end">Demo beenden</string>
+    <string name="menu_demo_tour">Tour noch einmal ansehen</string>
 </resources>

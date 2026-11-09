@@ -38,4 +38,20 @@
     <string name="playback_failed">Přehrávání selhalo: %1$s</string>
     <string name="notification_channel">Připojení k Home Assistant</string>
     <string name="notification_text">Čeká na Home Assistant na portu %1$d</string>
+    <string name="setup_demo">Vyzkoušet demo</string>
+    <string name="demo_label">Demo</string>
+    <string name="demo_overview">Přehled</string>
+    <string name="demo_energy">Energie</string>
+    <string name="demo_cameras">Kamery</string>
+    <string name="demo_intro">Ukázková domácnost. S Home Assistant se zde zobrazují vaše vlastní panely a vaše automatizace na ně mohou umístit další věci, například tyto.</string>
+    <string name="demo_notify_caption">Oznámení, například když pračka dopere.</string>
+    <string name="demo_notify_title">Pračka</string>
+    <string name="demo_notify_message">Praní je hotové. Je čas prádlo pověsit.</string>
+    <string name="demo_camera_caption">Kamera v rohu, například když někdo zazvoní u dveří.</string>
+    <string name="demo_dashboard_caption">Na chvíli jiný panel: tady panel energie, na 15 sekund.</string>
+    <string name="demo_video_caption">Také videa a hudba, jako tato ukázka z filmu %1$s.</string>
+    <string name="demo_end">To je konec prohlídky. Klepnutím na ukázková světla a zámky si je vyzkoušejte. Pro další panely, novou prohlídku nebo ukončení dema klepněte na obrazovku a potom na ⋮.</string>
+    <string name="menu_demo_info">Ukázková domácnost. Chcete-li zobrazit vlastní panely, přidejte toto zařízení do Home Assistant pomocí PIN výše.</string>
+    <string name="menu_demo_end">Ukončit demo</string>
+    <string name="menu_demo_tour">Spustit prohlídku znovu</string>
 </resources>

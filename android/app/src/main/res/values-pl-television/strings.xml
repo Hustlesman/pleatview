@@ -8,4 +8,6 @@
     <string name="signin_enter_here">Wpisz na telewizorze</string>
     <string name="signin_remember">Nie wylogowuj mnie na tym telewizorze</string>
     <string name="overlay_settings_missing">Ten telewizor nie ma takiego ustawienia. Rozwiązanie w jednej linii znajdziesz na pleatview.hustlesman.com/support.</string>
+    <string name="demo_end">To koniec prezentacji. Wypróbuj przykładowe światła i zamki strzałkami i przyciskiem OK. Naciśnij Wstecz, aby otworzyć menu: inne panele, prezentacja jeszcze raz lub „Zakończ demo”.</string>
+    <string name="menu_demo_info">Przykładowy dom. Aby wyświetlać własne panele, dodaj ten telewizor do Home Assistant, używając PIN-u powyżej.</string>
 </resources>
