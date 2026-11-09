@@ -27,8 +27,8 @@ Raspberry Pi ([PleatView for Linux](linux/README.md)). Made by Hustlesman.
 - **Any web dashboard.** Webpage dashboards (Grafana, UniFi, OpenSearch…) open directly,
   zoomed to fit. When one asks for a password, the TV shows a QR code: sign in on your
   phone, and the TV keeps the sign-in, encrypted, on the TV only.
-- **Small.** The release APK is about 1.2 MB, with no Google Play services and no
-  cloud. Everything stays on your LAN.
+- **Small.** The release APK is about 2.3 MB (the demo's video and photos are 0.9 MB of
+  it), with no Google Play services and no cloud. Everything stays on your LAN.
 - **A demo, no server needed.** *Try the demo* on the setup screen shows a sample home and
   a 90-second tour of what Home Assistant can show on top of it: a notification, a doorbell
   camera in a corner, another dashboard for a while and a video. It's built into the app.
