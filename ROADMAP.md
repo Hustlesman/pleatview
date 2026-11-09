@@ -350,6 +350,7 @@ website and in the README.
 | LG or Samsung store approval takes too long | Meanwhile, the web player works in their TV browsers and sideloading is documented |
 | OLED burn-in on displays that stay on 24/7 | Pixel shift option, dark themes, night standby, guidance in the docs |
 | TV screensavers or energy-saving modes override keep-awake on webOS and Tizen | Use the platforms' keep-awake APIs in M5 and document the TV settings |
+| A Samsung TV's browser plays one video at a time (a 2024 model on Tizen 9, 9 Nov: of four muted YouTube players, only one started). A camera next to a playing video, or a wall of streams, may not work there | Check how many videos a Tizen app can play in M5; until then the web player shows one video at a time on Samsung TVs and says so |
 | Apple rejects an app that mostly shows web pages (App Store guideline 4.2) | Native features beyond the page (discovery, pairing, keep-awake, Guided Access); meanwhile the web player works in Safari |
 | Smart displays close the page after a while: the Nest Hub stops a cast after about 10 minutes, and an Echo Show can go back to its home screen | The integration opens or casts the player again when it stops; checked on each device before it's listed |
 | One developer, many platforms | The rules above: one milestone at a time, a fixed scope, and the parking lot |
