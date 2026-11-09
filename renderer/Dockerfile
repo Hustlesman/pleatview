@@ -1,8 +1,9 @@
 # PleatView Renderer: Chromium, a virtual display and ffmpeg, controlled by a small Python server.
 # Only free software from Debian's main archive; /app-packages.txt (and GET /api/packages) lists
 # every installed package and version, for audits and vulnerability scans.
-ARG BUILD_FROM=debian:bookworm-slim@sha256:734a72b3d6142a71993b4bc580ca01d8ca687f77a2c422d96a961d3376b179bc
-FROM ${BUILD_FROM}
+# Not BUILD_FROM: Home Assistant's Supervisor sets that to its own Alpine base image.
+ARG DEBIAN=debian:bookworm-slim@sha256:734a72b3d6142a71993b4bc580ca01d8ca687f77a2c422d96a961d3376b179bc
+FROM ${DEBIAN}
 
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \

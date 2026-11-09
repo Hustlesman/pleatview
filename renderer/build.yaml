@@ -1,4 +1,0 @@
-# Home Assistant builds the add-on from this folder, on the machine itself, from this pinned base.
-build_from:
-  amd64: debian:bookworm-slim@sha256:734a72b3d6142a71993b4bc580ca01d8ca687f77a2c422d96a961d3376b179bc
-  aarch64: debian:bookworm-slim@sha256:734a72b3d6142a71993b4bc580ca01d8ca687f77a2c422d96a961d3376b179bc
