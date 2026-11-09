@@ -464,7 +464,8 @@ def view_bounds(view_id: str) -> tuple[int, int, int, int] | None:
     relative to the view's parent, which for the views asked about fills the screen.
     """
     dump = adb("shell", "dumpsys", "activity", f"{PACKAGE}/.MainActivity", check=False)
-    match = re.search(r"\{\w+ V\S* \S+ (-?\d+),(-?\d+)-(-?\d+),(-?\d+) #\w+ app:id/" + view_id + r"\}", dump)
+    # Focusable views add their accessibility id: "… app:id/setup_demo aid=1073741824}".
+    match = re.search(r"\{\w+ V\S* \S+ (-?\d+),(-?\d+)-(-?\d+),(-?\d+) #\w+ app:id/" + view_id + r"(?: [^}]*)?\}", dump)
     return tuple(int(n) for n in match.groups()) if match else None
 
 
@@ -722,8 +723,12 @@ def checks(r: Run, report: Report, apk: Path) -> None:
         wait_for("the demo's notification", lambda: view_bounds("toast_card"), timeout=30, interval=1)
         wait_for("the demo's door camera", lambda: view_bounds("web_overlay_container"), timeout=30, interval=1)
         report.screenshot("01-demo-camera")
+        # Back closes the camera first, as it would one from Home Assistant; then it opens the menu.
         adb("shell", "input", "keyevent", "KEYCODE_BACK")
-        wait_for("the demo's menu", lambda: view_bounds("menu_panel"), timeout=15, interval=1)
+        wait_for("Back to close the door camera", lambda: not view_bounds("web_overlay_container"), timeout=10, interval=1)
+        adb("shell", "input", "keyevent", "KEYCODE_BACK")
+        # The overlay, not the panel: a view in a hidden layer still calls itself visible.
+        wait_for("the demo's menu", lambda: view_bounds("menu_overlay"), timeout=15, interval=1)
         press("End the demo")
         pin = wait_for("the setup screen again", read_pin, timeout=30)
         if adb("shell", "pidof", PACKAGE).strip() != pid:
