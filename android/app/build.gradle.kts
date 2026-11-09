@@ -20,8 +20,8 @@ android {
         applicationId = "com.hustlesman.pleatview"
         minSdk = 24
         targetSdk = 36
-        versionCode = 16
-        versionName = "1.0.13"
+        versionCode = 17
+        versionName = "1.0.14"
         buildConfigField("String", "DONATE_URL", "\"$donateUrl\"")
     }
 
