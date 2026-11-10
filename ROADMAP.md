@@ -237,6 +237,13 @@ store on Google TV and Fire TV.
 - [ ] Checked against Google's TV app quality guidelines
 - [ ] Public on Google Play once the beta has run its 14 days
 - [ ] Submitted to the Amazon Appstore for Fire TV and Fire tablets (Fire OS devices only)
+- [ ] **In cars, with Amazon Automotive (Fire TV for Auto):** the rear-seat screens of the
+      Stellantis (Jeep) Wagoneer and Grand Wagoneer (AFTLFT962X3) and the BMW 7 Series
+      Theatre Screen (AFTLBT962E2) install from the Amazon Appstore too, so the submission
+      targets them. Today Home Assistant has to reach the screen on the home network, so a car
+      pairs and takes commands only on the home Wi-Fi; on the road it needs protocol v2 (M4),
+      where the app connects out to Home Assistant. Check the BMW's very wide screen, and touch
+      on both
 - [ ] **Encrypted connections at home.** Today Home Assistant, the TV and the phone page talk
       plain HTTP on the local network ([SECURITY.md](SECURITY.md)). The TV makes its own
       certificate, and Home Assistant pins it when pairing, so the tokens travel encrypted.
