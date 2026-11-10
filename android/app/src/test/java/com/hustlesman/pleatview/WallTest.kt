@@ -10,6 +10,9 @@ class WallTest {
     @Test
     fun wallAddressesListTheirStreams() {
         val ids = listOf("rFZHOHl-L8A", "ROboUHfPUrU", "XsOU8JnEpNM")
+        assertEquals(ids, Wall.ids("http://192.168.1.10:8123/api/pleatview/wall?v=rFZHOHl-L8A,ROboUHfPUrU,XsOU8JnEpNM"))
+        assertEquals(ids, Wall.ids("https://ha.example.org/api/pleatview/wall/?v=rFZHOHl-L8A,ROboUHfPUrU,XsOU8JnEpNM"))
+        // 1.0.14's address on the website.
         assertEquals(ids, Wall.ids("https://pleatview.hustlesman.com/wall?v=rFZHOHl-L8A,ROboUHfPUrU,XsOU8JnEpNM"))
         assertEquals(ids, Wall.ids("https://pleatview.hustlesman.com/wall/?v=rFZHOHl-L8A%2CROboUHfPUrU%2CXsOU8JnEpNM"))
         assertEquals(ids, Wall.ids("http://PleatView.Hustlesman.com/wall.html?x=1&v=rFZHOHl-L8A,%20ROboUHfPUrU,XsOU8JnEpNM#top"))
@@ -29,6 +32,8 @@ class WallTest {
         assertNull(Wall.ids("https://pleatview.hustlesman.com/?v=rFZHOHl-L8A"))
         assertNull(Wall.ids("https://pleatview.hustlesman.com/wallpaper?v=rFZHOHl-L8A"))
         assertNull(Wall.ids("https://example.com/wall?v=rFZHOHl-L8A"))
+        assertNull(Wall.ids("http://192.168.1.10:8123/api/pleatview/wall2?v=rFZHOHl-L8A"))
+        assertNull(Wall.ids("http://192.168.1.10:8123/local/api/pleatview/wall?v=rFZHOHl-L8A"))
         assertNull(Wall.ids("http://homeassistant.local:8123/local/streams.html?v=rFZHOHl-L8A"))
         assertNull(Wall.ids("/lovelace/0"))
     }
