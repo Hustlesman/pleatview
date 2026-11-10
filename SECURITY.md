@@ -36,7 +36,7 @@ PleatView is built for a home network you trust. What it does, and what it can't
   before. Versions up to 1.0.6 showed the dashboard over any lock screen.
 - **The PleatView Renderer** (optional, [Render on Home Assistant](docs/render-on-home-assistant.md))
   runs a TV's dashboards in Chromium on the Home Assistant machine, signed in with that
-  TV's token. Its own interface has no sign-in: keep it off the network, as the add-on
+  TV's token. Its own interface has no sign-in: keep it off the network, as the Home Assistant app
   (Home Assistant's internal network only) and the documented `docker run` (127.0.0.1)
   do. Chromium runs as an unprivileged user. The stream reaches the TV through Home
   Assistant, at an address with a secret only that TV gets. The image holds only free

@@ -165,6 +165,14 @@ async def detect_encoder(choice: str) -> str:
     return "vaapi" if await proc.wait() == 0 else "x264"
 
 
+def advertised_address(env: dict[str, str], port: int) -> str:
+    """The address to put in PleatView's options: the one it listens on, or its host name."""
+    host = env.get("HOST", "0.0.0.0")
+    if host in ("", "0.0.0.0", "::"):
+        host = env.get("HOSTNAME", "<this machine>")
+    return f"http://{host}:{port}"
+
+
 def settings() -> dict[str, str]:
     """Environment variables, or the add-on's options when running as a Home Assistant add-on."""
     values = dict(os.environ)
@@ -182,6 +190,6 @@ def main() -> None:
     encoder = asyncio.run(detect_encoder(env.get("ENCODER", "auto")))
     port = int(env.get("PORT", "8780"))
     _LOGGER.info("PleatView Renderer %s, encoding with %s", VERSION, encoder)
-    _LOGGER.info("In PleatView's options, use the renderer address http://%s:%d", env.get("HOSTNAME", "<this host>"), port)
+    _LOGGER.info("In PleatView's options, use the renderer address %s", advertised_address(env, port))
     app = create_app(root, encoder, max_sessions=int(env.get("MAX_SCREENS", "4")))
     web.run_app(app, host=env.get("HOST", "0.0.0.0"), port=port, print=None)

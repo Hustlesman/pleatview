@@ -73,7 +73,7 @@
           "reopen_minutes": "Gdy ktoś opuści PleatView dla innej aplikacji, wraca, gdy przez tyle czasu nic nie odtwarzało dźwięku. 0 nigdy nie wraca.",
           "reload_minutes": "Regularne pełne odświeżenie zwalnia pamięć na ekranach działających długo. 0 nigdy nie odświeża.",
           "launch_on_boot": "Wymaga na telewizorze uprawnienia \"Wyświetlanie nad innymi aplikacjami\".",
-          "render_url": "Adres PleatView Renderer, np. http://localhost:8780. Komputer z Home Assistant uruchamia wtedy panele tego telewizora i wysyła mu ich obraz wideo, dla telewizorów zbyt wolnych na ciężkie panele lub ściany wideo. Puste: telewizor uruchamia je sam."
+          "render_url": "Adres PleatView Renderer, np. http://ce7dee09-pleatview-renderer:8780. Komputer z Home Assistant uruchamia wtedy panele tego telewizora i wysyła mu ich obraz wideo, dla telewizorów zbyt wolnych na ciężkie panele lub ściany wideo. Puste: telewizor uruchamia je sam."
         }
       }
     },

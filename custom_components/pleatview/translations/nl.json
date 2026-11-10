@@ -73,7 +73,7 @@
           "reopen_minutes": "Als iemand PleatView verlaat voor een andere app, komt het terug zodra er zo lang geen geluid heeft gespeeld. 0 komt nooit terug.",
           "reload_minutes": "Regelmatig volledig herladen maakt geheugen vrij op schermen die lang aanstaan. 0 herlaadt nooit.",
           "launch_on_boot": "Heeft op de tv de toestemming \"Weergeven vóór andere apps\" nodig.",
-          "render_url": "Adres van de PleatView Renderer, zoals http://localhost:8780. De computer van Home Assistant draait dan de dashboards van deze tv en stuurt de tv er een video van, voor tv's die te traag zijn voor zware dashboards of videomuren. Leeg: de tv draait ze zelf."
+          "render_url": "Adres van de PleatView Renderer, zoals http://ce7dee09-pleatview-renderer:8780. De computer van Home Assistant draait dan de dashboards van deze tv en stuurt de tv er een video van, voor tv's die te traag zijn voor zware dashboards of videomuren. Leeg: de tv draait ze zelf."
         }
       }
     },

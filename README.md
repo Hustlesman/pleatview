@@ -190,7 +190,7 @@ of streams in a process of its own. See [a wall of live streams](docs/ideas/live
 **Render on Home Assistant.** For a TV too slow for a dashboard, such as a streaming stick
 with a wall of nine live streams, Home Assistant's machine can run the dashboard and send
 the TV one video of it, which every TV plays smoothly. It takes the PleatView Renderer
-(an add-on, or a container) and one option per TV, from 1.0.14: see
+(a Home Assistant app, or a container) and one option per TV, from 1.0.14: see
 [Render on Home Assistant](docs/render-on-home-assistant.md).
 
 **Sites that ask for a sign-in.** When a dashboard shows a login form or a password

@@ -76,6 +76,14 @@ class PageTest(unittest.TestCase):
         self.assertTrue(page.script("", "", "off").startswith('if ("" && '))
 
 
+class AddressTest(unittest.TestCase):
+    def test_the_log_names_the_address_to_use(self) -> None:
+        # The documented docker run listens on 127.0.0.1 only; the add-on on all addresses.
+        self.assertEqual(server.advertised_address({"HOST": "127.0.0.1", "HOSTNAME": "media"}, 8780), "http://127.0.0.1:8780")
+        self.assertEqual(server.advertised_address({"HOSTNAME": "a0d7b954-pleatview-renderer"}, 8780),
+                         "http://a0d7b954-pleatview-renderer:8780")
+
+
 class ApiTest(AioHTTPTestCase):
     async def get_application(self):
         self.root = tempfile.TemporaryDirectory()

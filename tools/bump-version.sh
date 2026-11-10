@@ -36,5 +36,6 @@ PY
 
 sed -i -E "s/^version: \"[^\"]+\"/version: \"$version\"/" "$root/renderer/config.yaml"
 sed -i -E "s/^VERSION = \"[^\"]+\"/VERSION = \"$version\"/" "$root/renderer/pleatview_renderer/server.py"
+sed -i -E "s/pleatview\.git#v[0-9.]+:renderer/pleatview.git#v$version:renderer/" "$root/docs/render-on-home-assistant.md"
 
 echo "Version $version (versionCode $((code + 1))). After merging, tag the commit: git tag v$version"
