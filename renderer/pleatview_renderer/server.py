@@ -24,7 +24,7 @@ from .session import Screen, Session
 
 _LOGGER = logging.getLogger(__name__)
 
-VERSION = "1.0.15"
+VERSION = "1.0.16"
 KEY = re.compile(r"^[A-Za-z0-9_-]{1,64}$")
 FILE = re.compile(r"^(index\.m3u8|s\d{1,9}\.ts)$")
 KIOSK_MODES = ("full", "sidebar", "off")
