@@ -388,7 +388,7 @@ class DashboardController(
             // The page's WebView waits blank behind the wall, so its renderer is free.
             view.loadUrl(BLANK)
             view.visibility = View.INVISIBLE
-            wall.show(streams, viewportWidth())
+            wall.show(streams, viewportWidth(), config.resolve(Wall.PATH).takeIf { Config.isHttpUrl(it) })
             callbacks.onStatus(null)
         } else {
             wall.hide()

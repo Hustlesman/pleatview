@@ -4,9 +4,9 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <!--
-  A wall of muted YouTube streams: /wall?v=ID,ID,ID,ID
-  The PleatView TV app (1.0.14 and later) shows this address itself, one row of players per
-  renderer process; anywhere else this page shows the same wall.
+  A demo of PleatView's wall of muted YouTube streams: /wall?v=ID,ID,ID,ID
+  Walls on TVs come from Home Assistant itself (/api/pleatview/wall, served by the
+  integration from 1.0.15), not from this site.
 -->
 <title>PleatView wall</title>
 <meta name="theme-color" content="#0a0e11">
@@ -26,11 +26,11 @@
 <body>
 <main hidden>
   <img src="/img/logo.svg" width="208" height="40" alt="PleatView">
-  <p>This page shows YouTube streams side by side, muted. Put their video IDs after <code>?v=</code>, separated by commas:
-  <code>https://pleatview.hustlesman.com/wall?v=ID,ID,ID,ID</code></p>
-  <p>An ID is the part of a video's address after <code>watch?v=</code>, <code>/live/</code> or <code>youtu.be/</code>.
-  The <a href="https://github.com/Hustlesman/pleatview/blob/main/docs/ideas/live-streams.md">live streams guide</a>
-  shows how to put a wall on a TV with PleatView.</p>
+  <p>A demo of PleatView's wall: YouTube streams side by side, muted. Put their video IDs after
+  <code>?v=</code>, separated by commas.</p>
+  <p>On a TV, your own Home Assistant serves the wall, at <code>/api/pleatview/wall?v=ID,ID,ID,ID</code>:
+  the <a href="https://github.com/Hustlesman/pleatview/blob/main/docs/ideas/live-streams.md">live streams guide</a>
+  shows how.</p>
 </main>
 <script>
   const param = new URLSearchParams(location.search).get("v") || "";

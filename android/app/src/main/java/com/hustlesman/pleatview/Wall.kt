@@ -26,8 +26,9 @@ import kotlin.math.roundToInt
 import kotlin.math.sqrt
 
 /**
- * A wall of YouTube streams, https://pleatview.hustlesman.com/wall?v=ID,ID,…, which the app shows
- * itself rather than loading that page. A renderer runs the scripts of every player it shows on one
+ * A wall of YouTube streams, Home Assistant's /api/pleatview/wall?v=ID,ID,… (served by the
+ * integration; 1.0.14 used https://pleatview.hustlesman.com/wall), which the app shows itself
+ * rather than loading that page. A renderer runs the scripts of every player it shows on one
  * thread, and on a TV box that thread keeps up with only a few YouTube players: nine stall (issue #77).
  * Each row of the wall gets its own WebView profile, which Chromium gives its own renderer process,
  * so the rows play side by side on the processor's cores.
@@ -38,18 +39,22 @@ class Wall(private val activity: Activity, private val container: FrameLayout, p
     private var rows: List<List<String>> = emptyList()
     private var columns = 1
     private var viewportWidth = 0
+    private var baseUrl: String? = null
 
     val isShown: Boolean get() = layout != null
 
     /**
      * Shows [ids] as a wall, at the zoom of a page [viewportWidth] CSS pixels wide (0: the screen's
-     * own). The same wall again stays as it is: when the low-memory killer takes the dashboard's
-     * idle renderer and PleatView recreates that WebView, the streams play on.
+     * own), as if loaded from [baseUrl], the wall's address on Home Assistant: that's the page
+     * YouTube's players are told embeds them. The same wall again stays as it is: when the
+     * low-memory killer takes the dashboard's idle renderer and PleatView recreates that
+     * WebView, the streams play on.
      */
-    fun show(ids: List<String>, viewportWidth: Int) {
-        if (isShown && ids == rows.flatten() && viewportWidth == this.viewportWidth) return
+    fun show(ids: List<String>, viewportWidth: Int, baseUrl: String?) {
+        if (isShown && ids == rows.flatten() && viewportWidth == this.viewportWidth && baseUrl == this.baseUrl) return
         hide()
         this.viewportWidth = viewportWidth
+        this.baseUrl = baseUrl
         columns = columns(ids.size)
         rows = ids.chunked(columns)
         val layout = LinearLayout(activity).apply {
@@ -66,7 +71,7 @@ class Wall(private val activity: Activity, private val container: FrameLayout, p
         if (!isShown) return
         val ids = rows.flatten()
         hide()
-        show(ids, viewportWidth)
+        show(ids, viewportWidth, baseUrl)
     }
 
     fun hide() {
@@ -135,15 +140,16 @@ class Wall(private val activity: Activity, private val container: FrameLayout, p
 
             override fun onPermissionRequest(request: PermissionRequest) = request.deny()
         }
-        // The page's address is the wall's own, which YouTube's players are told as the referrer.
-        view.loadDataWithBaseURL(PAGE, html(rows[index], columns, viewportWidth), "text/html", "utf-8", null)
+        view.loadDataWithBaseURL(baseUrl, html(rows[index], columns, viewportWidth), "text/html", "utf-8", null)
         return view
     }
 
     companion object {
-        const val PAGE = "https://pleatview.hustlesman.com/wall"
+        /** The wall's path on Home Assistant. */
+        const val PATH = "/api/pleatview/wall"
         const val MAX_STREAMS = 16
-        private const val HOST = "pleatview.hustlesman.com"
+        /** Where 1.0.14 put walls; still shown, though the integration serves them now. */
+        private const val OLD_HOST = "pleatview.hustlesman.com"
         private const val GAP = 4
         private val ID = Regex("^[A-Za-z0-9_-]{11}$")
         private val YOUTUBE_ORIGINS = setOf("https://www.youtube.com", "https://www.youtube-nocookie.com")
@@ -153,8 +159,10 @@ class Wall(private val activity: Activity, private val container: FrameLayout, p
         /** The YouTube video IDs of a wall address, or null if [url] isn't one. */
         fun ids(url: String): List<String>? {
             val uri = runCatching { URI(url) }.getOrNull() ?: return null
-            if (uri.scheme?.lowercase() !in listOf("https", "http") || uri.host?.lowercase() != HOST) return null
-            if (uri.rawPath.orEmpty().removeSuffix("/").removeSuffix(".html") != "/wall") return null
+            val host = uri.host?.lowercase() ?: return null
+            if (uri.scheme?.lowercase() !in listOf("https", "http")) return null
+            val path = uri.rawPath.orEmpty().removeSuffix("/")
+            if (path != PATH && (host != OLD_HOST || path.removeSuffix(".html") != "/wall")) return null
             val value = uri.rawQuery.orEmpty().split('&')
                 .firstNotNullOfOrNull { param -> param.split('=', limit = 2).takeIf { it[0] == "v" }?.getOrNull(1) }
                 ?: return null

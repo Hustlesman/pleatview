@@ -38,13 +38,14 @@ from .const import (
 )
 from .coordinator import PleatViewConfigEntry, PleatViewDevice
 from .render import RenderStreamView
+from .wall import WallView
 
 _LOGGER = logging.getLogger(__name__)
 
 LOVELACE_UPDATED = "lovelace_updated"  # fired when a dashboard's configuration is saved
 
 PLATFORMS = [Platform.BINARY_SENSOR, Platform.MEDIA_PLAYER, Platform.NOTIFY, Platform.SENSOR]
-RENDER_VIEW = f"{DOMAIN}_render_view"
+VIEWS = f"{DOMAIN}_views"  # the stream and wall pages, registered with the first TV
 TOKEN_LIFETIME = timedelta(days=3650)
 
 
@@ -72,9 +73,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: PleatViewConfigEntry) ->
         raise ConfigEntryNotReady(f"A different PleatView device answered at {client.base_url}")
 
     await _async_ensure_credentials(hass, entry)
-    if not hass.data.get(RENDER_VIEW):
+    if not hass.data.get(VIEWS):
         hass.http.register_view(RenderStreamView(hass))
-        hass.data[RENDER_VIEW] = True
+        hass.http.register_view(WallView())
+        hass.data[VIEWS] = True
 
     device = PleatViewDevice(hass, entry, client, info, state)
     entry.runtime_data = device
