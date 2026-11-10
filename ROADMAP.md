@@ -290,6 +290,9 @@ kiosk. v1.4.0 is released.
 - [ ] Shared TV wrapper: first-run screen (enter the Home Assistant address with the
       remote, show the pairing code), opens the player full screen, Back and Exit
       behaviour per each store's rules, offline screen
+- [ ] **The built-in demo in the TV apps** (as on Android): store testers have no Home
+      Assistant, and Samsung asks how to test an app that needs one. *Try the demo* on the
+      first-run screen opens the sample home and its tour
 - [ ] **LG webOS:** `.ipk` built with the webOS CLI, screen kept awake, tested in
       Developer Mode on a 2021+ LG TV, submitted to the LG Content Store
 - [ ] **Samsung Tizen:** `.wgt` built with the Tizen CLI and Samsung certificates, remote
