@@ -29,7 +29,9 @@ The Home Assistant machine, an Intel Core i5-7500 with Quick Sync, used about 2.
 
 ## 1. Install the renderer
 
-### Home Assistant OS: as an app
+Pick the way that matches your Home Assistant. On **Home Assistant OS** or Supervised, which
+most installs are, the renderer is an app, as below. On **Home Assistant Container**, use the
+alternative at the end of this step instead.
 
 Home Assistant 2026 calls add-ons *apps*. On older versions, read *Add-ons* and *Add-on
 store* below.
@@ -57,21 +59,24 @@ Home Assistant the same one: `http://ce7dee09-pleatview-renderer:8780`.
 
 ![The renderer's log, with the address to use](img/render-5-log.webp)
 
-### Home Assistant Container: next to it
+<details>
+<summary><b>Alternative: Home Assistant Container</b> (Home Assistant in Docker, without the App store)</summary>
 
 Build the renderer from source and run it on the same machine:
 
 ```sh
-docker build -t pleatview-renderer https://github.com/Hustlesman/pleatview.git#v1.0.16:renderer
+docker build -t pleatview-renderer https://github.com/Hustlesman/pleatview.git#v1.0.15:renderer
 docker run -d --name pleatview-renderer --restart unless-stopped --network host \
   -e HOST=127.0.0.1 --device /dev/dri pleatview-renderer
 ```
 
-Its address is then `http://127.0.0.1:8780`, as its log says. Leave out
+Its address is then `http://127.0.0.1:8780`. Leave out
 `--device /dev/dri` on a machine without Intel or AMD graphics; the processor encodes
 instead, using about one core per TV.
 
 ![The renderer's log in a terminal, with the address to use](img/render-7-docker.webp)
+
+</details>
 
 ## 2. Turn it on for a TV
 
