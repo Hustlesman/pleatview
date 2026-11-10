@@ -52,7 +52,7 @@ restart and from a frozen page. Phone and tablet emulators add touch, turning th
 and both ran a 42-hour soak test without a crash. A security review on 2 Nov fixed what it
 found, and no dependency has a known vulnerability. 66 app tests, 49 integration tests and 9
 renderer tests pass. Since 1.0.14, Home Assistant can render a TV's dashboards and stream them to
-it, which an add-on in Home Assistant OS does too.
+it, which a Home Assistant OS app does too.
 The Android app, the phone page and the integration are translated into 10 languages besides
 English, chosen from where Home Assistant is used most.
 
@@ -374,7 +374,7 @@ Ideas we'll consider after M6, or between milestones if there's slack:
   browser at all (a Raspberry Pi Zero W): it would only play the stream Home Assistant
   renders ([Render on Home Assistant](docs/render-on-home-assistant.md), 1.0.14)
 - Remote-control browsing on rendered dashboards (the keys sent on to the renderer)
-- Prebuilt renderer images, so the add-on needn't build on each machine
+- Prebuilt renderer images, so the renderer app needn't build on each machine
 - A standalone controller for PleatView TVs without Home Assistant: a small program for
   Windows, macOS and Linux with its web page at `localhost`, offering schedules, playlists,
   groups of TVs and a media library. Built on protocol v2, so it covers every PleatView TV,

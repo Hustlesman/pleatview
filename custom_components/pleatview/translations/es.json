@@ -73,7 +73,7 @@
           "reopen_minutes": "Cuando alguien sale de PleatView a otra app, vuelve en cuanto nada ha reproducido sonido durante este tiempo. 0 no vuelve nunca.",
           "reload_minutes": "Una recarga completa periódica libera memoria en pantallas que pasan mucho tiempo encendidas. 0 no recarga nunca.",
           "launch_on_boot": "Necesita el permiso \"Mostrar sobre otras apps\" en la TV.",
-          "render_url": "Dirección del PleatView Renderer, como http://localhost:8780. El equipo de Home Assistant ejecuta entonces los paneles de este televisor y le envía un vídeo de ellos, para televisores demasiado lentos para paneles pesados o muros de vídeos. Vacío: los ejecuta el propio televisor."
+          "render_url": "Dirección del PleatView Renderer, como http://ce7dee09-pleatview-renderer:8780. El equipo de Home Assistant ejecuta entonces los paneles de este televisor y le envía un vídeo de ellos, para televisores demasiado lentos para paneles pesados o muros de vídeos. Vacío: los ejecuta el propio televisor."
         }
       }
     },

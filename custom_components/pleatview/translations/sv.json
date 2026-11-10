@@ -73,7 +73,7 @@
           "reopen_minutes": "När någon lämnar PleatView för en annan app kommer den tillbaka när inget har spelat ljud så länge. 0 kommer aldrig tillbaka.",
           "reload_minutes": "En regelbunden fullständig omladdning frigör minne på skärmar som är på länge. 0 laddar aldrig om.",
           "launch_on_boot": "Kräver behörigheten \"Visa ovanpå andra appar\" på tv:n.",
-          "render_url": "Adress till PleatView Renderer, t.ex. http://localhost:8780. Datorn med Home Assistant kör då den här tv:ns kontrollpaneler och skickar en video av dem till tv:n, för tv-apparater som är för långsamma för tunga kontrollpaneler eller videoväggar. Tomt: tv:n kör dem själv."
+          "render_url": "Adress till PleatView Renderer, t.ex. http://ce7dee09-pleatview-renderer:8780. Datorn med Home Assistant kör då den här tv:ns kontrollpaneler och skickar en video av dem till tv:n, för tv-apparater som är för långsamma för tunga kontrollpaneler eller videoväggar. Tomt: tv:n kör dem själv."
         }
       }
     },

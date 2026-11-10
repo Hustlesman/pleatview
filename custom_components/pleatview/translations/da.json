@@ -73,7 +73,7 @@
           "reopen_minutes": "Når nogen forlader PleatView for en anden app, kommer den tilbage, når intet har spillet lyd så længe. 0 kommer aldrig tilbage.",
           "reload_minutes": "En fast fuld genindlæsning frigør hukommelse på skærme, der er tændt længe. 0 genindlæser aldrig.",
           "launch_on_boot": "Kræver tilladelsen \"Vis oven på andre apps\" på tv'et.",
-          "render_url": "Adressen på PleatView Renderer, f.eks. http://localhost:8780. Maskinen med Home Assistant kører så dette tv's betjeningspaneler og sender tv'et en video af dem, til tv, der er for langsomme til tunge betjeningspaneler eller videovægge. Tomt: tv'et kører dem selv."
+          "render_url": "Adressen på PleatView Renderer, f.eks. http://ce7dee09-pleatview-renderer:8780. Maskinen med Home Assistant kører så dette tv's betjeningspaneler og sender tv'et en video af dem, til tv, der er for langsomme til tunge betjeningspaneler eller videovægge. Tomt: tv'et kører dem selv."
         }
       }
     },
