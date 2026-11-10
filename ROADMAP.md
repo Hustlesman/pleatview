@@ -30,6 +30,7 @@ Last updated 10 November 2026. **Current milestone: M1** (M0 finished early).
 | [M1](#m1--validated-on-real-android-tv-hardware) Validated on real Android TV hardware | Fri 20 Nov 2026 | M0, devices | In progress |
 | [L1](#l1--linux-app) Linux app for mini PCs and Raspberry Pi, alongside M1 and M2 | Fri 18 Dec 2026 | — | In progress |
 | [M2](#m2--public-beta) Public beta, Google Play closed test, phones and tablets | Fri 4 Dec 2026 | M1, 12 beta testers | Not started |
+| [R1](#r1--rendering-for-many-screens) Rendering for many screens: several renderers, chosen per TV | To be scheduled | — | Not started |
 | [M3](#m3--google-play-and-amazon-appstore) Google Play and Amazon Appstore | Fri 15 Jan 2027 | M2, store reviews | Not started |
 | [M4](#m4--web-player) Web player for any TV browser | Fri 29 Jan 2027 | M3 submitted | Not started |
 | [M5](#m5--lg-and-samsung-apps) LG and Samsung apps submitted | Fri 5 Mar 2027 | M4, test TVs | Not started |
@@ -180,6 +181,30 @@ screens (setup, cards, media, menu) are web pages, a start for the M4 web player
 
 **Exit:** the beta package passes the test plan, minus Android-only items, on the three
 devices above, and the README covers installing it.
+
+## R1 — Rendering for many screens
+
+*To be scheduled* (added 10 Nov 2026, on request). [Render on Home Assistant](docs/render-on-home-assistant.md)
+(1.0.14) gives each TV one address for one renderer. That suits a home with a slow TV or
+two, not a control room: think two 16-channel NVRs on a wall of eight TVs, four cameras each,
+driven by the cheapest 1 GB Google TV sticks. A renderer shows up to 8 screens, Home
+Assistant OS runs only one copy of the app, and a renderer on another machine would be open
+to the network.
+
+- [ ] **Renderers as entries, with an alias** ("Rack A"). The app on Home Assistant OS is
+      found by itself; renderers running with Docker are added with their address and a token
+- [ ] **Renderer sign-in:** the renderer's API asks for that token, so a renderer can run on
+      another machine without being open to the network
+- [ ] **A renderer per TV from a list:** *The TV renders itself*, each renderer by its alias, or
+      *Automatic* (the least busy renderer)
+- [ ] **Load in Home Assistant:** each renderer as a device, with screens in use out of its
+      maximum, processor and memory, so you can see when to add one
+- [ ] **One stream for several TVs** showing the same dashboard at the same size, rendered once
+- [ ] **A sizing guide**, measured: what a wall of four camera sub-streams costs the renderer,
+      and the hardware for eight such walls
+
+**Exit:** eight TVs, four cameras each, on two renderers chosen from the list; stopping one
+renderer leaves the other's walls playing, and its own come back when it does.
 
 ## M2 — Public beta
 
