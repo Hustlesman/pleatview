@@ -51,6 +51,11 @@ PleatView is built for a home network you trust. What it does, and what it can't
   time, and come with build provenance: `gh attestation verify pleatview.apk --repo
   Hustlesman/pleatview`.
 
+## Baseline
+
+[docs/security-baseline.md](docs/security-baseline.md) holds PleatView against ETSI EN 303 645,
+provision by provision, with what's still to do.
+
 ## Home Assistant's version
 
 Use Home Assistant 2026.7 or later. Older versions have published security bugs in
