@@ -107,8 +107,10 @@ class Player:
     # What the screen does
 
     async def play(self, url: str, *, loop: bool = False, volume: float | None = None,
-                   start: float | None = None, live: bool = False) -> None:
+                   start: float | None = None, live: bool = False, image_seconds: int | None = None) -> None:
         options = [f"loop-file={'inf' if loop else 'no'}"]
+        if image_seconds:
+            options.append(f"image-display-duration={image_seconds}")
         if start:
             options.append(f"start={start}")
         if live:

@@ -287,7 +287,7 @@ class StateModel {
         const val VIEW_DASHBOARD = "dashboard"
 
         /** What this app can do beyond protocol version 1, so Home Assistant only asks for that. */
-        val FEATURES = listOf("render_stream", "home_without_ha")
+        val FEATURES = listOf("render_stream", "home_without_ha", "home_playlist")
     }
 }
 

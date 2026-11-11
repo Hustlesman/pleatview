@@ -18,6 +18,7 @@ from .config import Config
 from .mdns import Responder, local_address
 from .pairing import Pairing
 from .player import Player
+from .playlist import MediaCache
 from .screen import Screen
 
 _LOGGER = logging.getLogger("pleatview_light")
@@ -113,8 +114,10 @@ async def main() -> None:
     pairing = Pairing(lambda: read(folder / "tokens.json"), lambda text: write_private(folder / "tokens.json", text))
     runtime = Path(os.environ.get("XDG_RUNTIME_DIR") or folder)
     player = Player(runtime / "pleatview-light-mpv.sock", lambda event: asyncio.ensure_future(screen.on_player(event)))
+    cache_dir = Path(os.environ.get("XDG_CACHE_HOME") or Path.home() / ".cache") / "pleatview-light" / "media"
+    cache = MediaCache(cache_dir)
     screen = Screen(config=config, save_config=save_config, player=player, setup=setup, version=VERSION,
-                    size=screen_size())
+                    size=screen_size(), cache=cache)
     pairing.on_changed = lambda: asyncio.ensure_future(screen.pin_changed())
     api = Api(screen, pairing, info)
     responder = Responder(lambda: {"id": device["id"], "name": name(), "api": str(API_VERSION), "version": VERSION},
@@ -128,6 +131,8 @@ async def main() -> None:
         _LOGGER.warning("Can't announce over mDNS: %s", err)
     await screen.home()
     screen.restart_rotation()
+    if config.home_playlist:
+        cache.keep(config.home_playlist)
     _LOGGER.info("PleatView Light %s on %s:%d", VERSION, local_address(), PORT)
 
     stop = asyncio.Event()

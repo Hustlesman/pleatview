@@ -98,7 +98,9 @@ Events stream that sends the full snapshot on connect and after every change
   sends configuration a feature needs to apps that list it. `render_stream`: the app plays
   `render_stream` (1.0.14 and later; the Linux app from 1.0.17). `home_without_ha`: a full web
   address in `home_dashboard` sets the app up without `ha_url`, for controllers other than
-  Home Assistant, such as PleatView Console (1.0.17 and later).
+  Home Assistant, such as PleatView Console (1.0.17 and later). `home_playlist`: the app
+  plays `home_playlist` itself as its home page and keeps its media in its own cache, so it
+  plays on offline (Android and PleatView Light, 1.0.17 and later).
 
 ## Commands
 
@@ -178,6 +180,7 @@ never sent to Home Assistant.
 | `keep_screen_on` | true | Stop the screensaver while a dashboard is shown |
 | `launch_on_boot` | true | Open after boot (needs `overlay_permission`) |
 | `render_stream` | empty | A live HLS stream of the TV's dashboards, rendered by Home Assistant ([guide](render-on-home-assistant.md)). The app plays it full screen instead of loading pages, and keeps reporting the `url` it would show, which Home Assistant renders. Only for apps with the `render_stream` feature |
+| `home_playlist` | `[]` | `[{"url": "http://…/play.mp4", "kind": "video", "seconds": 10}]`, up to 500: a home page that is a playlist (`kind` `video`, `audio` or `image`; `seconds` for pictures). The app plays it full screen, in order, again and again, and keeps every item in its own cache, so it plays on without the network and after a restart. Only for apps with the `home_playlist` feature |
 | `rev` | — | Opaque revision set by Home Assistant; any update without `rev` clears it |
 
 `ha_token` belongs to the Home Assistant at `ha_url`: an update that moves `ha_url` to

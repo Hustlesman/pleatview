@@ -864,6 +864,27 @@ class FakeRenderer:
         return web.Response(text="#EXTM3U", content_type="application/vnd.apple.mpegurl")
 
 
+class HomePlaylists(Pairing):
+    async def test_apps_that_cache_get_the_list(self) -> None:
+        self.tv.state["features"] = ["render_stream", "home_without_ha", "home_playlist"]
+        tenant = self.store.tenant(self.tenant)
+        media_id, token = tenant.add_media("Clip", 10)
+        tenant.update_media(media_id, status="ready", kind="video", playable="play.mp4")
+        waiting, _ = tenant.add_media("Not yet", 10)
+        page_id = tenant.save_page(None, name="Loop", kind="playlist", url=None,
+                                   items=[{"media_id": media_id}, {"media_id": waiting, "seconds": 5}])
+        screen_id = await self.screens.pair(self.tenant, self.site, "127.0.0.1", self.tv.server.port, "123456")
+        await self.wait_online(screen_id)
+        await asyncio.sleep(0.1)
+        await self.screens.configure(self.tenant, screen_id, {}, page_id)
+        self.assertEqual(self.tv.config["home_playlist"], [
+            {"url": f"http://localhost:8791/play/{self.tenant}/m/{token}/play.mp4", "kind": "video", "seconds": 10}])
+        self.assertTrue(self.tv.config["home_dashboard"].endswith(tenant.page(page_id)["token"]))  # the page, for older apps
+        web = tenant.save_page(None, name="Menu", kind="web", url="https://example.com/", items=[])
+        await self.screens.configure(self.tenant, screen_id, {}, web)
+        self.assertEqual(self.tv.config["home_playlist"], [])
+
+
 class ConsoleRenderers(Pairing):
     async def asyncSetUp(self) -> None:
         await super().asyncSetUp()

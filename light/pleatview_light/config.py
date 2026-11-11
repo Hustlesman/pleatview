@@ -78,11 +78,12 @@ class Config:
     return_home_minutes: int = 0
     reopen_minutes: int = 10
     render_stream: str = ""
+    home_playlist: list[dict[str, Any]] = field(default_factory=list)
     rev: str = ""
 
     @property
     def configured(self) -> bool:
-        return bool(self.ha_url) or is_http(self.home_dashboard)
+        return bool(self.ha_url) or is_http(self.home_dashboard) or bool(self.home_playlist)
 
     @property
     def home_path(self) -> str:
@@ -141,6 +142,19 @@ class Config:
                 if stream and not is_http(stream):
                     raise ValueError("render_stream must start with http:// or https://")
                 changes[key] = stream
+            elif key == "home_playlist":
+                if not isinstance(value, list) or len(value) > 500:
+                    raise ValueError("home_playlist must be a list of up to 500 items")
+                items = []
+                for i, item in enumerate(value):
+                    if not isinstance(item, dict) or not is_http(str(item.get("url", ""))):
+                        raise ValueError(f"playlist item {i} needs an http(s) url")
+                    kind = item.get("kind", "video")
+                    if kind not in ("video", "audio", "image"):
+                        raise ValueError(f"playlist item {i}: kind must be video, audio or image")
+                    seconds = _int(f"playlist item {i} seconds", item.get("seconds", 10), 1, 86400)
+                    items.append({"url": item["url"], "kind": kind, "seconds": seconds})
+                changes[key] = items
             elif key == "rev":
                 changes[key] = _str(key, value)[:64]
             elif key == "ha_token_set":
