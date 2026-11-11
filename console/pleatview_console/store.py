@@ -142,7 +142,22 @@ CREATE TABLE pages (
 ALTER TABLE screens ADD COLUMN home_page INTEGER REFERENCES pages(id) ON DELETE SET NULL;
 """
 
-TENANT_SCHEMA = [TENANT_V1, TENANT_V2, TENANT_V3]
+# Schedules, and the time zone each site's schedules run in.
+TENANT_V4 = """
+ALTER TABLE sites ADD COLUMN timezone TEXT NOT NULL DEFAULT 'UTC';
+CREATE TABLE schedules (
+    id INTEGER PRIMARY KEY,
+    name TEXT NOT NULL,
+    target TEXT NOT NULL,
+    page_id INTEGER NOT NULL REFERENCES pages(id) ON DELETE CASCADE,
+    days TEXT NOT NULL,
+    start TEXT NOT NULL,
+    end TEXT NOT NULL,
+    created REAL NOT NULL
+);
+"""
+
+TENANT_SCHEMA = [TENANT_V1, TENANT_V2, TENANT_V3, TENANT_V4]
 
 
 def _connect(path: Path, migrations: list[str]) -> sqlite3.Connection:
@@ -173,18 +188,51 @@ class TenantDb:
     # Sites
 
     def sites(self) -> list[dict[str, Any]]:
-        return [dict(r) for r in self.db.execute("SELECT id, name FROM sites ORDER BY name, id")]
+        return [dict(r) for r in self.db.execute("SELECT id, name, timezone FROM sites ORDER BY name, id")]
 
     def site(self, site_id: int) -> dict[str, Any] | None:
-        row = self.db.execute("SELECT id, name FROM sites WHERE id = ?", (site_id,)).fetchone()
+        row = self.db.execute("SELECT id, name, timezone FROM sites WHERE id = ?", (site_id,)).fetchone()
         return dict(row) if row else None
 
-    def add_site(self, name: str) -> int:
-        cur = self.db.execute("INSERT INTO sites (name, created) VALUES (?, ?)", (name, time.time()))
+    def add_site(self, name: str, timezone: str = "UTC") -> int:
+        cur = self.db.execute("INSERT INTO sites (name, timezone, created) VALUES (?, ?, ?)",
+                              (name, timezone, time.time()))
         return int(cur.lastrowid)
 
-    def rename_site(self, site_id: int, name: str) -> None:
-        self.db.execute("UPDATE sites SET name = ? WHERE id = ?", (name, site_id))
+    def rename_site(self, site_id: int, name: str, timezone: str | None = None) -> None:
+        self.db.execute("UPDATE sites SET name = ?, timezone = COALESCE(?, timezone) WHERE id = ?",
+                        (name, timezone, site_id))
+
+    def groups_of(self, screen_id: int) -> list[int]:
+        return [r[0] for r in self.db.execute("SELECT group_id FROM group_screens WHERE screen_id = ?", (screen_id,))]
+
+    # Schedules
+
+    def schedules(self) -> list[dict[str, Any]]:
+        return [dict(r) for r in self.db.execute(
+            "SELECT id, name, target, page_id, days, start, end FROM schedules ORDER BY id")]
+
+    def schedule(self, schedule_id: int) -> dict[str, Any] | None:
+        return next((s for s in self.schedules() if s["id"] == schedule_id), None)
+
+    def save_schedule(self, schedule_id: int | None, **fields: Any) -> int:
+        keys = ("name", "target", "page_id", "days", "start", "end")
+        values = tuple(fields[k] for k in keys)
+        if schedule_id is None:
+            cur = self.db.execute(
+                "INSERT INTO schedules (name, target, page_id, days, start, end, created) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                (*values, time.time()))
+            return int(cur.lastrowid)
+        self.db.execute("UPDATE schedules SET name = ?, target = ?, page_id = ?, days = ?, start = ?, end = ? WHERE id = ?",
+                        (*values, schedule_id))
+        return schedule_id
+
+    def delete_schedule(self, schedule_id: int) -> None:
+        self.db.execute("DELETE FROM schedules WHERE id = ?", (schedule_id,))
+
+    def forget_target(self, target: str) -> None:
+        """Schedules for a screen, group or site that's gone."""
+        self.db.execute("DELETE FROM schedules WHERE target = ?", (target,))
 
     def delete_site(self, site_id: int) -> bool:
         """Deletes an empty site; a site with screens stays."""
@@ -482,6 +530,9 @@ class Store:
 
     def tenants(self) -> list[dict[str, Any]]:
         return [dict(r) for r in self.db.execute("SELECT id, name, created FROM tenants ORDER BY name")]
+
+    def rename_tenant(self, tenant_id: str, name: str) -> None:
+        self.db.execute("UPDATE tenants SET name = ? WHERE id = ?", (name, tenant_id))
 
     def tenant_name(self, tenant_id: str) -> str | None:
         row = self.db.execute("SELECT name FROM tenants WHERE id = ?", (tenant_id,)).fetchone()

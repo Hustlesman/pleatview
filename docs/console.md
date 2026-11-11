@@ -203,5 +203,9 @@ device keys), `ffmpeg` and `tini`. Anything more needs approval first.
 2. Two-factor sign-in, members and roles in the web app (done 11 Nov).
 3. The apps' home page without Home Assistant (Android and Linux; done 11 Nov).
 4. Groups, pages and the media library with conversion (done 11 Nov).
-5. Schedules and playlists.
-6. Many sites, then many tenants, with S1's connections.
+5. Schedules (done 11 Nov): a page as the home page by day and time, on a screen, a group or
+   a site, by the site's clock (the most specific wins). Playlists came with step 4.
+6. Many sites and organisations (11 Nov: time zones per site; organisations renamed, exported
+   as JSON without secrets, and deleted with their key by an administrator). Still to come:
+   sites that keep playing while the console is offline, and S1's connections for sites
+   elsewhere.

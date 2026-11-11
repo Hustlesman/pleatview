@@ -17,7 +17,7 @@ from typing import Any, Awaitable, Callable
 from aiohttp import web
 
 from . import VERSION
-from . import totp
+from . import schedule, totp
 from .auth import DUMMY_HASH, Throttle, check_new_password, check_password, hash_password
 from .screens import Invalid, Screens, check_address, command_params, web_url
 from .media import Library, folder
@@ -223,7 +223,7 @@ async def setup(request: web.Request) -> web.Response:
     tenant_id = store.add_tenant(tenant_name)
     store.set_member(user_id, tenant_id, "owner")
     tenant = store.tenant(tenant_id)
-    tenant.add_site(site_name)
+    tenant.add_site(site_name, _timezone(data))
     tenant.log("tenant_created", user=username, address=client_address(request))
     _LOGGER.info("Set up by %s", username)
     response = web.json_response(me(store, store.user(user_id)))
@@ -389,7 +389,7 @@ async def add_tenant(request: web.Request) -> web.Response:
     tenant_id = store.add_tenant(name_field(data, "name", "A name"))
     store.set_member(user["id"], tenant_id, "owner")
     tenant = store.tenant(tenant_id)
-    tenant.add_site(name_field(data, "site", "A first site") if data.get("site") else "Main site")
+    tenant.add_site(name_field(data, "site", "A first site") if data.get("site") else "Main site", _timezone(data))
     tenant.log("tenant_created", user=user["username"], address=client_address(request))
     return web.json_response({"id": tenant_id, **me(store, user)})
 
@@ -405,11 +405,20 @@ async def tenant_overview(request: web.Request) -> web.Response:
     })
 
 
+def _timezone(data: dict[str, Any]) -> str:
+    """The site's time zone (the browser sends its own); UTC when there's none."""
+    zone = data.get("timezone") or "UTC"
+    if not schedule.valid_zone(zone):
+        raise fail(400, "Unknown time zone")
+    return zone
+
+
 async def add_site(request: web.Request) -> web.Response:
     user, tenant_id, _ = member(request, "own")
     tenant = request.app[STORE].tenant(tenant_id)
-    name = name_field(await body(request), "name", "A name")
-    site_id = tenant.add_site(name)
+    data = await body(request)
+    name = name_field(data, "name", "A name")
+    site_id = tenant.add_site(name, _timezone(data))
     tenant.log("site_added", user=user["username"], target=f"site:{site_id}", detail={"name": name},
                address=client_address(request))
     return web.json_response({"id": site_id, "sites": tenant.sites()})
@@ -424,12 +433,16 @@ async def change_site(request: web.Request) -> web.Response:
     if request.method == "DELETE":
         if not tenant.delete_site(site_id):
             raise fail(409, "Move or remove the site's screens first")
+        tenant.forget_target(f"site:{site_id}")
         tenant.log("site_removed", user=user["username"], target=f"site:{site_id}", address=client_address(request))
     else:
-        name = name_field(await body(request), "name", "A name")
-        tenant.rename_site(site_id, name)
-        tenant.log("site_renamed", user=user["username"], target=f"site:{site_id}", detail={"name": name},
-                   address=client_address(request))
+        data = await body(request)
+        name = name_field(data, "name", "A name")
+        zone = _timezone(data) if data.get("timezone") else None
+        tenant.rename_site(site_id, name, zone)
+        tenant.log("site_renamed", user=user["username"], target=f"site:{site_id}",
+                   detail={"name": name, **({"timezone": zone} if zone else {})}, address=client_address(request))
+        await request.app[SCREENS].refresh(tenant_id, [x["id"] for x in tenant.screens() if x["site_id"] == site_id])
     return web.json_response({"sites": tenant.sites()})
 
 
@@ -674,6 +687,7 @@ async def remove_screen(request: web.Request) -> web.Response:
     user, tenant_id, _ = member(request, "operate")
     screen = _screen(request, tenant_id)
     await request.app[SCREENS].unpair(tenant_id, screen["id"])
+    request.app[STORE].tenant(tenant_id).forget_target(f"screen:{screen['id']}")
     request.app[STORE].tenant(tenant_id).log(
         "screen_removed", user=user["username"], target=f"screen:{screen['id']}",
         detail={"name": screen["name"]}, address=client_address(request))
@@ -784,6 +798,7 @@ async def delete_group(request: web.Request) -> web.Response:
     if not group:
         raise fail(404, "No such group")
     tenant.delete_group(group_id)
+    tenant.forget_target(f"group:{group_id}")
     tenant.log("group_removed", user=user["username"], target=f"group:{group_id}", detail={"name": group["name"]},
                address=client_address(request))
     return web.json_response({"groups": tenant.groups()})
@@ -995,6 +1010,133 @@ async def media_thumbnail(request: web.Request) -> web.StreamResponse:
     return web.FileResponse(path, headers={"Content-Type": "image/jpeg", "Cache-Control": "private, max-age=600"})
 
 
+# ---- Schedules ------------------------------------------------------------------------
+
+
+async def list_schedules(request: web.Request) -> web.Response:
+    _, tenant_id, _ = member(request, "view")
+    return web.json_response({"schedules": request.app[STORE].tenant(tenant_id).schedules()})
+
+
+async def save_schedule(request: web.Request) -> web.Response:
+    user, tenant_id, _ = member(request, "operate")
+    tenant = request.app[STORE].tenant(tenant_id)
+    schedule_id = _number_id(request, "schedule") if "schedule" in request.match_info else None
+    if schedule_id is not None and not tenant.schedule(schedule_id):
+        raise fail(404, "No such schedule")
+    data = await body(request)
+    name = name_field(data, "name", "A name")
+    target = data.get("target")
+    kind, _, raw_id = target.partition(":") if isinstance(target, str) else ("", "", "")
+    exists = {"screen": tenant.screen, "group": tenant.group, "site": tenant.site}.get(kind)
+    if not exists or not raw_id.isdigit() or not exists(int(raw_id)):
+        raise fail(400, "Choose a screen, a group or a site")
+    page_id = data.get("page_id")
+    if not isinstance(page_id, int) or isinstance(page_id, bool) or not tenant.page(page_id):
+        raise fail(400, "Choose a page")
+    days = data.get("days")
+    if not isinstance(days, str) or not days or not set(days) <= set("1234567"):
+        raise fail(400, "Choose at least one day")
+    start, end = data.get("start"), data.get("end")
+    if not all(isinstance(t, str) and schedule.TIME.match(t) for t in (start, end)):
+        raise fail(400, "Times look like 08:00")
+    schedule_id = tenant.save_schedule(schedule_id, name=name, target=target, page_id=page_id,
+                                       days="".join(sorted(set(days))), start=start, end=end)
+    tenant.log("schedule_saved", user=user["username"], target=f"schedule:{schedule_id}",
+               detail={"name": name, "on": target, "days": days, "from": start, "to": end},
+               address=client_address(request))
+    await request.app[SCREENS].refresh(tenant_id)
+    return web.json_response({"id": schedule_id})
+
+
+async def delete_schedule(request: web.Request) -> web.Response:
+    user, tenant_id, _ = member(request, "operate")
+    tenant = request.app[STORE].tenant(tenant_id)
+    entry = tenant.schedule(_number_id(request, "schedule"))
+    if not entry:
+        raise fail(404, "No such schedule")
+    tenant.delete_schedule(entry["id"])
+    tenant.log("schedule_removed", user=user["username"], target=f"schedule:{entry['id']}",
+               detail={"name": entry["name"]}, address=client_address(request))
+    await request.app[SCREENS].refresh(tenant_id)
+    return web.json_response({})
+
+
+# ---- Organisations ---------------------------------------------------------------------
+
+
+async def rename_tenant(request: web.Request) -> web.Response:
+    user, tenant_id, _ = member(request, "own")
+    store = request.app[STORE]
+    name = name_field(await body(request), "name", "A name")
+    store.rename_tenant(tenant_id, name)
+    store.tenant(tenant_id).log("tenant_renamed", user=user["username"], detail={"name": name},
+                                address=client_address(request))
+    return web.json_response(me(store, user))
+
+
+async def export_tenant(request: web.Request) -> web.Response:
+    """Everything the organisation set up, as JSON, without secrets (no tokens, no passwords).
+    Media files stay on the console; the export lists them."""
+    user, tenant_id, _ = member(request, "own")
+    store = request.app[STORE]
+    tenant = store.tenant(tenant_id)
+    data = {
+        "pleatview_console_export": 1,
+        "version": VERSION,
+        "organisation": {"id": tenant_id, "name": store.tenant_name(tenant_id)},
+        "members": [{k: m[k] for k in ("username", "name", "role")} for m in store.members(tenant_id)],
+        "sites": tenant.sites(),
+        "screens": [{k: s[k] for k in ("id", "site_id", "device_id", "name", "host", "port", "info", "config", "home_page")}
+                    for s in tenant.screens()],
+        "groups": tenant.groups(),
+        "pages": [{k: p[k] for k in ("id", "name", "kind", "url", "items")} for p in tenant.pages()],
+        "media": [{k: m[k] for k in ("id", "name", "size", "kind", "duration", "summary", "status")} for m in tenant.media()],
+        "schedules": tenant.schedules(),
+        "activity": tenant.audit(limit=100000),
+    }
+    tenant.log("tenant_exported", user=user["username"], address=client_address(request))
+    return web.json_response(data, headers={
+        "Content-Disposition": f'attachment; filename="pleatview-console-{tenant_id}.json"'})
+
+
+async def all_tenants(request: web.Request) -> web.Response:
+    """For console administrators: every organisation's name and size, not its content."""
+    store = request.app[STORE]
+    user = signed_in(request)
+    if not user["admin"]:
+        raise fail(403, "Only console administrators")
+    out = []
+    for t in store.tenants():
+        out.append({"id": t["id"], "name": t["name"], "members": len(store.members(t["id"])),
+                    "screens": len(store.tenant(t["id"]).screens())})
+    return web.json_response({"tenants": out})
+
+
+async def delete_tenant(request: web.Request) -> web.Response:
+    """Unpairs the organisation's screens, then deletes it with its key, data and media."""
+    store, screens = request.app[STORE], request.app[SCREENS]
+    user = signed_in(request)
+    if not user["admin"]:
+        raise fail(403, "Only console administrators")
+    tenant_id = request.match_info["tenant"]
+    name = store.tenant_name(tenant_id) if TENANT_ID.match(tenant_id) else None
+    if name is None:
+        raise fail(404, "No such organisation")
+    if (await body(request)).get("confirm") != name:
+        raise fail(400, "Type the organisation's name to confirm")
+    for screen in store.tenant(tenant_id).screens():
+        await screens.unpair(tenant_id, screen["id"])
+    members = [m["id"] for m in store.members(tenant_id)]
+    store.delete_tenant(tenant_id)
+    for member_id in members:  # accounts left with nothing to open go too
+        account = store.user(member_id)
+        if account and not account["admin"] and not store.memberships(member_id):
+            store.delete_user(member_id)
+    _LOGGER.warning("%s deleted organisation %s (%s)", user["username"], name, tenant_id)
+    return web.json_response(me(store, user))
+
+
 # ---- The web app -----------------------------------------------------------------------
 
 SAFE_FILE = re.compile(r"^[a-z0-9-]+\.(html|js|css|webmanifest|png|svg)$")
@@ -1037,6 +1179,14 @@ def create_app(store: Store, screens: Screens, *, https: bool, library: Library 
     app.router.add_post("/api/settings", settings)
     t = "/api/t/{tenant}"
     app.router.add_get(t, tenant_overview)
+    app.router.add_patch(t, rename_tenant)
+    app.router.add_get(t + "/export", export_tenant)
+    app.router.add_get(t + "/schedules", list_schedules)
+    app.router.add_post(t + "/schedules", save_schedule)
+    app.router.add_patch(t + "/schedules/{schedule}", save_schedule)
+    app.router.add_delete(t + "/schedules/{schedule}", delete_schedule)
+    app.router.add_get("/api/tenants", all_tenants)
+    app.router.add_delete("/api/tenants/{tenant}", delete_tenant)
     app.router.add_post(t + "/sites", add_site)
     app.router.add_patch(t + "/sites/{site:\\d+}", change_site)
     app.router.add_delete(t + "/sites/{site:\\d+}", change_site)
