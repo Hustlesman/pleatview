@@ -282,7 +282,9 @@ The work, in order:
       Started 11 Nov with the foundation: first start, sign-in, tenants and sites in separate
       databases with their own keys, screens found on the network, paired, followed live and
       sent commands, the activity log, and the installable web app. Checked with a Fire TV
-      Stick
+      Stick. Then two-factor sign-in and members, home pages without Home Assistant (apps
+      1.0.17), groups, pages, the media library (any format, converted with ffmpeg) and
+      schedules, all on 11 Nov
 - [ ] **Many sites:** sites, a renderer per site, sites that keep playing offline
 - [ ] **Many tenants:** silos, roles, a key per tenant, export and deletion
 

@@ -18,6 +18,7 @@ from urllib.parse import urlsplit
 
 import aiohttp
 
+from . import schedule
 from .mdns import Browser
 from .store import Store
 from .tvapi import CannotConnect, InvalidAuth, PleatViewClient, PleatViewError
@@ -227,6 +228,7 @@ class Screens:
         for tenant in self.store.tenants():
             for screen in self.store.tenant(tenant["id"]).screens():
                 self._link(tenant["id"], screen)
+        self._schedules = asyncio.create_task(self.follow_schedules())
         if self.browser:
             try:
                 await self.browser.start()
@@ -235,6 +237,8 @@ class Screens:
                 self.browser = None
 
     async def stop(self) -> None:
+        if getattr(self, "_schedules", None):
+            self._schedules.cancel()
         if self.browser:
             await self.browser.stop()
         await asyncio.gather(*(link.stop() for link in self.links.values()))
@@ -252,15 +256,44 @@ class Screens:
             return None
         return f"{self.screen_url}/play/{tenant_id}/m/{item['token']}/{item['playable']}"
 
+    def scheduled(self, tenant_id: str, screen: dict[str, Any]) -> dict[str, Any] | None:
+        tenant = self.store.tenant(tenant_id)
+        entries = tenant.schedules()
+        if not entries:
+            return None
+        site = tenant.site(screen["site_id"]) or {"timezone": "UTC"}
+        return schedule.active(entries, screen, tenant.groups_of(screen["id"]), site["timezone"])
+
     def desired(self, tenant_id: str, screen: dict[str, Any]) -> dict[str, Any]:
         """The settings the console keeps on a screen: its own, with the home page from the
-        page chosen for it."""
+        schedule that's on, else from the page chosen for it."""
         config = dict(screen["config"])
-        if screen.get("home_page"):
-            page = self.store.tenant(tenant_id).page(screen["home_page"])
+        on = self.scheduled(tenant_id, screen)
+        page_id = on["page_id"] if on else screen.get("home_page")
+        if page_id:
+            page = self.store.tenant(tenant_id).page(page_id)
             if page:
                 config["home_dashboard"] = self.page_url(tenant_id, page)
         return config
+
+    async def follow_schedules(self) -> None:
+        """Every half minute: screens whose schedule changed get their new home page."""
+        while True:
+            for tenant in self.store.tenants():
+                try:
+                    db = self.store.tenant(tenant["id"])
+                except KeyError:
+                    continue
+                for screen in db.screens():
+                    link = self.links.get((tenant["id"], screen["id"]))
+                    if not link or link.managed_by:
+                        continue
+                    desired = self.desired(tenant["id"], screen)
+                    if desired != link.config:
+                        link.config = desired
+                        await link.push_config()
+                        self.publish(tenant["id"], screen["id"])
+            await asyncio.sleep(30)
 
     async def refresh(self, tenant_id: str, screen_ids: list[int] | None = None) -> None:
         """Puts the current settings on the screens (all of the tenant's when None)."""
@@ -290,6 +323,7 @@ class Screens:
             "app_version": (link.state or {}).get("app_version") if link else None,
             "config": screen["config"],
             "home_page": screen.get("home_page"),
+            "schedule": (self.scheduled(tenant_id, screen) or {}).get("name"),
             "home_without_ha": "home_without_ha" in ((link.state or {}).get("features") or []) if link else False,
             **(link.view() if link else {"online": False, "rejected": False, "managed_by": None,
                                          "seen": None, "state": None}),

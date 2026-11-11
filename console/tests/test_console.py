@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import base64
+from datetime import datetime, timezone
 import json
 import os
 from pathlib import Path
@@ -23,7 +24,7 @@ from aiohttp.test_utils import TestClient, TestServer
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from pleatview_console import auth, keys, mdns, totp  # noqa: E402
+from pleatview_console import auth, keys, mdns, schedule, totp  # noqa: E402
 from pleatview_console import store as store_module  # noqa: E402
 from pleatview_console.screens import Invalid, Screens, check_address, command_params  # noqa: E402
 from pleatview_console.content import create_content_app  # noqa: E402
@@ -751,6 +752,76 @@ class HomePages(Pairing):
         await self.screens.configure(self.tenant, screen_id, {}, playlist)
         token = tenant.page(playlist)["token"]
         self.assertEqual(self.tv.config["home_dashboard"], f"http://localhost:8791/play/{self.tenant}/p/{token}")
+
+
+
+
+class Schedules(unittest.TestCase):
+    def entry(self, **kw):
+        return {"id": 1, "target": "site:1", "page_id": 1, "days": "12345", "start": "08:00", "end": "17:00", **kw}
+
+    def test_times(self) -> None:
+        tue_9 = datetime(2026, 11, 10, 9, 0)  # a Tuesday
+        self.assertTrue(schedule.is_on(self.entry(), tue_9))
+        self.assertFalse(schedule.is_on(self.entry(), tue_9.replace(hour=17)))
+        self.assertFalse(schedule.is_on(self.entry(days="67"), tue_9))
+        night = self.entry(start="22:00", end="06:00", days="1")  # Monday night into Tuesday
+        self.assertTrue(schedule.is_on(night, datetime(2026, 11, 9, 23, 0)))
+        self.assertTrue(schedule.is_on(night, datetime(2026, 11, 10, 5, 59)))
+        self.assertFalse(schedule.is_on(night, datetime(2026, 11, 10, 22, 30)))
+        self.assertTrue(schedule.is_on(self.entry(start="00:00", end="00:00", days="2"), tue_9))
+
+    def test_the_most_specific_wins_in_the_sites_time_zone(self) -> None:
+        screen = {"id": 5, "site_id": 1}
+        entries = [self.entry(id=1, page_id=10), self.entry(id=2, target="group:3", page_id=20),
+                   self.entry(id=3, target="screen:5", page_id=30, start="12:00", end="13:00")]
+        # 20:30 UTC on Monday is 09:30 on Tuesday in Auckland.
+        now = datetime(2026, 11, 9, 20, 30, tzinfo=timezone.utc)
+        self.assertEqual(schedule.active(entries, screen, [3], "Pacific/Auckland", now)["page_id"], 20)
+        self.assertEqual(schedule.active(entries, screen, [], "Pacific/Auckland", now)["page_id"], 10)
+        self.assertIsNone(schedule.active(entries, screen, [3], "UTC", now))  # Monday 20:30 there
+        self.assertFalse(schedule.valid_zone("Mars/Olympus"))
+
+
+class Organisations(ApiBase):
+    async def test_schedules_rename_export_and_delete(self) -> None:
+        me = await self.setup_console()
+        tenant_id = me["tenants"][0]["id"]
+        base = f"/api/t/{tenant_id}"
+        site = self.store.tenant(tenant_id).sites()[0]
+        page = await (await self.client.post(base + "/pages", headers=HEADERS, json={
+            "name": "Menu", "kind": "web", "url": "https://example.com/"})).json()
+        bad = await self.client.post(base + "/schedules", headers=HEADERS, json={
+            "name": "x", "target": "site:999", "page_id": page["id"], "days": "1", "start": "08:00", "end": "09:00"})
+        self.assertEqual(bad.status, 400)
+        good = await self.client.post(base + "/schedules", headers=HEADERS, json={
+            "name": "Breakfast", "target": f"site:{site['id']}", "page_id": page["id"], "days": "71", "start": "06:00", "end": "10:30"})
+        self.assertEqual(good.status, 200, await good.text())
+        self.assertEqual((await (await self.client.get(base + "/schedules")).json())["schedules"][0]["days"], "17")
+        zone = await self.client.patch(f"{base}/sites/{site['id']}", headers=HEADERS, json={"name": "HQ", "timezone": "Europe/Amsterdam"})
+        self.assertEqual(zone.status, 200)
+        self.assertEqual((await self.client.patch(f"{base}/sites/{site['id']}", headers=HEADERS,
+                                                  json={"name": "HQ", "timezone": "Nowhere/Land"})).status, 400)
+        renamed = await (await self.client.patch(base, headers=HEADERS, json={"name": "Acme Ltd"})).json()
+        self.assertEqual(renamed["tenants"][0]["name"], "Acme Ltd")
+        export = await self.client.get(base + "/export")
+        data = await export.json()
+        self.assertEqual(data["organisation"]["name"], "Acme Ltd")
+        self.assertEqual(data["sites"][0]["timezone"], "Europe/Amsterdam")
+        self.assertEqual(len(data["schedules"]), 1)
+        self.assertNotIn("token", json.dumps(data["screens"]))
+
+        other = (await (await self.client.post("/api/tenants", headers=HEADERS, json={"name": "Other"})).json())["id"]
+        added = await (await self.client.post(f"/api/t/{other}/members", headers=HEADERS, json={
+            "username": "olga", "name": "Olga", "role": "owner"})).json()
+        listed = (await (await self.client.get("/api/tenants")).json())["tenants"]
+        self.assertEqual(sorted(t["name"] for t in listed), ["Acme Ltd", "Other"])
+        refused = await self.client.delete(f"/api/tenants/{other}", headers=HEADERS, json={"confirm": "other"})
+        self.assertEqual(refused.status, 400)
+        deleted = await self.client.delete(f"/api/tenants/{other}", headers=HEADERS, json={"confirm": "Other"})
+        self.assertEqual(deleted.status, 200)
+        self.assertFalse((self.store.data / "tenants" / other).exists())
+        self.assertIsNone(self.store.user(added["id"]))  # Olga had nothing else to open
 
 
 if __name__ == "__main__":

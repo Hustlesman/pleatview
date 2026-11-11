@@ -42,6 +42,8 @@ button {
   padding: .45em 1em;
   cursor: pointer;
 }
+a.button { display: inline-block; text-decoration: none; color: var(--text); border: 1px solid var(--line); border-radius: 8px; padding: .45em 1em; }
+a.button:hover { border-color: var(--cyan); }
 button:hover { background: var(--cyan); border-color: var(--cyan); color: var(--ink); }
 button.quiet { background: transparent; border-color: var(--line); }
 button.quiet:hover { border-color: var(--cyan); color: var(--text); }

@@ -93,6 +93,7 @@ async function start() {
   $("#logout").addEventListener("click", logout);
   $("#change-password").addEventListener("click", changePassword);
   $("#add-tenant").addEventListener("click", addTenant);
+  $("#organisations").addEventListener("click", () => organisations().catch((e) => toast(e.message)));
   $("#two-factor").addEventListener("click", () => twoFactor().catch((e) => toast(e.message)));
   $("#console-settings").addEventListener("click", () => consoleSettings().catch((e) => toast(e.message)));
   $("#tenant").addEventListener("change", (event) => selectTenant(event.target.value));
@@ -214,7 +215,7 @@ function showSetup() {
     { name: "password", label: "Password", type: "password", autocomplete: "new-password", hint: "At least 12 characters." },
     { name: "tenant", label: "Organisation", hint: "Your company, a customer, or your household. You can add more later." },
     { name: "site", label: "First site", value: "Main site", hint: "A building, a branch or a home." },
-  ], "Set up", async (data) => signedIn(await api("POST", "/api/setup", data)));
+  ], "Set up", async (data) => signedIn(await api("POST", "/api/setup", { ...data, timezone: browserZone() })));
 }
 
 function showLogin(withCode = false, values = {}) {
@@ -249,6 +250,7 @@ function signedIn(me) {
   $("#username").textContent = me.user.name;
   $("#add-tenant").hidden = !me.user.admin;
   $("#console-settings").hidden = !me.user.admin;
+  $("#organisations").hidden = !me.user.admin;
   const select = $("#tenant");
   select.replaceChildren(...me.tenants.map((t) => h("option", { value: t.id, text: t.name })));
   select.hidden = me.tenants.length < 2;
@@ -422,7 +424,7 @@ function addTenant() {
     ],
     ok: "Add",
     submit: async (data) => {
-      const result = await api("POST", "/api/tenants", data);
+      const result = await api("POST", "/api/tenants", { ...data, timezone: browserZone() });
       localStorage.setItem("tenant", result.id);
       signedIn({ user: result.user, tenants: result.tenants });
     },
@@ -494,6 +496,7 @@ function render() {
   else if (current === "members") renderMembers();
   else if (current === "groups") renderGroups();
   else if (current === "content") renderContent();
+  else if (current === "schedules") renderSchedules();
   else if (current === "activity") renderActivity();
   else renderScreens();
 }
@@ -535,6 +538,7 @@ function screenCard(screen) {
       screen.managed_by === "home_assistant" ? h("span", { class: "badge", text: "Home Assistant", title: "Home Assistant manages this screen's settings; the console sends it commands." }) : null),
     h("div", { class: "meta", text: [screen.model, screen.app_version && `PleatView ${screen.app_version}`, screen.host].filter(Boolean).join(" · ") }),
     h("div", { text: describe(screen) }),
+    screen.schedule ? h("div", { class: "meta", text: `Schedule: ${screen.schedule}` }) : null,
     operate ? h("div", { class: "buttons" },
       h("button", { type: "button", onclick: () => showPage(screen), text: "Show a page" }),
       h("button", { type: "button", onclick: () => playMedia(screen), text: "Play" }),
@@ -704,16 +708,30 @@ function removeScreen(screen) {
 
 // ---- Sites ------------------------------------------------------------------------------
 
+function browserZone() {
+  return Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
+}
+
+function zoneOptions(current) {
+  const zones = Intl.supportedValuesOf ? Intl.supportedValuesOf("timeZone") : [current || "UTC"];
+  return [...new Set(["UTC", current || browserZone(), ...zones])].map((z) => [z, z.replaceAll("_", " ")]);
+}
+
 function renderSites() {
   const own = may("own");
   const count = (site) => app.screens.filter((s) => s.site_id === site.id).length;
   page(
     h("div", { class: "section-head" },
+      h("h1", { text: app.overview.name }),
+      own ? h("button", { type: "button", class: "quiet", onclick: renameTenant, text: "Rename" }) : null,
+      own ? h("a", { class: "button quiet", href: `/api/t/${app.tenant}/export`, download: "", text: "Export" }) : null),
+    h("p", { class: "hint", text: "Export: everything this organisation set up, as a file, without passwords or keys." }),
+    h("div", { class: "section-head" },
       h("h1", { text: "Sites" }),
       own ? h("button", { type: "button", class: "quiet", onclick: addSite, text: "Add a site" }) : null),
     h("section", { class: "panel" }, app.overview.sites.map((site) => h("div", { class: "row" },
-      h("span", {}, h("strong", { text: site.name }), " ", h("span", { class: "meta", text: `${count(site)} screen${count(site) === 1 ? "" : "s"}` })),
-      own ? h("button", { type: "button", class: "quiet", onclick: () => renameSite(site), text: "Rename" }) : null,
+      h("span", {}, h("strong", { text: site.name }), " ", h("span", { class: "meta", text: `${count(site)} screen${count(site) === 1 ? "" : "s"} · ${site.timezone.replaceAll("_", " ")}` })),
+      own ? h("button", { type: "button", class: "quiet", onclick: () => renameSite(site), text: "Edit" }) : null,
       own ? h("button", { type: "button", class: "danger", onclick: () => removeSite(site), text: "Remove", disabled: count(site) > 0, title: count(site) ? "Move or remove its screens first" : null }) : null))),
   );
 }
@@ -723,13 +741,50 @@ async function refreshOverview() {
   render();
 }
 
+function renameTenant() {
+  dialog({
+    title: "Rename the organisation",
+    fields: [{ name: "name", label: "Name", value: app.overview.name }],
+    ok: "Save",
+    submit: async (data) => {
+      const me = await api("PATCH", `/api/t/${app.tenant}`, { name: data.name.trim() });
+      app.me.tenants = me.tenants;
+      $("#tenant").replaceChildren(...me.tenants.map((t) => h("option", { value: t.id, text: t.name, selected: t.id === app.tenant })));
+      await refreshOverview();
+    },
+  });
+}
+
+async function organisations() {
+  $("#usermenu").open = false;
+  const { tenants } = await api("GET", "/api/tenants");
+  dialog({
+    title: "Organisations on this console",
+    text: "Deleting one unpairs its screens and deletes its data, media and key for good. Type its name to confirm.",
+    fields: [
+      { name: "tenant", label: "Organisation", options: tenants.map((t) => [t.id, `${t.name} (${t.members} member${t.members === 1 ? "" : "s"}, ${t.screens} screen${t.screens === 1 ? "" : "s"})`]) },
+      { name: "confirm", label: "Its name, to delete it", required: false, autocomplete: "off" },
+    ],
+    ok: "Delete",
+    danger: true,
+    submit: async (data) => {
+      const me = await api("DELETE", `/api/tenants/${data.tenant}`, { confirm: data.confirm });
+      toast("Organisation deleted");
+      signedIn({ ...app.me, tenants: me.tenants });
+    },
+  });
+}
+
 function addSite() {
   dialog({
     title: "Add a site",
-    fields: [{ name: "name", label: "Name", hint: "A building, a branch or a home." }],
+    fields: [
+      { name: "name", label: "Name", hint: "A building, a branch or a home." },
+      { name: "timezone", label: "Time zone", options: zoneOptions(), value: browserZone(), hint: "Its schedules run on this clock." },
+    ],
     ok: "Add",
     submit: async (data) => {
-      await api("POST", `/api/t/${app.tenant}/sites`, { name: data.name.trim() });
+      await api("POST", `/api/t/${app.tenant}/sites`, { name: data.name.trim(), timezone: data.timezone });
       await refreshOverview();
     },
   });
@@ -737,11 +792,14 @@ function addSite() {
 
 function renameSite(site) {
   dialog({
-    title: "Rename the site",
-    fields: [{ name: "name", label: "Name", value: site.name }],
+    title: `Edit ${site.name}`,
+    fields: [
+      { name: "name", label: "Name", value: site.name },
+      { name: "timezone", label: "Time zone", options: zoneOptions(site.timezone), value: site.timezone },
+    ],
     ok: "Save",
     submit: async (data) => {
-      await api("PATCH", `/api/t/${app.tenant}/sites/${site.id}`, { name: data.name.trim() });
+      await api("PATCH", `/api/t/${app.tenant}/sites/${site.id}`, { name: data.name.trim(), timezone: data.timezone });
       await refreshOverview();
     },
   });
@@ -1043,6 +1101,83 @@ function removePage(p) {
   });
 }
 
+// ---- Schedules --------------------------------------------------------------------------
+
+const DAYS = [["1", "Mon"], ["2", "Tue"], ["3", "Wed"], ["4", "Thu"], ["5", "Fri"], ["6", "Sat"], ["7", "Sun"]];
+
+async function renderSchedules() {
+  let schedules, groups;
+  try {
+    [{ schedules }, { groups }] = await Promise.all([
+      api("GET", `/api/t/${app.tenant}/schedules`), api("GET", `/api/t/${app.tenant}/groups`)]);
+    app.groups = groups;
+  } catch (error) {
+    page(h("p", { class: "error", text: error.message }));
+    return;
+  }
+  if (tab() !== "schedules") return;
+  const operate = may("operate");
+  const days = (d) => d === "1234567" ? "Every day" : d === "12345" ? "Weekdays" : d === "67" ? "Weekends" : DAYS.filter(([v]) => d.includes(v)).map(([, n]) => n).join(" ");
+  page(
+    h("div", { class: "section-head" },
+      h("h1", { text: "Schedules" }),
+      operate ? h("button", { type: "button", class: "quiet", onclick: () => editSchedule(), text: "Add a schedule" }) : null),
+    h("p", { class: "hint", text: "A page as the home page at set times, on a screen, a group or a whole site, by the site's clock. A screen's own schedule comes before its groups', and those before its site's. Outside them, screens show their own home page." }),
+    schedules.length ? h("section", { class: "panel" }, schedules.map((e) => h("div", { class: "row" },
+      h("span", {}, h("strong", { text: e.name }), " ",
+        h("span", { class: "meta", text: `${app.pages.find((p) => p.id === e.page_id)?.name || "?"} on ${targetLabel(e.target)} · ${days(e.days)} ${e.start}–${e.end}` })),
+      operate ? h("button", { type: "button", class: "quiet", onclick: () => editSchedule(e), text: "Edit" }) : null,
+      operate ? h("button", { type: "button", class: "danger", onclick: () => removeSchedule(e), text: "Remove" }) : null)))
+      : h("p", { class: "empty", text: app.pages.length ? "No schedules yet." : "Add a page under Content first." }),
+  );
+}
+
+function targetLabel(target) {
+  const [kind, id] = target.split(":");
+  if (kind === "screen") return screenName(Number(id));
+  if (kind === "group") return `group ${(app.groups || []).find((g) => String(g.id) === id)?.name || id}`;
+  return `site ${app.overview.sites.find((s) => String(s.id) === id)?.name || id}`;
+}
+
+function editSchedule(entry) {
+  const targets = [
+    ...app.overview.sites.map((s) => [`site:${s.id}`, `Site: ${s.name}`]),
+    ...(app.groups || []).map((g) => [`group:${g.id}`, `Group: ${g.name}`]),
+    ...app.screens.map((s) => [`screen:${s.id}`, `Screen: ${s.name}`]),
+  ];
+  dialog({
+    title: entry ? `Edit ${entry.name}` : "Add a schedule",
+    fields: [
+      { name: "name", label: "Name", value: entry?.name || "", hint: "Such as “Breakfast menu”." },
+      { name: "page_id", label: "Show", options: app.pages.map((p) => [p.id, p.name]), value: entry?.page_id },
+      { name: "target", label: "On", options: targets, value: entry?.target },
+      { name: "days", label: "Days", type: "checks", options: DAYS, value: (entry?.days || "12345").split("") },
+      { name: "start", label: "From", type: "time", value: entry?.start || "08:00" },
+      { name: "end", label: "Until", type: "time", value: entry?.end || "17:00", hint: "Before the start: until that time the next day. The same as the start: all day." },
+    ],
+    ok: "Save",
+    submit: async (data) => {
+      const payload = { name: data.name.trim(), page_id: Number(data.page_id), target: data.target,
+        days: (data.days || []).join(""), start: data.start, end: data.end };
+      if (entry) await api("PATCH", `/api/t/${app.tenant}/schedules/${entry.id}`, payload);
+      else await api("POST", `/api/t/${app.tenant}/schedules`, payload);
+      renderSchedules();
+    },
+  });
+}
+
+function removeSchedule(entry) {
+  dialog({
+    title: `Remove ${entry.name}?`,
+    ok: "Remove",
+    danger: true,
+    submit: async () => {
+      await api("DELETE", `/api/t/${app.tenant}/schedules/${entry.id}`);
+      renderSchedules();
+    },
+  });
+}
+
 // ---- Members ----------------------------------------------------------------------------
 
 const ROLES = [["owner", "Owner: everything, members too"], ["operator", "Operator: pairs and controls screens"], ["viewer", "Viewer: sees screens and activity"]];
@@ -1164,6 +1299,10 @@ const ACTIONS = {
   page_removed: "Removed a page",
   media_added: "Uploaded media",
   media_removed: "Removed media",
+  schedule_saved: "Saved a schedule",
+  schedule_removed: "Removed a schedule",
+  tenant_renamed: "Renamed the organisation",
+  tenant_exported: "Exported the organisation",
   two_factor_enabled: "Turned on two-factor sign-in",
   two_factor_disabled: "Turned off two-factor sign-in",
 };
