@@ -1,7 +1,9 @@
-"""Announces the screen as `_pleatview._tcp` over mDNS, with the standard library only.
+"""Announces a PleatView service over mDNS, with the standard library only: a screen as
+`_pleatview._tcp`, a renderer as `_pleatview-renderer._tcp`.
 
-Answers questions for the service, this screen's instance and its host name, and announces
-itself when it starts and when its name changes. Shares port 5353 with avahi-daemon.
+Answers questions for the service, this instance and its host name, and announces itself
+when it starts and when its name changes. Shares port 5353 with avahi-daemon. The light
+client and the renderer use the same file (a test checks they stay the same).
 """
 
 from __future__ import annotations
@@ -69,9 +71,12 @@ def record(name: str, rtype: int, ttl: int, data: bytes, flush: bool = True) -> 
 
 
 class Responder(asyncio.DatagramProtocol):
-    def __init__(self, info: Callable[[], dict[str, str]], port: int) -> None:
-        self.info = info  # id, name, api, version
+    def __init__(self, info: Callable[[], dict[str, str]], port: int, service: str = SERVICE,
+                 keys: tuple[str, ...] = ("id", "name", "api", "version")) -> None:
+        self.info = info  # the TXT record's values: id, name, ...
         self.port = port
+        self.service = service
+        self.keys = keys
         self.transport: asyncio.DatagramTransport | None = None
 
     # Names
@@ -79,7 +84,7 @@ class Responder(asyncio.DatagramProtocol):
     @property
     def instance(self) -> str:
         name = (self.info().get("name") or "PleatView").replace(".", " ")[:63]
-        return f"{name}.{SERVICE}"
+        return f"{name}.{self.service}"
 
     @property
     def host(self) -> str:
@@ -88,9 +93,9 @@ class Responder(asyncio.DatagramProtocol):
     def records(self, ttl: int | None = None) -> dict[str, bytes]:
         info = self.info()
         txt = b"".join(bytes([len(item)]) + item for item in (
-            f"{k}={info.get(k, '')}".encode()[:255] for k in ("id", "name", "api", "version")))
+            f"{k}={info.get(k, '')}".encode()[:255] for k in self.keys))
         return {
-            "ptr": record(SERVICE, PTR, TTL_OTHER if ttl is None else ttl, encode_name(self.instance), flush=False),
+            "ptr": record(self.service, PTR, TTL_OTHER if ttl is None else ttl, encode_name(self.instance), flush=False),
             "srv": record(self.instance, SRV, TTL_HOST if ttl is None else ttl,
                           struct.pack("!HHH", 0, 0, self.port) + encode_name(self.host)),
             "txt": record(self.instance, TXT, TTL_OTHER if ttl is None else ttl, txt),
@@ -101,7 +106,7 @@ class Responder(asyncio.DatagramProtocol):
         recs = self.records()
         answers: list[bytes] = []
         for name, qtype in asked:
-            if name == SERVICE.lower() and qtype in (PTR, ANY):
+            if name == self.service.lower() and qtype in (PTR, ANY):
                 answers.append(recs["ptr"])
             elif name == self.instance.lower() and qtype in (SRV, TXT, ANY):
                 answers += [recs["srv"], recs["txt"]] if qtype == ANY else [recs["srv" if qtype == SRV else "txt"]]

@@ -35,6 +35,14 @@ CONF_KEEP_SCREEN_ON: Final = "keep_screen_on"
 CONF_LAUNCH_ON_BOOT: Final = "launch_on_boot"
 # Address of the PleatView Renderer that runs this TV's dashboards; empty: the TV runs them.
 CONF_RENDER_URL: Final = "render_url"
+# A PleatView Renderer's own entry (renderers.py): what it is, and how it's reached.
+CONF_KIND: Final = "kind"
+KIND_RENDERER: Final = "renderer"
+CONF_SCHEME: Final = "scheme"
+CONF_FINGERPRINT: Final = "fingerprint"
+RENDER_AUTO: Final = "auto"
+RENDERER_PREFIX: Final = "renderer:"
+RENDERER_SERVICE: Final = "_pleatview-renderer._tcp.local."
 
 KIOSK_MODES: Final = ["full", "sidebar", "off"]
 

@@ -29,6 +29,14 @@
           "allow_control": "Dla dedykowanego użytkownika. Wyłącz, jeśli ekran ma tylko wyświetlać: panele nadal się odświeżają, ale przyciski na telewizorze niczego nie zmienią.",
           "ha_token": "Dla twojego własnego tokena. Utwórz go w swoim profilu, w sekcji Bezpieczeństwo."
         }
+      },
+      "renderer": {
+        "title": "Sparuj z rendererem {name}",
+        "description": "Wpisz 6-cyfrowy PIN z dziennika renderera (karta Dziennik aplikacji lub `docker logs pleatview-renderer`), pod adresem {address}. Pod tą nazwą zobaczą go telewizory.",
+        "data": {
+          "name": "Nazwa",
+          "pin": "PIN"
+        }
       }
     },
     "error": {
@@ -73,7 +81,7 @@
           "reopen_minutes": "Gdy ktoś opuści PleatView dla innej aplikacji, wraca, gdy przez tyle czasu nic nie odtwarzało dźwięku. 0 nigdy nie wraca.",
           "reload_minutes": "Regularne pełne odświeżenie zwalnia pamięć na ekranach działających długo. 0 nigdy nie odświeża.",
           "launch_on_boot": "Wymaga na telewizorze uprawnienia \"Wyświetlanie nad innymi aplikacjami\".",
-          "render_url": "Adres PleatView Renderer, np. http://ce7dee09-pleatview-renderer:8780. Komputer z Home Assistant uruchamia wtedy panele tego telewizora i wysyła mu ich obraz wideo, dla telewizorów zbyt wolnych na ciężkie panele lub ściany wideo. Puste: telewizor uruchamia je sam."
+          "render_url": "PleatView Renderer do użycia: sparowany, według nazwy, Automatycznie (najmniej obciążony), znaleziony przez Home Assistant, albo wpisz jego adres, np. http://ce7dee09-pleatview-renderer:8780. Komputer z Home Assistant uruchamia wtedy pulpity tego telewizora i wysyła mu ich obraz wideo. Puste: telewizor uruchamia je sam."
         }
       }
     },
@@ -109,6 +117,11 @@
         "managed": "Dedykowany użytkownik dla tego telewizora (zalecane)",
         "token": "Mój własny długotrwały token dostępu",
         "none": "Logowanie na telewizorze pilotem"
+      }
+    },
+    "render": {
+      "options": {
+        "auto": "Automatycznie: najmniej obciążony renderer"
       }
     }
   },
@@ -236,6 +249,19 @@
     "old_home_assistant": {
       "title": "Zaktualizuj Home Assistant dla paneli na telewizorze",
       "description": "Home Assistant {version} ma znane luki bezpieczeństwa w kartach paneli, naprawione w {safe_version}. Telewizor pokazuje swój panel przez cały dzień, zalogowany, więc złośliwa karta mogłaby działać jako użytkownik telewizora. Zaktualizuj Home Assistant do {safe_version} lub nowszego."
+    }
+  },
+  "entity": {
+    "sensor": {
+      "renderer_screens": {
+        "name": "Ekrany"
+      },
+      "renderer_cpu": {
+        "name": "Obciążenie procesora"
+      },
+      "renderer_memory": {
+        "name": "Zajęta pamięć"
+      }
     }
   }
 }

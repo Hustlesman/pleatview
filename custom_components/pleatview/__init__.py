@@ -37,6 +37,7 @@ from .const import (
     SAFE_HA_VERSION,
 )
 from .coordinator import PleatViewConfigEntry, PleatViewDevice
+from . import renderers
 from .render import RenderStreamView
 from .wall import WallView
 
@@ -45,6 +46,7 @@ _LOGGER = logging.getLogger(__name__)
 LOVELACE_UPDATED = "lovelace_updated"  # fired when a dashboard's configuration is saved
 
 PLATFORMS = [Platform.BINARY_SENSOR, Platform.MEDIA_PLAYER, Platform.NOTIFY, Platform.SENSOR]
+RENDERER_PLATFORMS = [Platform.SENSOR]
 VIEWS = f"{DOMAIN}_views"  # the stream and wall pages, registered with the first TV
 TOKEN_LIFETIME = timedelta(days=3650)
 
@@ -59,7 +61,14 @@ def _client(hass: HomeAssistant, entry: PleatViewConfigEntry) -> PleatViewClient
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: PleatViewConfigEntry) -> bool:
-    """Connect to the TV, hand it its configuration and start listening."""
+    """Connect to the TV, hand it its configuration and start listening; or, for a
+    renderer's entry, start watching the renderer."""
+    if renderers.is_renderer(entry):
+        coordinator = renderers.RendererCoordinator(hass, entry)
+        await coordinator.async_config_entry_first_refresh()
+        entry.runtime_data = coordinator  # type: ignore[assignment]
+        await hass.config_entries.async_forward_entry_setups(entry, RENDERER_PLATFORMS)
+        return True
     _async_check_ha_version(hass)
     client = _client(hass, entry)
     try:
@@ -127,13 +136,19 @@ async def _async_options_updated(hass: HomeAssistant, entry: PleatViewConfigEntr
 
 async def async_unload_entry(hass: HomeAssistant, entry: PleatViewConfigEntry) -> bool:
     """Unload a config entry; the event stream task is cancelled with it."""
+    if renderers.is_renderer(entry):
+        return await hass.config_entries.async_unload_platforms(entry, RENDERER_PLATFORMS)
     if renderer := entry.runtime_data.renderer:
         await renderer.async_stop()
     return await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
 
 
 async def async_remove_entry(hass: HomeAssistant, entry: PleatViewConfigEntry) -> None:
-    """Reset the TV, revoke our pairing and delete the user created for it."""
+    """Reset the TV, revoke our pairing and delete the user created for it; for a renderer,
+    revoke our pairing with it."""
+    if renderers.is_renderer(entry):
+        await renderers.async_unpair(hass, entry)
+        return
     client = _client(hass, entry)
     with suppress(PleatViewError):
         if entry.data.get(CONF_AUTH_MODE) != AUTH_NONE:

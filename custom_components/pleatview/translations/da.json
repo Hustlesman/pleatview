@@ -29,6 +29,14 @@
           "allow_control": "Til den særlige bruger. Slå fra for en skærm, der kun viser: panelerne opdateres stadig, men knapper på tv'et kan ikke ændre noget.",
           "ha_token": "Til dit eget token. Opret et i din profil under Sikkerhed."
         }
+      },
+      "renderer": {
+        "title": "Par med rendereren {name}",
+        "description": "Indtast den 6-cifrede PIN fra rendererens log (appens Log-fane eller `docker logs pleatview-renderer`) på {address}. Navnet er det, tv'erne viser den under.",
+        "data": {
+          "name": "Navn",
+          "pin": "PIN"
+        }
       }
     },
     "error": {
@@ -73,7 +81,7 @@
           "reopen_minutes": "Når nogen forlader PleatView for en anden app, kommer den tilbage, når intet har spillet lyd så længe. 0 kommer aldrig tilbage.",
           "reload_minutes": "En fast fuld genindlæsning frigør hukommelse på skærme, der er tændt længe. 0 genindlæser aldrig.",
           "launch_on_boot": "Kræver tilladelsen \"Vis oven på andre apps\" på tv'et.",
-          "render_url": "Adressen på PleatView Renderer, f.eks. http://ce7dee09-pleatview-renderer:8780. Maskinen med Home Assistant kører så dette tv's betjeningspaneler og sender tv'et en video af dem, til tv, der er for langsomme til tunge betjeningspaneler eller videovægge. Tomt: tv'et kører dem selv."
+          "render_url": "PleatView Renderer, der skal bruges: en parret efter navn, Automatisk (den mindst travle), en som Home Assistant fandt, eller skriv dens adresse, fx http://ce7dee09-pleatview-renderer:8780. Home Assistants maskine kører så tv'ets dashboards og sender tv'et en video af dem. Tom: tv'et kører dem selv."
         }
       }
     },
@@ -109,6 +117,11 @@
         "managed": "Særlig bruger til dette tv (anbefalet)",
         "token": "Mit eget langlivede adgangstoken",
         "none": "Log ind på tv'et med fjernbetjeningen"
+      }
+    },
+    "render": {
+      "options": {
+        "auto": "Automatisk: den mindst travle renderer"
       }
     }
   },
@@ -236,6 +249,19 @@
     "old_home_assistant": {
       "title": "Opdater Home Assistant til dine tv-paneler",
       "description": "Home Assistant {version} har kendte sikkerhedsfejl i betjeningspanelernes kort, rettet i {safe_version}. Et tv viser sit panel hele dagen, logget ind, så et ondsindet kort kunne handle som tv'ets bruger. Opdater Home Assistant til {safe_version} eller nyere."
+    }
+  },
+  "entity": {
+    "sensor": {
+      "renderer_screens": {
+        "name": "Skærme"
+      },
+      "renderer_cpu": {
+        "name": "Processorbelastning"
+      },
+      "renderer_memory": {
+        "name": "Hukommelse i brug"
+      }
     }
   }
 }

@@ -29,6 +29,14 @@
           "allow_control": "Para o usuário dedicado. Desligue para uma tela só de leitura: os dashboards continuam atualizando, mas os botões na TV não podem mudar nada.",
           "ha_token": "Para o seu próprio token. Crie um no seu perfil, em Segurança."
         }
+      },
+      "renderer": {
+        "title": "Parear com o renderizador {name}",
+        "description": "Digite o PIN de 6 dígitos do registro do renderizador (aba Registro do app ou `docker logs pleatview-renderer`), em {address}. As TVs o mostram com este nome.",
+        "data": {
+          "name": "Nome",
+          "pin": "PIN"
+        }
       }
     },
     "error": {
@@ -73,7 +81,7 @@
           "reopen_minutes": "Quando alguém sai do PleatView para outro app, ele volta assim que nada tocar som por esse tempo. 0 nunca volta.",
           "reload_minutes": "Recarregar tudo de tempos em tempos libera memória em telas que ficam ligadas por muito tempo. 0 nunca recarrega.",
           "launch_on_boot": "Precisa da permissão \"Sobrepor a outros apps\" na TV.",
-          "render_url": "Endereço do PleatView Renderer, como http://ce7dee09-pleatview-renderer:8780. A máquina do Home Assistant passa a executar os dashboards desta TV e envia a ela um vídeo deles, para TVs lentas demais para dashboards pesados ou paredes de vídeos. Vazio: a própria TV os executa."
+          "render_url": "O PleatView Renderer a usar: um pareado, pelo nome, Automático (o menos ocupado), um que o Home Assistant encontrou, ou digite o endereço, por exemplo http://ce7dee09-pleatview-renderer:8780. A máquina do Home Assistant então roda os painéis desta TV e envia a ela um vídeo deles. Vazio: a TV os roda."
         }
       }
     },
@@ -109,6 +117,11 @@
         "managed": "Usuário dedicado para esta TV (recomendado)",
         "token": "Meu próprio token de acesso de longa duração",
         "none": "Entrar na TV com o controle remoto"
+      }
+    },
+    "render": {
+      "options": {
+        "auto": "Automático: o renderizador menos ocupado"
       }
     }
   },
@@ -236,6 +249,19 @@
     "old_home_assistant": {
       "title": "Atualize o Home Assistant para os dashboards da sua TV",
       "description": "O Home Assistant {version} tem falhas de segurança conhecidas nos cards de dashboard, corrigidas na {safe_version}. Uma TV mostra o dashboard o dia todo, conectada, então um card malicioso poderia agir como o usuário da TV. Atualize o Home Assistant para a {safe_version} ou mais recente."
+    }
+  },
+  "entity": {
+    "sensor": {
+      "renderer_screens": {
+        "name": "Telas"
+      },
+      "renderer_cpu": {
+        "name": "Carga do processador"
+      },
+      "renderer_memory": {
+        "name": "Memória em uso"
+      }
     }
   }
 }

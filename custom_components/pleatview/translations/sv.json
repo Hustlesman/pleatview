@@ -29,6 +29,14 @@
           "allow_control": "För den egna användaren. Stäng av för en skärm som bara visar: panelerna uppdateras fortfarande, men knappar på tv:n kan inte ändra något.",
           "ha_token": "För din egen token. Skapa en i din profil, under Säkerhet."
         }
+      },
+      "renderer": {
+        "title": "Para ihop med renderaren {name}",
+        "description": "Ange den 6-siffriga PIN-koden från renderarens logg (appens Logg-flik eller `docker logs pleatview-renderer`), på {address}. Tv-apparaterna visar den under det här namnet.",
+        "data": {
+          "name": "Namn",
+          "pin": "PIN-kod"
+        }
       }
     },
     "error": {
@@ -73,7 +81,7 @@
           "reopen_minutes": "När någon lämnar PleatView för en annan app kommer den tillbaka när inget har spelat ljud så länge. 0 kommer aldrig tillbaka.",
           "reload_minutes": "En regelbunden fullständig omladdning frigör minne på skärmar som är på länge. 0 laddar aldrig om.",
           "launch_on_boot": "Kräver behörigheten \"Visa ovanpå andra appar\" på tv:n.",
-          "render_url": "Adress till PleatView Renderer, t.ex. http://ce7dee09-pleatview-renderer:8780. Datorn med Home Assistant kör då den här tv:ns kontrollpaneler och skickar en video av dem till tv:n, för tv-apparater som är för långsamma för tunga kontrollpaneler eller videoväggar. Tomt: tv:n kör dem själv."
+          "render_url": "PleatView Renderer att använda: en ihopparad med namn, Automatiskt (den minst belastade), en som Home Assistant hittade, eller skriv dess adress, till exempel http://ce7dee09-pleatview-renderer:8780. Home Assistants dator kör då tv:ns instrumentpaneler och skickar tv:n en video av dem. Tomt: tv:n kör dem själv."
         }
       }
     },
@@ -109,6 +117,11 @@
         "managed": "Egen användare för den här tv:n (rekommenderas)",
         "token": "Min egen långlivade åtkomsttoken",
         "none": "Logga in på tv:n med fjärrkontrollen"
+      }
+    },
+    "render": {
+      "options": {
+        "auto": "Automatiskt: den minst belastade renderaren"
       }
     }
   },
@@ -236,6 +249,19 @@
     "old_home_assistant": {
       "title": "Uppdatera Home Assistant för dina tv-paneler",
       "description": "Home Assistant {version} har kända säkerhetsbrister i kontrollpanelernas kort, åtgärdade i {safe_version}. En tv visar sin panel hela dagen, inloggad, så ett skadligt kort skulle kunna agera som tv:ns användare. Uppdatera Home Assistant till {safe_version} eller senare."
+    }
+  },
+  "entity": {
+    "sensor": {
+      "renderer_screens": {
+        "name": "Skärmar"
+      },
+      "renderer_cpu": {
+        "name": "Processorbelastning"
+      },
+      "renderer_memory": {
+        "name": "Använt minne"
+      }
     }
   }
 }

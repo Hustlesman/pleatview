@@ -10,7 +10,7 @@ from unittest import mock
 
 from aiohttp.test_utils import AioHTTPTestCase
 
-from pleatview_renderer import page, server, session
+from pleatview_renderer import page, pairing, server, session
 from pleatview_renderer.session import Screen
 
 APP_HELPER = Path(__file__).parents[2] / "android/app/src/main/assets/pleatview.js"
@@ -119,6 +119,54 @@ class ApiTest(AioHTTPTestCase):
         self.assertEqual((await self.client.get("/hls/tv-1/s4.ts")).status, 404)
         self.assertEqual((await self.client.get("/hls/tv-1/..%2Fprofiles")).status, 404)
         self.assertEqual((await self.client.get("/hls/other/s3.ts")).status, 404)
+
+
+class PairedApiTest(AioHTTPTestCase):
+    """A renderer on the network: nothing without a paired client's token."""
+
+    async def get_application(self):
+        self.root = tempfile.TemporaryDirectory()
+        self.addCleanup(self.root.cleanup)
+        patches = [mock.patch.object(session.Session, name, new=mock.AsyncMock()) for name in ("stop", "update")]
+        patches.append(mock.patch.object(session.Session, "start", new=mock.Mock()))
+        for patch in patches:
+            patch.start()
+            self.addCleanup(patch.stop)
+        self.stored: list[str] = []
+        self.pairing = pairing.Pairing(lambda: None, self.stored.append)
+        return server.create_app(Path(self.root.name), "x264", max_sessions=2, pairing=self.pairing,
+                                 require_token=True, identity={"id": "r1", "name": "Rack A"})
+
+    async def test_pairing_and_tokens(self) -> None:
+        body = {"url": "http://ha.local:8123/home"}
+        self.assertEqual((await self.client.put("/api/sessions/tv-1", json=body)).status, 401)
+        self.assertEqual((await self.client.get("/hls/tv-1/index.m3u8")).status, 401)
+        info = await (await self.client.get("/api/info")).json()
+        self.assertEqual((info["name"], info["paired"], info["max_screens"]), ("Rack A", False, 2))
+        self.assertNotIn("sessions", info)  # nothing about its screens without a token
+        self.assertEqual((await self.client.post("/api/pair", json={"pin": "000000x"})).status, 403)
+        reply = await (await self.client.post("/api/pair", json={"pin": self.pairing.pin, "client": "HA"})).json()
+        auth = {"Authorization": f"Bearer {reply['token']}"}
+        self.assertNotIn(reply["token"], self.stored[-1])
+        self.assertEqual((await self.client.put("/api/sessions/tv-1", json=body, headers=auth)).status, 200)
+        info = await (await self.client.get("/api/info", headers=auth)).json()
+        self.assertIn("tv-1", info["sessions"])
+        self.assertIn("cpu", info["load"])
+        self.assertEqual((await self.client.put("/api/sessions/tv-1", json=body,
+                                                headers={"Authorization": "Bearer nope"})).status, 401)
+        proofs = (await (await self.client.post("/api/verify", json={"nonce": "ab" * 16})).json())["proofs"]
+        self.assertEqual(len(proofs), 1)
+        self.assertEqual((await self.client.post("/api/unpair", headers=auth)).status, 200)
+        self.assertEqual((await self.client.put("/api/sessions/tv-1", json=body, headers=auth)).status, 401)
+
+
+class SharedCode(unittest.TestCase):
+    def test_same_as_the_light_client(self) -> None:
+        light = Path(__file__).resolve().parents[2] / "light" / "pleatview_light"
+        if not light.is_dir():
+            self.skipTest("the repository's light client isn't here")
+        for name in ("mdns.py", "pairing.py"):
+            self.assertEqual((light / name).read_text(), (Path(server.__file__).parent / name).read_text(), name)
 
 
 if __name__ == "__main__":
