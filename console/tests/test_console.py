@@ -11,6 +11,7 @@ import socket
 import sqlite3
 import stat
 import struct
+import subprocess
 import sys
 import tempfile
 import time
@@ -25,7 +26,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from pleatview_console import auth, keys, mdns, totp  # noqa: E402
 from pleatview_console import store as store_module  # noqa: E402
 from pleatview_console.screens import Invalid, Screens, check_address, command_params  # noqa: E402
-from pleatview_console.server import create_app  # noqa: E402
+from pleatview_console.content import create_content_app  # noqa: E402
+from pleatview_console.server import LIBRARY, MEDIA_MAX, create_app  # noqa: E402
 from pleatview_console.store import Store  # noqa: E402
 
 REPO = Path(__file__).resolve().parents[2]
@@ -614,6 +616,141 @@ class Pairing(Base):
         self.screens = Screens(self.store, self.session, discovery=False)
         await self.screens.start()
         await self.wait_online(screen_id)
+
+
+
+def ffmpeg(*args: str) -> None:
+    subprocess.run(["ffmpeg", "-nostdin", "-hide_banner", "-v", "error", "-y", *args], check=True)
+
+
+def probe_codecs(path: Path) -> list[str]:
+    out = subprocess.run(["ffprobe", "-v", "error", "-show_entries", "stream=codec_name", "-of", "csv=p=0", str(path)],
+                         check=True, capture_output=True, text=True).stdout
+    return [line.strip() for line in out.splitlines() if line.strip()]
+
+
+class MediaLibrary(ApiBase):
+    """Uploads in other formats come out playable; playlists and media reach screens."""
+
+    async def asyncSetUp(self) -> None:
+        await super().asyncSetUp()
+        self.files = Path(self.tmp.name) / "samples"
+        self.files.mkdir()
+        me = await self.setup_console()
+        self.tenant_id = me["tenants"][0]["id"]
+        self.content = TestClient(TestServer(create_content_app(self.store)))
+        await self.content.start_server()
+        self.library = self.client.server.app[LIBRARY]
+
+    async def asyncTearDown(self) -> None:
+        await self.content.close()
+        await super().asyncTearDown()
+
+    async def upload(self, path: Path) -> int:
+        response = await self.client.post(f"/api/t/{self.tenant_id}/media?name={path.name}", headers=HEADERS,
+                                          data=path.read_bytes())
+        self.assertEqual(response.status, 200, await response.text())
+        media_id = (await response.json())["id"]
+        await self.library.convert(self.tenant_id, media_id)
+        return media_id
+
+    def item(self, media_id: int) -> dict:
+        return self.store.tenant(self.tenant_id).media_item(media_id)
+
+    async def test_formats(self) -> None:
+        webm = self.files / "clip.webm"
+        ffmpeg("-f", "lavfi", "-i", "testsrc2=size=320x240:rate=25:duration=1", "-f", "lavfi", "-i", "sine=duration=1",
+               "-c:v", "libvpx-vp9", "-c:a", "libopus", "-shortest", str(webm))
+        mp4 = self.files / "ready.mp4"
+        ffmpeg("-f", "lavfi", "-i", "testsrc2=size=320x240:rate=25:duration=1", "-c:v", "libx264", "-pix_fmt", "yuv420p", str(mp4))
+        flac = self.files / "tone.flac"
+        ffmpeg("-f", "lavfi", "-i", "sine=duration=1", str(flac))
+        png = self.files / "still.png"
+        ffmpeg("-f", "lavfi", "-i", "testsrc2=size=64x48", "-frames:v", "1", str(png))
+        evil = self.files / "evil.m3u8"
+        evil.write_text("#EXTM3U\n#EXT-X-TARGETDURATION:1\n#EXTINF:1,\nfile:///etc/passwd\n#EXT-X-ENDLIST\n")
+
+        converted = self.item(await self.upload(webm))
+        self.assertEqual((converted["status"], converted["kind"], converted["playable"]), ("ready", "video", "play.mp4"))
+        folder = self.store.data / "tenants" / self.tenant_id / "media" / str(converted["id"])
+        self.assertEqual(sorted(probe_codecs(folder / "play.mp4")), ["aac", "h264"])
+        self.assertTrue((folder / "thumb.jpg").is_file())
+        self.assertEqual(converted["summary"]["video"]["codec"], "vp9")
+
+        copied = self.item(await self.upload(mp4))
+        self.assertEqual(copied["playable"], "play.mp4")
+        self.assertEqual(probe_codecs(self.store.data / "tenants" / self.tenant_id / "media" / str(copied["id"]) / "play.mp4"), ["h264"])
+        self.assertEqual(self.item(await self.upload(flac))["playable"], "play.m4a")
+        self.assertEqual(self.item(await self.upload(png))[("playable")], "play.png")
+        failed = self.item(await self.upload(evil))
+        self.assertEqual(failed["status"], "failed")
+        self.assertIsNone(failed["playable"])
+
+    async def test_pages_groups_and_what_screens_load(self) -> None:
+        png = self.files / "still.png"
+        ffmpeg("-f", "lavfi", "-i", "testsrc2=size=64x48", "-frames:v", "1", str(png))
+        media_id = await self.upload(png)
+        base = f"/api/t/{self.tenant_id}"
+        bad = await self.client.post(base + "/pages", headers=HEADERS, json={"name": "X", "kind": "playlist", "items": [{"media_id": 999}]})
+        self.assertEqual(bad.status, 400)
+        response = await self.client.post(base + "/pages", headers=HEADERS, json={
+            "name": "Lobby loop", "kind": "playlist", "items": [{"media_id": media_id, "seconds": 5}]})
+        page_id = (await response.json())["id"]
+        pages = (await (await self.client.get(base + "/pages")).json())["pages"]
+        address = pages[0]["address"]
+        path = address.split("8791", 1)[1] if "8791" in address else address.split("://", 1)[1].split("/", 1)[1]
+        path = "/" + path.lstrip("/")
+        player = await self.content.get(path)
+        self.assertEqual(player.status, 200)
+        self.assertIn("player.js", await player.text())
+        self.assertIn("default-src 'none'", player.headers["Content-Security-Policy"])
+        items = (await (await self.content.get(path + "/items")).json())["items"]
+        self.assertEqual([(i["kind"], i["seconds"]) for i in items], [("image", 5)])
+        picture = await self.content.get(items[0]["url"])
+        self.assertEqual(picture.status, 200)
+        self.assertEqual(picture.headers["Content-Type"], "image/png")
+        for wrong in (path.replace(path.rsplit("/", 1)[1], "x" * 24), items[0]["url"].replace("play.png", "original"),
+                      f"/play/{self.tenant_id}/m/{'y' * 24}/play.png", "/play/player.js"):
+            self.assertEqual((await self.content.get(wrong)).status, 200 if wrong.endswith("player.js") else 404, wrong)
+
+        web_page = await (await self.client.post(base + "/pages", headers=HEADERS, json={
+            "name": "Menu", "kind": "web", "url": "https://example.com/menu"})).json()
+        self.assertEqual((await self.client.post(base + "/pages", headers=HEADERS, json={
+            "name": "Bad", "kind": "web", "url": "javascript:alert(1)"})).status, 400)
+        group = await (await self.client.post(base + "/groups", headers=HEADERS, json={"name": "Lobby", "screens": [42]})).json()
+        self.assertNotIn("id", group)  # not a screen of this organisation
+        group = await (await self.client.post(base + "/groups", headers=HEADERS, json={"name": "Lobby", "screens": []})).json()
+        result = await (await self.client.post(f"{base}/groups/{group['id']}/action", headers=HEADERS,
+                                               json={"command": "home"})).json()
+        self.assertEqual(result, {"done": 0, "failed": []})
+        self.assertEqual((await self.client.delete(f"{base}/pages/{page_id}", headers=HEADERS)).status, 200)
+        self.assertEqual((await self.client.delete(f"{base}/media/{media_id}", headers=HEADERS)).status, 200)
+        self.assertFalse((self.store.data / "tenants" / self.tenant_id / "media" / str(media_id)).exists())
+        self.assertEqual(web_page["id"] > 0, True)
+
+    async def test_upload_limit(self) -> None:
+        self.client.server.app[MEDIA_MAX] = 10
+        response = await self.client.post(f"/api/t/{self.tenant_id}/media?name=big", headers=HEADERS, data=b"x" * 100)
+        self.assertEqual(response.status, 413)
+        self.assertEqual(self.store.tenant(self.tenant_id).media(), [])
+
+
+class HomePages(Pairing):
+    async def test_a_page_as_home(self) -> None:
+        screen_id = await self.screens.pair(self.tenant, self.site, "127.0.0.1", self.tv.server.port, "123456")
+        await self.wait_online(screen_id)
+        await asyncio.sleep(0.1)
+        tenant = self.store.tenant(self.tenant)
+        page_id = tenant.save_page(None, name="Menu", kind="web", url="https://example.com/menu", items=[])
+        await self.screens.configure(self.tenant, screen_id, {"zoom": 90}, page_id)
+        self.assertEqual(self.tv.config["home_dashboard"], "https://example.com/menu")
+        tenant.save_page(page_id, name="Menu", kind="web", url="https://example.com/menu2", items=[])
+        await self.screens.refresh(self.tenant, tenant.screens_with_page(page_id))
+        self.assertEqual(self.tv.config["home_dashboard"], "https://example.com/menu2")
+        playlist = tenant.save_page(None, name="Loop", kind="playlist", url=None, items=[])
+        await self.screens.configure(self.tenant, screen_id, {}, playlist)
+        token = tenant.page(playlist)["token"]
+        self.assertEqual(self.tv.config["home_dashboard"], f"http://localhost:8791/play/{self.tenant}/p/{token}")
 
 
 if __name__ == "__main__":

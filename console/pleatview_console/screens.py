@@ -213,9 +213,12 @@ class Link:
 class Screens:
     """Every paired screen of every tenant, and the screens found on the network."""
 
-    def __init__(self, store: Store, session: aiohttp.ClientSession, *, discovery: bool = True) -> None:
+    def __init__(self, store: Store, session: aiohttp.ClientSession, *, discovery: bool = True,
+                 screen_url: str = "http://localhost:8791") -> None:
         self.store = store
         self.session = session
+        # Where screens load the console's pages and media (the content listener).
+        self.screen_url = screen_url.rstrip("/")
         self.links: dict[tuple[str, int], Link] = {}
         self.browser = Browser(self._on_discovery) if discovery else None
         self._listeners: dict[str, set[asyncio.Queue]] = {}
@@ -237,6 +240,40 @@ class Screens:
         await asyncio.gather(*(link.stop() for link in self.links.values()))
         self.links.clear()
 
+    # What screens load
+
+    def page_url(self, tenant_id: str, page: dict[str, Any]) -> str:
+        if page["kind"] == "web":
+            return page["url"]
+        return f"{self.screen_url}/play/{tenant_id}/p/{page['token']}"
+
+    def media_url(self, tenant_id: str, item: dict[str, Any]) -> str | None:
+        if item["status"] != "ready" or not item["playable"]:
+            return None
+        return f"{self.screen_url}/play/{tenant_id}/m/{item['token']}/{item['playable']}"
+
+    def desired(self, tenant_id: str, screen: dict[str, Any]) -> dict[str, Any]:
+        """The settings the console keeps on a screen: its own, with the home page from the
+        page chosen for it."""
+        config = dict(screen["config"])
+        if screen.get("home_page"):
+            page = self.store.tenant(tenant_id).page(screen["home_page"])
+            if page:
+                config["home_dashboard"] = self.page_url(tenant_id, page)
+        return config
+
+    async def refresh(self, tenant_id: str, screen_ids: list[int] | None = None) -> None:
+        """Puts the current settings on the screens (all of the tenant's when None)."""
+        tenant = self.store.tenant(tenant_id)
+        for screen in tenant.screens():
+            if screen_ids is not None and screen["id"] not in screen_ids:
+                continue
+            link = self.links.get((tenant_id, screen["id"]))
+            if link and not link.managed_by:
+                link.config = self.desired(tenant_id, screen)
+                await link.push_config()
+            self.publish(tenant_id, screen["id"])
+
     # Reading
 
     def view(self, tenant_id: str, screen: dict[str, Any]) -> dict[str, Any]:
@@ -252,6 +289,7 @@ class Screens:
             "model": " ".join(filter(None, (info.get("manufacturer"), info.get("model")))),
             "app_version": (link.state or {}).get("app_version") if link else None,
             "config": screen["config"],
+            "home_page": screen.get("home_page"),
             "home_without_ha": "home_without_ha" in ((link.state or {}).get("features") or []) if link else False,
             **(link.view() if link else {"online": False, "rejected": False, "managed_by": None,
                                          "seen": None, "state": None}),
@@ -312,17 +350,18 @@ class Screens:
         self.store.tenant(tenant_id).delete_screen(screen_id)
         self._send(tenant_id, {"type": "removed", "id": screen_id})
 
-    async def configure(self, tenant_id: str, screen_id: int, config: dict[str, Any]) -> None:
-        """Keeps these settings on the screen, now and whenever it comes back."""
+    async def configure(self, tenant_id: str, screen_id: int, config: dict[str, Any],
+                        home_page: int | None | bool = False) -> None:
+        """Keeps these settings (and home page, unless False) on the screen, now and whenever
+        it comes back."""
+        link = self.links.get((tenant_id, screen_id))
+        if link and link.managed_by:
+            raise Invalid("Home Assistant manages this screen's settings")
         tenant = self.store.tenant(tenant_id)
         tenant.update_screen(screen_id, config=config)
-        link = self.links.get((tenant_id, screen_id))
-        if link:
-            if link.managed_by:
-                raise Invalid("Home Assistant manages this screen's settings")
-            link.config = config
-            await link.push_config()
-        self.publish(tenant_id, screen_id)
+        if home_page is not False:
+            tenant.set_home_page(screen_id, home_page)
+        await self.refresh(tenant_id, [screen_id])
 
     async def command(self, tenant_id: str, screen_id: int, command: str, params: dict[str, Any]) -> None:
         link = self.links.get((tenant_id, screen_id))
@@ -345,6 +384,9 @@ class Screens:
         if screen:
             self._send(tenant_id, {"type": "screen", "screen": self.view(tenant_id, screen)})
 
+    def publish_media(self, tenant_id: str, media_id: int) -> None:
+        self._send(tenant_id, {"type": "media", "id": media_id})
+
     def _send(self, tenant_id: str, event: dict[str, Any]) -> None:
         for queue in list(self._listeners.get(tenant_id, ())):
             if queue.full():
@@ -355,7 +397,7 @@ class Screens:
 
     def _link(self, tenant_id: str, screen: dict[str, Any]) -> None:
         token = self.store.sealer(tenant_id).open(screen["token"], f"screen:{screen['device_id']}")
-        link = Link(self, tenant_id, screen, token)
+        link = Link(self, tenant_id, {**screen, "config": self.desired(tenant_id, screen)}, token)
         self.links[(tenant_id, screen["id"])] = link
         link.start()
 

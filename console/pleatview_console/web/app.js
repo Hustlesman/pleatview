@@ -128,7 +128,13 @@ function toast(message) {
 function field({ name, label, type = "text", value = "", hint, options, autocomplete, required = true }) {
   const id = `f-${name}`;
   let input;
-  if (options) {
+  if (type === "checks") {
+    const chosen = new Set((value || []).map(String));
+    input = h("fieldset", { id, class: "checks" }, options.length
+      ? options.map(([v, text]) => h("label", { class: "check" },
+        h("input", { type: "checkbox", name, value: v, checked: chosen.has(String(v)) }), " ", text))
+      : h("p", { class: "hint", text: "Nothing to choose yet." }));
+  } else if (options) {
     input = h("select", { id, name }, options.map(([v, text]) => h("option", { value: v, selected: String(v) === String(value), text })));
   } else {
     input = h("input", { id, name, type, value, autocomplete, required, spellcheck: "false" });
@@ -138,7 +144,14 @@ function field({ name, label, type = "text", value = "", hint, options, autocomp
 
 function values(form) {
   const out = {};
-  for (const el of form.querySelectorAll("input, select")) out[el.name] = el.value;
+  for (const el of form.querySelectorAll("input, select")) {
+    if (el.type === "checkbox") {
+      out[el.name] = out[el.name] || [];
+      if (el.checked) out[el.name].push(el.value);
+    } else if (el.name) {
+      out[el.name] = el.value;
+    }
+  }
   return out;
 }
 
@@ -435,9 +448,13 @@ async function selectTenant(id) {
 }
 
 async function loadScreens() {
-  const data = await api("GET", `/api/t/${app.tenant}/screens`);
+  const [data, pages] = await Promise.all([
+    api("GET", `/api/t/${app.tenant}/screens`),
+    api("GET", `/api/t/${app.tenant}/pages`),
+  ]);
   app.screens = data.screens;
   app.discovered = data.discovered;
+  app.pages = pages.pages;
 }
 
 let discoveredTimer = 0;
@@ -452,6 +469,8 @@ function onEvent(event) {
   } else if (event.type === "removed") {
     app.screens = app.screens.filter((s) => s.id !== event.id);
     if (tab() === "screens") render();
+  } else if (event.type === "media") {
+    if (tab() === "content") refreshMedia();
   } else if (event.type === "discovered") {
     clearTimeout(discoveredTimer);
     discoveredTimer = setTimeout(async () => {
@@ -473,6 +492,8 @@ function render() {
   $("#members-tab").hidden = !may("own");
   if (current === "sites") renderSites();
   else if (current === "members") renderMembers();
+  else if (current === "groups") renderGroups();
+  else if (current === "content") renderContent();
   else if (current === "activity") renderActivity();
   else renderScreens();
 }
@@ -635,7 +656,9 @@ function editScreen(screen) {
   ];
   if (own) {
     fields.push(
-      { name: "home", label: "Home page", type: "url", required: false, value: screen.config.home_dashboard || "",
+      { name: "home_page", label: "Home page", value: screen.home_page ?? "",
+        options: [["", "A web address (below)"], ...app.pages.map((p) => [p.id, p.name])] },
+      { name: "home", label: "Web address", type: "url", required: false, value: screen.home_page ? "" : screen.config.home_dashboard || "",
         hint: screen.home_without_ha || !screen.online
           ? "What the screen shows, and comes back to: any web page. Empty: its setup screen."
           : "Needs PleatView 1.0.17 or later on this screen." },
@@ -649,6 +672,7 @@ function editScreen(screen) {
     submit: async (data) => {
       const change = { name: data.name.trim(), site_id: Number(data.site_id) };
       if (own) {
+        change.home_page = data.home_page ? Number(data.home_page) : null;
         change.home = data.home.trim();
         change.zoom = data.zoom.trim() ? Number(data.zoom) : null;
       }
@@ -731,6 +755,290 @@ function removeSite(site) {
     submit: async () => {
       await api("DELETE", `/api/t/${app.tenant}/sites/${site.id}`);
       await refreshOverview();
+    },
+  });
+}
+
+// ---- Groups -----------------------------------------------------------------------------
+
+const screenName = (id) => app.screens.find((s) => s.id === id)?.name || `Screen ${id}`;
+const screenChoices = () => app.screens.map((s) => [s.id, s.name]);
+
+async function renderGroups() {
+  let groups;
+  try {
+    ({ groups } = await api("GET", `/api/t/${app.tenant}/groups`));
+  } catch (error) {
+    page(h("p", { class: "error", text: error.message }));
+    return;
+  }
+  if (tab() !== "groups") return;
+  const operate = may("operate");
+  page(
+    h("div", { class: "section-head" },
+      h("h1", { text: "Groups" }),
+      operate ? h("button", { type: "button", class: "quiet", onclick: () => editGroup(), text: "Add a group" }) : null),
+    h("p", { class: "hint", text: "Screens that do things together: a page, a video or a notification on all of them at once." }),
+    groups.length ? h("section", { class: "panel" }, groups.map((g) => h("div", { class: "row" },
+      h("span", {}, h("strong", { text: g.name }), " ", h("span", { class: "meta", text: g.screens.map(screenName).join(", ") || "No screens" })),
+      operate ? h("button", { type: "button", onclick: () => groupDo(g), text: "Do" }) : null,
+      operate ? h("button", { type: "button", class: "quiet", onclick: () => editGroup(g), text: "Edit" }) : null,
+      operate ? h("button", { type: "button", class: "danger", onclick: () => removeGroup(g), text: "Remove" }) : null)))
+      : h("p", { class: "empty", text: "No groups yet." }),
+  );
+}
+
+function editGroup(group) {
+  dialog({
+    title: group ? `Edit ${group.name}` : "Add a group",
+    fields: [
+      { name: "name", label: "Name", value: group?.name || "" },
+      { name: "screens", label: "Screens", type: "checks", options: screenChoices(), value: group?.screens || [] },
+    ],
+    ok: "Save",
+    submit: async (data) => {
+      const payload = { name: data.name.trim(), screens: (data.screens || []).map(Number) };
+      if (group) await api("PATCH", `/api/t/${app.tenant}/groups/${group.id}`, payload);
+      else await api("POST", `/api/t/${app.tenant}/groups`, payload);
+      renderGroups();
+    },
+  });
+}
+
+function removeGroup(group) {
+  dialog({
+    title: `Remove ${group.name}?`,
+    text: "Only the group goes; its screens stay.",
+    ok: "Remove",
+    danger: true,
+    submit: async () => {
+      await api("DELETE", `/api/t/${app.tenant}/groups/${group.id}`);
+      renderGroups();
+    },
+  });
+}
+
+const GROUP_ACTIONS = [
+  ["home_page", "Set their home page"], ["show_url", "Show a web page"], ["play_media", "Play media"],
+  ["notify", "Notify"], ["home", "Go home"], ["reload", "Reload"], ["turn_off", "Standby"], ["turn_on", "Wake"],
+];
+
+function groupDo(group) {
+  const pageOptions = [["", "None: back to their own"], ...app.pages.map((p) => [p.id, p.name])];
+  const mediaOptions = (app.media || []).filter((m) => m.address).map((m) => [m.address, m.name]);
+  dialog({
+    title: `${group.name}: do`,
+    fields: [
+      { name: "action", label: "What", options: GROUP_ACTIONS },
+      { name: "page", label: "Home page (for “Set their home page”)", options: pageOptions, required: false },
+      { name: "url", label: "Address (web page or media)", type: "url", required: false,
+        hint: mediaOptions.length ? "Or leave empty and choose media below." : null },
+      ...(mediaOptions.length ? [{ name: "media", label: "Media from the library", options: [["", "None"], ...mediaOptions], required: false }] : []),
+      { name: "message", label: "Message (for “Notify”)", required: false },
+    ],
+    ok: "Do it",
+    submit: async (data) => {
+      let payload;
+      if (data.action === "home_page") payload = { home_page: data.page ? Number(data.page) : null };
+      else if (data.action === "show_url") payload = { command: "show_url", url: data.url.trim() };
+      else if (data.action === "play_media") payload = { command: "play_media", url: (data.url.trim() || data.media || "") };
+      else if (data.action === "notify") payload = { command: "notify", message: data.message };
+      else payload = { command: data.action };
+      const result = await api("POST", `/api/t/${app.tenant}/groups/${group.id}/action`, payload);
+      toast(result.failed.length ? `Done on ${result.done}; not on ${result.failed.join(", ")}` : `Done on ${result.done} screen${result.done === 1 ? "" : "s"}`);
+    },
+  });
+}
+
+// ---- Content: pages and the media library ---------------------------------------------
+
+const KINDS = { video: "Video", audio: "Sound", image: "Picture" };
+
+function size(bytes) {
+  if (bytes >= 1e9) return `${(bytes / 1e9).toFixed(1)} GB`;
+  if (bytes >= 1e6) return `${(bytes / 1e6).toFixed(1)} MB`;
+  return `${Math.ceil(bytes / 1e3)} kB`;
+}
+
+function length(seconds) {
+  if (!seconds) return "";
+  const s = Math.round(seconds);
+  return s >= 3600 ? `${Math.floor(s / 3600)}:${String(Math.floor(s / 60) % 60).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`
+    : `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
+}
+
+function describeMedia(m) {
+  const parts = [KINDS[m.kind] || "", length(m.duration), size(m.size)];
+  const sum = m.summary;
+  if (sum?.video) parts.push(`${(sum.video.codec || "").toUpperCase()} ${sum.video.width}×${sum.video.height}`);
+  if (sum?.audio) parts.push(`${(sum.audio.codec || "").toUpperCase()}${sum.audio.channels ? ` ${sum.audio.channels} ch` : ""}`);
+  return parts.filter(Boolean).join(" · ");
+}
+
+function mediaStatus(m) {
+  if (m.status === "ready") return "Ready";
+  if (m.status === "failed") return `Couldn't convert: ${m.error || "unknown error"}`;
+  if (m.status === "converting") return `Converting for every screen… ${Math.round(m.progress * 100)}%`;
+  return "Waiting to convert";
+}
+
+async function refreshMedia() {
+  clearTimeout(refreshMedia.timer);
+  refreshMedia.timer = setTimeout(async () => {
+    try {
+      app.media = (await api("GET", `/api/t/${app.tenant}/media`)).media;
+      if (tab() === "content") drawContent();
+    } catch {
+      // the next event tries again
+    }
+  }, 300);
+}
+
+async function renderContent() {
+  try {
+    const [pages, media] = await Promise.all([
+      api("GET", `/api/t/${app.tenant}/pages`),
+      api("GET", `/api/t/${app.tenant}/media`),
+    ]);
+    app.pages = pages.pages;
+    app.media = media.media;
+  } catch (error) {
+    page(h("p", { class: "error", text: error.message }));
+    return;
+  }
+  if (tab() === "content") drawContent();
+}
+
+function drawContent() {
+  const operate = may("operate");
+  const upload = h("input", { type: "file", multiple: true, hidden: true,
+    accept: "video/*,audio/*,image/*,.mkv,.ts,.m2ts,.flac,.opus,.wma,.wmv" });
+  upload.addEventListener("change", () => uploadFiles([...upload.files]));
+  page(
+    h("div", { class: "section-head" },
+      h("h1", { text: "Pages" }),
+      operate ? h("button", { type: "button", class: "quiet", onclick: () => editPage(null, "web"), text: "Add a web page" }) : null,
+      operate ? h("button", { type: "button", class: "quiet", onclick: () => editPage(null, "playlist"), text: "Add a playlist" }) : null),
+    h("p", { class: "hint", text: "What screens can show as their home page: any web page, or a playlist of your media that plays full screen." }),
+    app.pages.length ? h("section", { class: "panel" }, app.pages.map((p) => h("div", { class: "row" },
+      h("span", {}, h("strong", { text: p.name }), " ",
+        h("span", { class: "meta", text: [p.kind === "web" ? p.url : `Playlist of ${p.items.length}`, p.screens ? `home of ${p.screens} screen${p.screens === 1 ? "" : "s"}` : null].filter(Boolean).join(" · ") })),
+      operate ? h("button", { type: "button", class: "quiet", onclick: () => editPage(p, p.kind), text: "Edit" }) : null,
+      operate ? h("button", { type: "button", class: "danger", onclick: () => removePage(p), text: "Remove" }) : null)))
+      : h("p", { class: "empty", text: "No pages yet." }),
+    h("div", { class: "section-head" },
+      h("h1", { text: "Media" }),
+      operate ? h("button", { type: "button", class: "quiet", onclick: () => upload.click(), text: "Upload" }) : null,
+      upload),
+    h("p", { class: "hint", text: "Videos, sounds and pictures in nearly any format. The console converts what a screen can't play as it is." }),
+    h("div", { id: "uploads" }),
+    app.media.length ? h("section", { class: "panel" }, app.media.map((m) => h("div", { class: "row media" },
+      m.thumbnail ? h("img", { class: "thumb", src: `/api/t/${app.tenant}/media/${m.id}/thumb.jpg`, alt: "" }) : h("span", { class: "thumb" }),
+      h("span", {}, h("strong", { text: m.name }), h("br"),
+        h("span", { class: "meta", text: describeMedia(m) }), h("br"),
+        h("span", { class: m.status === "failed" ? "error" : "meta", text: mediaStatus(m) })),
+      operate && m.address ? h("button", { type: "button", onclick: () => playOn(m), text: "Play on…" }) : null,
+      operate ? h("button", { type: "button", class: "danger", onclick: () => removeMedia(m), text: "Remove" }) : null)))
+      : h("p", { class: "empty", text: "Nothing uploaded yet." }),
+  );
+}
+
+function uploadFiles(files) {
+  for (const file of files) {
+    const bar = h("progress", { max: 100, value: 0 });
+    const row = h("div", { class: "row" }, h("span", { text: `Uploading ${file.name}` }), bar);
+    $("#uploads")?.append(row);
+    const request = new XMLHttpRequest();
+    request.open("POST", `/api/t/${app.tenant}/media?name=${encodeURIComponent(file.name)}`);
+    request.setRequestHeader("X-PleatView", "1");
+    request.setRequestHeader("Content-Type", "application/octet-stream");
+    request.upload.onprogress = (event) => { if (event.lengthComputable) bar.value = (100 * event.loaded) / event.total; };
+    request.onload = () => {
+      row.remove();
+      if (request.status !== 200) {
+        let message = `Error ${request.status}`;
+        try { message = JSON.parse(request.responseText).error || message; } catch { /* keep */ }
+        toast(`${file.name}: ${message}`);
+      }
+      refreshMedia();
+    };
+    request.onerror = () => { row.remove(); toast(`${file.name}: the upload stopped`); };
+    request.send(file);
+  }
+}
+
+function playOn(m) {
+  dialog({
+    title: `Play ${m.name}`,
+    fields: [{ name: "screen", label: "On", options: app.screens.map((s) => [s.id, s.name]) }],
+    ok: "Play",
+    submit: async (data) => {
+      await api("POST", `/api/t/${app.tenant}/screens/${data.screen}/command`,
+        { command: "play_media", url: m.address, title: m.name });
+      toast(`Playing on ${screenName(Number(data.screen))}`);
+    },
+  });
+}
+
+function removeMedia(m) {
+  dialog({
+    title: `Remove ${m.name}?`,
+    text: "It goes from the library and from every playlist.",
+    ok: "Remove",
+    danger: true,
+    submit: async () => {
+      await api("DELETE", `/api/t/${app.tenant}/media/${m.id}`);
+      renderContent();
+    },
+  });
+}
+
+function editPage(p, kind) {
+  const fields = [{ name: "name", label: "Name", value: p?.name || "" }];
+  if (kind === "web") {
+    fields.push({ name: "url", label: "Address", type: "url", value: p?.url || "", hint: "Any web page, such as a dashboard, a menu board or a website." });
+  }
+  dialog({
+    title: p ? `Edit ${p.name}` : kind === "web" ? "Add a web page" : "Add a playlist",
+    fields,
+    ok: "Save",
+    submit: async (data) => {
+      const payload = { name: data.name.trim(), kind };
+      if (kind === "web") payload.url = data.url.trim();
+      else {
+        payload.items = [...$("#dialog-body").querySelectorAll("input[name=item]:checked")].map((box) => {
+          const seconds = $("#dialog-body").querySelector(`input[name=seconds-${box.value}]`)?.value;
+          return { media_id: Number(box.value), ...(seconds ? { seconds: Number(seconds) } : {}) };
+        });
+      }
+      if (p) await api("PATCH", `/api/t/${app.tenant}/pages/${p.id}`, payload);
+      else await api("POST", `/api/t/${app.tenant}/pages`, payload);
+      renderContent();
+    },
+  });
+  if (kind === "playlist") {
+    // The library, oldest first, which is the order the playlist plays in.
+    const chosen = new Map((p?.items || []).map((i) => [i.media_id, i.seconds]));
+    const items = [...app.media].reverse();
+    $("#dialog-body").append(h("fieldset", { class: "checks" },
+      h("legend", { text: "Plays in this order, then starts again" }),
+      items.length ? items.map((m) => h("label", { class: "check" },
+        h("input", { type: "checkbox", name: "item", value: m.id, checked: chosen.has(m.id) }), " ", m.name,
+        m.kind === "image" ? h("input", { type: "number", name: `seconds-${m.id}`, min: 1, max: 86400, value: chosen.get(m.id) || 10, class: "seconds", "aria-label": `Seconds for ${m.name}` }) : null,
+        m.kind === "image" ? " s" : null))
+        : h("p", { class: "hint", text: "Upload media first." })));
+  }
+}
+
+function removePage(p) {
+  dialog({
+    title: `Remove ${p.name}?`,
+    text: p.screens ? "Screens with it as their home page keep a web page's address, or go back to their setup screen for a playlist." : null,
+    ok: "Remove",
+    danger: true,
+    submit: async () => {
+      await api("DELETE", `/api/t/${app.tenant}/pages/${p.id}`);
+      renderContent();
     },
   });
 }
@@ -849,6 +1157,13 @@ const ACTIONS = {
   member_removed: "Removed a member",
   member_password_reset: "Reset a member's password",
   member_two_factor_reset: "Turned off a member's two-factor sign-in",
+  group_saved: "Saved a group",
+  group_removed: "Removed a group",
+  group_action: "Sent to a group",
+  page_saved: "Saved a page",
+  page_removed: "Removed a page",
+  media_added: "Uploaded media",
+  media_removed: "Removed media",
   two_factor_enabled: "Turned on two-factor sign-in",
   two_factor_disabled: "Turned off two-factor sign-in",
 };

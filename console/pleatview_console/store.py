@@ -104,7 +104,45 @@ TENANT_V2 = """
 ALTER TABLE screens ADD COLUMN config TEXT NOT NULL DEFAULT '{}';
 """
 
-TENANT_SCHEMA = [TENANT_V1, TENANT_V2]
+# Groups of screens, pages (web pages and playlists) and the media library.
+TENANT_V3 = """
+CREATE TABLE groups (
+    id INTEGER PRIMARY KEY,
+    name TEXT NOT NULL,
+    created REAL NOT NULL
+);
+CREATE TABLE group_screens (
+    group_id INTEGER NOT NULL REFERENCES groups(id) ON DELETE CASCADE,
+    screen_id INTEGER NOT NULL REFERENCES screens(id) ON DELETE CASCADE,
+    PRIMARY KEY (group_id, screen_id)
+);
+CREATE TABLE media (
+    id INTEGER PRIMARY KEY,
+    name TEXT NOT NULL,
+    token TEXT NOT NULL UNIQUE,
+    size INTEGER NOT NULL,
+    status TEXT NOT NULL,
+    progress REAL NOT NULL DEFAULT 0,
+    kind TEXT,
+    duration REAL,
+    playable TEXT,
+    summary TEXT,
+    error TEXT,
+    created REAL NOT NULL
+);
+CREATE TABLE pages (
+    id INTEGER PRIMARY KEY,
+    name TEXT NOT NULL,
+    kind TEXT NOT NULL CHECK (kind IN ('web', 'playlist')),
+    url TEXT,
+    items TEXT NOT NULL DEFAULT '[]',
+    token TEXT NOT NULL UNIQUE,
+    created REAL NOT NULL
+);
+ALTER TABLE screens ADD COLUMN home_page INTEGER REFERENCES pages(id) ON DELETE SET NULL;
+"""
+
+TENANT_SCHEMA = [TENANT_V1, TENANT_V2, TENANT_V3]
 
 
 def _connect(path: Path, migrations: list[str]) -> sqlite3.Connection:
@@ -196,6 +234,115 @@ class TenantDb:
         screen["info"] = json.loads(screen["info"] or "{}")
         screen["config"] = json.loads(screen.get("config") or "{}")
         return screen
+
+    # Groups
+
+    def groups(self) -> list[dict[str, Any]]:
+        groups = [dict(r) for r in self.db.execute("SELECT id, name FROM groups ORDER BY name, id")]
+        members: dict[int, list[int]] = {}
+        for row in self.db.execute("SELECT group_id, screen_id FROM group_screens ORDER BY screen_id"):
+            members.setdefault(row[0], []).append(row[1])
+        for group in groups:
+            group["screens"] = members.get(group["id"], [])
+        return groups
+
+    def group(self, group_id: int) -> dict[str, Any] | None:
+        return next((g for g in self.groups() if g["id"] == group_id), None)
+
+    def save_group(self, group_id: int | None, name: str, screen_ids: list[int]) -> int:
+        with self.db:
+            self.db.execute("BEGIN")
+            if group_id is None:
+                group_id = int(self.db.execute("INSERT INTO groups (name, created) VALUES (?, ?)",
+                                               (name, time.time())).lastrowid)
+            else:
+                self.db.execute("UPDATE groups SET name = ? WHERE id = ?", (name, group_id))
+                self.db.execute("DELETE FROM group_screens WHERE group_id = ?", (group_id,))
+            self.db.executemany("INSERT INTO group_screens (group_id, screen_id) VALUES (?, ?)",
+                                [(group_id, s) for s in dict.fromkeys(screen_ids)])
+        return group_id
+
+    def delete_group(self, group_id: int) -> None:
+        self.db.execute("DELETE FROM groups WHERE id = ?", (group_id,))
+
+    # Media library
+
+    def media(self) -> list[dict[str, Any]]:
+        return [self._media(r) for r in self.db.execute("SELECT * FROM media ORDER BY created DESC, id DESC")]
+
+    def media_item(self, media_id: int) -> dict[str, Any] | None:
+        row = self.db.execute("SELECT * FROM media WHERE id = ?", (media_id,)).fetchone()
+        return self._media(row) if row else None
+
+    def media_by_token(self, token: str) -> dict[str, Any] | None:
+        row = self.db.execute("SELECT * FROM media WHERE token = ?", (token,)).fetchone()
+        return self._media(row) if row else None
+
+    def add_media(self, name: str, size: int) -> tuple[int, str]:
+        token = secrets.token_urlsafe(18)
+        cur = self.db.execute(
+            "INSERT INTO media (name, token, size, status, created) VALUES (?, ?, ?, 'waiting', ?)",
+            (name, token, size, time.time()),
+        )
+        return int(cur.lastrowid), token
+
+    def update_media(self, media_id: int, **fields: Any) -> None:
+        allowed = {"name", "size", "status", "progress", "kind", "duration", "playable", "summary", "error"}
+        if not fields or set(fields) - allowed:
+            raise ValueError(f"cannot update {sorted(set(fields) - allowed)}")
+        if "summary" in fields and not isinstance(fields["summary"], (str, type(None))):
+            fields["summary"] = json.dumps(fields["summary"], sort_keys=True)
+        columns = ", ".join(f"{name} = ?" for name in fields)
+        self.db.execute(f"UPDATE media SET {columns} WHERE id = ?", (*fields.values(), media_id))
+
+    def delete_media(self, media_id: int) -> None:
+        self.db.execute("DELETE FROM media WHERE id = ?", (media_id,))
+
+    @staticmethod
+    def _media(row: sqlite3.Row) -> dict[str, Any]:
+        item = dict(row)
+        item["summary"] = json.loads(item["summary"]) if item["summary"] else None
+        return item
+
+    # Pages: a web page by its address, or a playlist of media the console plays.
+
+    def pages(self) -> list[dict[str, Any]]:
+        return [self._page(r) for r in self.db.execute("SELECT * FROM pages ORDER BY name, id")]
+
+    def page(self, page_id: int) -> dict[str, Any] | None:
+        row = self.db.execute("SELECT * FROM pages WHERE id = ?", (page_id,)).fetchone()
+        return self._page(row) if row else None
+
+    def page_by_token(self, token: str) -> dict[str, Any] | None:
+        row = self.db.execute("SELECT * FROM pages WHERE token = ?", (token,)).fetchone()
+        return self._page(row) if row else None
+
+    def save_page(self, page_id: int | None, *, name: str, kind: str, url: str | None,
+                  items: list[dict[str, Any]]) -> int:
+        if page_id is None:
+            cur = self.db.execute(
+                "INSERT INTO pages (name, kind, url, items, token, created) VALUES (?, ?, ?, ?, ?, ?)",
+                (name, kind, url, json.dumps(items), secrets.token_urlsafe(18), time.time()),
+            )
+            return int(cur.lastrowid)
+        self.db.execute("UPDATE pages SET name = ?, kind = ?, url = ?, items = ? WHERE id = ?",
+                        (name, kind, url, json.dumps(items), page_id))
+        return page_id
+
+    def delete_page(self, page_id: int) -> None:
+        self.db.execute("DELETE FROM pages WHERE id = ?", (page_id,))
+
+    def screens_with_page(self, page_id: int) -> list[int]:
+        return [r[0] for r in self.db.execute("SELECT id FROM screens WHERE home_page = ?", (page_id,))]
+
+    def set_home_page(self, screen_id: int, page_id: int | None) -> None:
+        self.db.execute("UPDATE screens SET home_page = ? WHERE id = ?", (page_id, screen_id))
+
+    @staticmethod
+    def _page(row: sqlite3.Row) -> dict[str, Any]:
+        page = dict(row)
+        page["items"] = json.loads(page["items"] or "[]")
+        return page
 
     # Audit log
 

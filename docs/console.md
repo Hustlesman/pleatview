@@ -113,7 +113,13 @@ home), and a site holds screens and renderers.
 
 ## Media in any format
 
-ffprobe reads every upload: container, codecs, size, length. When a screen plays it:
+**Pages** are what screens show as their home page: a web page by its address, or a playlist
+of the library's pictures, videos and sounds, which the console serves as a page that plays
+them full screen, in order, again and again. **Groups** of screens take a command, or a home
+page, all at once.
+
+ffprobe reads every upload: container, codecs, size, length. Then the console makes one file
+that every screen plays:
 
 1. If the screen plays the codecs and the container, the file is sent as it is.
 2. If only the container doesn't suit it, ffmpeg remuxes it (no quality lost, little work).
@@ -158,6 +164,9 @@ asks for the first administrator's name and password, and sets up a tenant and a
 | `TLS_CERT`, `TLS_KEY` | — | Your own certificate and key (PEM files) instead of the console's |
 | `MASTER_KEY_FILE` | `/data/master.key` | The master key, best kept apart from `/data` and its backups |
 | `DISCOVERY` | `1` | `0` turns off looking for screens over mDNS |
+| `SCREEN_PORT`, `SCREEN_HOST` | `8791`, `0.0.0.0` | Where screens load playlists and media: plain HTTP on the local network, like protocol v1, with nothing else on it |
+| `SCREEN_URL` | `http://<this machine>:8791` | The address screens use for it, when they reach the console another way |
+| `MEDIA_MAX_MB` | `4096` | The largest upload |
 
 To try the web app from another computer without a trusted certificate, run it with
 `TLS=off`, forward port 8790 to that computer (an SSH tunnel, or your editor's port
@@ -193,6 +202,6 @@ device keys), `ffmpeg` and `tini`. Anything more needs approval first.
    installable web app, the Docker image and tests.
 2. Two-factor sign-in, members and roles in the web app (done 11 Nov).
 3. The apps' home page without Home Assistant (Android and Linux; done 11 Nov).
-4. Groups, pages and the media library with conversion.
+4. Groups, pages and the media library with conversion (done 11 Nov).
 5. Schedules and playlists.
 6. Many sites, then many tenants, with S1's connections.

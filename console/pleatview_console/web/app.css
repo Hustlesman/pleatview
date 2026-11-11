@@ -207,3 +207,11 @@ code.secret, pre.codes {
   white-space: pre-wrap;
 }
 .row select { width: auto; }
+
+fieldset.checks { border: 1px solid var(--line); border-radius: 8px; padding: .5rem .8rem; margin: 0; max-height: 16rem; overflow: auto; }
+fieldset.checks legend { color: var(--muted); font-size: .9rem; }
+label.check { display: flex; align-items: center; gap: .5rem; margin: .3rem 0; color: var(--text); font-size: 1rem; }
+label.check input[type=checkbox] { width: auto; }
+label.check input.seconds { width: 5.5rem; margin-left: auto; }
+.row.media .thumb { width: 96px; height: 54px; object-fit: cover; border-radius: 6px; background: var(--ink); flex: none; }
+progress { width: 12rem; accent-color: var(--cyan); }
