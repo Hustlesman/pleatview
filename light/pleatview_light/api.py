@@ -1,0 +1,129 @@
+"""Protocol v1's HTTP API (docs/protocol.md), on asyncio streams from the standard library.
+
+One request per connection, bodies up to 256 KiB, JSON in and out; the event stream is
+Server-Sent Events with a ping every 20 seconds.
+"""
+
+from __future__ import annotations
+
+import asyncio
+import json
+import logging
+import re
+from typing import Any, Callable
+
+from .pairing import Pairing
+from .screen import Screen
+
+_LOGGER = logging.getLogger(__name__)
+
+MAX_BODY = 256 * 1024
+REASONS = {200: "OK", 400: "Bad Request", 401: "Unauthorized", 403: "Forbidden", 404: "Not Found",
+           405: "Method Not Allowed", 409: "Conflict", 413: "Payload Too Large", 429: "Too Many Requests"}
+
+
+class Api:
+    def __init__(self, screen: Screen, pairing: Pairing, info: Callable[[], dict[str, Any]]) -> None:
+        self.screen = screen
+        self.pairing = pairing
+        self.info = info
+
+    async def handle(self, reader: asyncio.StreamReader, writer: asyncio.StreamWriter) -> None:
+        try:
+            await asyncio.wait_for(self._handle(reader, writer), timeout=None)
+        except (ConnectionError, asyncio.IncompleteReadError, asyncio.LimitOverrunError, ValueError):
+            pass
+        finally:
+            writer.close()
+
+    async def _handle(self, reader: asyncio.StreamReader, writer: asyncio.StreamWriter) -> None:
+        head = await asyncio.wait_for(reader.readuntil(b"\r\n\r\n"), 10)
+        lines = head.decode("latin-1").split("\r\n")
+        method, path, _ = (lines[0].split(" ") + ["", ""])[:3]
+        headers = {k.strip().lower(): v.strip() for k, _, v in (line.partition(":") for line in lines[1:] if line)}
+        length = int(headers.get("content-length") or 0)
+        if length > MAX_BODY:
+            return await self._send(writer, 413, {"error": "too_large"})
+        raw = await asyncio.wait_for(reader.readexactly(length), 10) if length else b""
+        token = re.sub(r"^Bearer\s+", "", headers.get("authorization", ""), flags=re.I) or None
+        path = path.split("?", 1)[0]
+        if method == "GET" and path == "/api/events":
+            if not self.pairing.valid(token):
+                return await self._send(writer, 401, {"error": "unauthorized"})
+            return await self._events(writer)
+        try:
+            body = json.loads(raw) if raw else {}
+        except ValueError:
+            return await self._send(writer, 400, {"error": "invalid_json"})
+        status, reply = await self.route(method, path, body if isinstance(body, dict) else None, token)
+        await self._send(writer, status, reply)
+
+    async def route(self, method: str, path: str, body: dict[str, Any] | None,
+                    token: str | None) -> tuple[int, dict[str, Any]]:
+        if body is None:
+            return 400, {"error": "body must be a JSON object"}
+        if (method, path) == ("GET", "/api/info"):
+            if not self.pairing.valid(token):
+                await self.screen.pin_requested()
+            return 200, {**self.info(), "paired": self.pairing.paired}
+        if (method, path) == ("POST", "/api/pair"):
+            result = self.pairing.pair(body.get("pin"), body.get("client"))
+            if result["result"] == "paired":
+                return 200, {"token": result["token"]}
+            if result["result"] == "locked_out":
+                return 429, {"error": "too_many_attempts", "retry_after": result["retry_after"]}
+            return 403, {"error": "invalid_pin"}
+        if (method, path) == ("POST", "/api/verify"):
+            nonce = body.get("nonce")
+            if not isinstance(nonce, str) or not re.fullmatch(r"[0-9a-fA-F]{32,128}", nonce):
+                return 400, {"error": "nonce must be 32 to 128 hex digits"}
+            return 200, {"proofs": self.pairing.prove(nonce)}
+        if not self.pairing.valid(token):
+            return 401, {"error": "unauthorized"}
+        if (method, path) == ("POST", "/api/unpair"):
+            self.pairing.revoke(token or "")
+            return 200, {}
+        if (method, path) == ("GET", "/api/state"):
+            return 200, self.screen.state
+        if path == "/api/config":
+            if method == "GET":
+                return 200, self.screen.config.public()
+            if method == "POST":
+                try:
+                    config = await self.screen.configure(body)
+                except ValueError as err:
+                    return 400, {"error": str(err)}
+                return 200, config.public()
+        if (method, path) == ("POST", "/api/command"):
+            try:
+                await self.screen.command(body)
+            except ValueError as err:
+                return 400, {"error": str(err)}
+            return 200, {}
+        if path == "/api/signin" or path == "/api/signins":
+            return 409, {"error": "no_sign_in_pending"}  # Home Assistant renders the pages
+        return 404, {"error": "not_found"}
+
+    async def _events(self, writer: asyncio.StreamWriter) -> None:
+        writer.write(b"HTTP/1.1 200 OK\r\nContent-Type: text/event-stream\r\nCache-Control: no-store\r\n"
+                     b"Connection: close\r\n\r\n")
+        queue = self.screen.subscribe()
+        try:
+            writer.write(f"event: state\ndata: {json.dumps(self.screen.state)}\n\n".encode())
+            await writer.drain()
+            while True:
+                try:
+                    state = await asyncio.wait_for(queue.get(), 20)
+                    writer.write(f"event: state\ndata: {json.dumps(state)}\n\n".encode())
+                except asyncio.TimeoutError:
+                    writer.write(b": ping\n\n")
+                await writer.drain()
+        finally:
+            self.screen.listeners.discard(queue)
+
+    @staticmethod
+    async def _send(writer: asyncio.StreamWriter, status: int, data: dict[str, Any]) -> None:
+        payload = json.dumps(data).encode()
+        writer.write(f"HTTP/1.1 {status} {REASONS.get(status, 'Error')}\r\nContent-Type: application/json\r\n"
+                     f"Content-Length: {len(payload)}\r\nConnection: close\r\n\r\n".encode() + payload)
+        await writer.drain()

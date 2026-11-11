@@ -116,7 +116,9 @@ jobs:
           (cd custom_components && zip -qr ../pleatview-integration.zip pleatview -x "*/__pycache__/*")
           cp linux-packages/pleatview_*_amd64.deb pleatview_amd64.deb
           cp linux-packages/pleatview_*_arm64.deb pleatview_arm64.deb
-          sha256sum pleatview.apk pleatview-integration.zip pleatview_amd64.deb pleatview_arm64.deb > SHA256SUMS
+          cp "$(light/build-deb.sh "$RUNNER_TEMP/light")" pleatview-light_all.deb
+          sha256sum pleatview.apk pleatview-integration.zip pleatview_amd64.deb pleatview_arm64.deb \
+            pleatview-light_all.deb > SHA256SUMS
 
       # Signed build provenance, so anyone can check where a file came from:
       #   gh attestation verify pleatview.apk --repo Hustlesman/pleatview
@@ -127,6 +129,7 @@ jobs:
             pleatview-integration.zip
             pleatview_amd64.deb
             pleatview_arm64.deb
+            pleatview-light_all.deb
             android/app/build/outputs/bundle/release/*.aab
 
       # Fixed asset names keep https://github.com/Hustlesman/pleatview/releases/latest/download/pleatview.apk
@@ -140,5 +143,5 @@ jobs:
           prerelease=""
           case "$GITHUB_REF_NAME" in *-*) prerelease="--prerelease" ;; esac
           gh release create "$GITHUB_REF_NAME" pleatview.apk pleatview-integration.zip \
-            pleatview_amd64.deb pleatview_arm64.deb SHA256SUMS \
+            pleatview_amd64.deb pleatview_arm64.deb pleatview-light_all.deb SHA256SUMS \
             --title "PleatView $GITHUB_REF_NAME" --generate-notes $prerelease

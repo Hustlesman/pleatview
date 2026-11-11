@@ -1,0 +1,78 @@
+#!/bin/sh
+# Sets up PleatView Light, which plays the dashboards Home Assistant renders, full screen.
+#
+#   sudo pleatview-light enable [USER]   start it with the computer, as USER (default: you)
+#   sudo pleatview-light disable         stop starting it
+#   pleatview-light pin                  show the screen's pairing PIN (also on screen)
+#
+# It takes over the screen's display (no desktop needed) and port 8765.
+set -eu
+
+unit=/etc/systemd/system/pleatview-light.service
+
+usage() {
+  sed -n '2,8p' "$0" | sed 's/^# \{0,1\}//'
+  exit 2
+}
+
+need_root() {
+  [ "$(id -u)" -eq 0 ] || { echo "Run this with sudo." >&2; exit 1; }
+}
+
+enable() {
+  need_root
+  user=${1:-${SUDO_USER:-}}
+  [ -n "$user" ] && [ "$user" != root ] || { echo "Name the user to run it as: sudo pleatview-light enable USER" >&2; exit 1; }
+  id "$user" >/dev/null 2>&1 || { echo "No user called $user." >&2; exit 1; }
+  for group in video render audio; do getent group "$group" >/dev/null && usermod -aG "$group" "$user"; done
+  # The Electron app's kiosk would hold the display and port 8765.
+  systemctl disable --now pleatview-kiosk.service >/dev/null 2>&1 || true
+  cat >"$unit" <<UNIT
+[Unit]
+Description=PleatView Light on this screen
+After=systemd-user-sessions.service network-online.target
+Wants=network-online.target
+Conflicts=getty@tty1.service
+
+[Service]
+User=$user
+PAMName=login
+TTYPath=/dev/tty1
+TTYReset=yes
+TTYVHangup=yes
+StandardInput=tty
+StandardOutput=journal
+StandardError=journal
+UtmpIdentifier=tty1
+UtmpMode=user
+Environment=PYTHONUNBUFFERED=1
+EnvironmentFile=-/etc/default/pleatview-light
+ExecStart=/usr/bin/python3 -m pleatview_light
+WorkingDirectory=/usr/share/pleatview-light
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
+UNIT
+  systemctl daemon-reload
+  systemctl disable --now getty@tty1.service >/dev/null 2>&1 || true
+  systemctl enable --now pleatview-light.service
+  echo "PleatView Light now starts with the computer, as $user. Logs: journalctl -u pleatview-light"
+}
+
+disable() {
+  need_root
+  systemctl disable --now pleatview-light.service >/dev/null 2>&1 || true
+  rm -f "$unit"
+  systemctl daemon-reload
+  systemctl enable --now getty@tty1.service >/dev/null 2>&1 || true
+  echo "PleatView Light no longer starts with the computer."
+}
+
+case "${1:-}" in
+  enable) shift; enable "$@" ;;
+  disable) disable ;;
+  pin) journalctl -u pleatview-light -n 200 --no-pager -o cat 2>/dev/null | grep -o 'PIN [0-9 ]*' | tail -1 || echo "Not running." ;;
+  *) usage ;;
+esac
