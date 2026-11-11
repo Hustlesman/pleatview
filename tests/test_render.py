@@ -35,7 +35,12 @@ class FakeRenderer:
         app.router.add_get("/hls/{key}/{name}", self._hls)
         app.router.add_get("/api/info", self._info)
         app.router.add_post("/api/pair", self._pair)
+        app.router.add_post("/api/sessions/{key}/overlay", self._overlay)
         return app
+
+    async def _overlay(self, request: web.Request) -> web.Response:
+        self.overlays = [*getattr(self, "overlays", []), await request.json()]
+        return web.json_response({})
 
     async def _pair(self, request: web.Request) -> web.Response:
         if (await request.json()).get("pin") != "123456":
@@ -202,4 +207,22 @@ async def test_a_renderer_pairs_from_its_announcement(hass: HomeAssistant, rende
     assert result["type"] is FlowResultType.CREATE_ENTRY
     assert result["title"] == "Rack A"
     assert result["data"]["kind"] == "renderer" and result["data"]["token"] == "paired-token"
+
+
+async def test_notifications_go_into_the_stream_for_screens_that_only_play_it(
+    hass: HomeAssistant, fake_tv: FakeTV, renderer: FakeRenderer
+) -> None:
+    """PleatView Light lists stream_overlays: its notifications are drawn into the stream."""
+    entry = make_entry(
+        fake_tv, options={"render_url": renderer.url}, **{CONF_AUTH_MODE: AUTH_MANAGED, CONF_HA_TOKEN: "tv-token"})
+    entry = await setup_entry(hass, entry)
+    await fake_tv.wait_for_stream()
+    await fake_tv.push(features=["render_stream", "stream_overlays"], screen={"width": 1920, "height": 1080, "density": 1.0})
+    await _until(lambda: entry.entry_id in renderer.screens)
+    device = entry.runtime_data
+    await device.async_command("notify", message="Someone's at the door", title="Front door", image_url=None)
+    assert renderer.overlays[-1] == {"kind": "notify", "message": "Someone's at the door", "title": "Front door"}
+    assert not any(c.get("command") == "notify" for c in fake_tv.commands)
+    await device.async_command("home")
+    assert renderer.overlays[-1] == {"kind": "clear"}
 

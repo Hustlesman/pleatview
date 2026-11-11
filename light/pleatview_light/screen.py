@@ -19,7 +19,8 @@ from .playlist import MediaCache
 
 _LOGGER = logging.getLogger(__name__)
 
-FEATURES = ["render_stream", "home_without_ha", "home_playlist"]
+# stream_overlays: Home Assistant draws notifications and cameras into the rendered stream.
+FEATURES = ["render_stream", "home_without_ha", "home_playlist", "stream_overlays"]
 STREAM_RETRY = 2.0
 PIN_SHOWN = 120  # seconds the PIN stays up after someone starts pairing
 

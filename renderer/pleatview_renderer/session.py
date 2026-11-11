@@ -117,6 +117,9 @@ class Session:
         self._cdp: Cdp | None = None
         self._script_id: str | None = None
         self._ready = asyncio.Event()
+        # Notifications and cameras on top of the page: kind -> (what, until).
+        self.overlays: dict[str, tuple[dict[str, Any], float]] = {}
+        self._overlay_task: asyncio.Task[None] | None = None
 
     @property
     def playlist(self) -> Path:
@@ -220,6 +223,37 @@ class Session:
             "-hls_flags", "delete_segments+independent_segments+omit_endlist+temp_file",
             "-hls_segment_filename", str(self.folder / "s%d.ts"), str(self.playlist),
         ))
+
+    async def overlay(self, item: dict[str, Any] | None, kind: str = "") -> None:
+        """Shows a notification or a camera on top of the page for its seconds (None clears)."""
+        if item is None:
+            if kind:
+                self.overlays.pop(kind, None)
+            else:
+                self.overlays.clear()
+        else:
+            self.overlays[item["kind"]] = (item, time.monotonic() + item["duration"])
+        await self._draw_overlays()
+        if self.overlays and (self._overlay_task is None or self._overlay_task.done()):
+            self._overlay_task = asyncio.create_task(self._keep_overlays())
+
+    async def _draw_overlays(self) -> None:
+        now = time.monotonic()
+        self.overlays = {k: v for k, v in self.overlays.items() if v[1] > now}
+        if not (self._cdp and self._ready.is_set()):
+            return
+        try:
+            await self._cdp.call("Runtime.evaluate", expression=page.overlay_script([v[0] for v in self.overlays.values()]))
+        except CdpError as err:
+            _LOGGER.debug("%s: overlay not drawn: %s", self.key, err)
+
+    async def _keep_overlays(self) -> None:
+        """Draws them again after the page changes, and takes them away when their time is up."""
+        while True:
+            await asyncio.sleep(1)
+            await self._draw_overlays()
+            if not self.overlays:
+                return
 
     async def _install_script(self) -> None:
         assert self._cdp

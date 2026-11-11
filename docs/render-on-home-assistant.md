@@ -126,6 +126,8 @@ back.
 - The TV only shows the picture. Browsing inside a dashboard with the remote, and the sign-in
   questions of webpage dashboards, don't reach the page.
 - Notifications, cameras in a corner, media and announcements still play on the TV itself.
+  On [PleatView Light](../light/README.md), which only plays the stream, Home Assistant draws
+  notifications and cameras into the stream instead.
 - When the TV is off or in another app, the renderer stops its screen after 90 seconds and
   starts it again when the TV is back.
 

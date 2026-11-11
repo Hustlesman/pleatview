@@ -148,8 +148,23 @@ class PleatViewDevice:
         self._notify()
         return True
 
+    @property
+    def stream_overlays(self) -> bool:
+        """Notifications and cameras go into the rendered stream: the app only plays it
+        (PleatView Light)."""
+        return self.rendering and "stream_overlays" in (self.state.get("features") or [])
+
     async def async_command(self, command: str, **params: Any) -> None:
         """Send a command, translating failures into Home Assistant errors."""
+        if self.stream_overlays and self.renderer:
+            if command == "notify":
+                await self.renderer.async_overlay({"kind": "notify", **{k: v for k, v in params.items() if v is not None}})
+                return
+            if command == "show_image":
+                await self.renderer.async_overlay({"kind": "image", **{k: v for k, v in params.items() if v is not None}})
+                return
+            if command in ("stop", "home"):
+                await self.renderer.async_overlay({"kind": "clear"})
         try:
             await self.client.command(command, **params)
         except InvalidAuth as err:

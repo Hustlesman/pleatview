@@ -124,7 +124,7 @@ class Screens(unittest.IsolatedAsyncioTestCase):
             await screen.command({"command": "play_media", "url": "file:///etc/passwd"})
         with self.assertRaises(ValueError):
             await screen.command({"command": "reboot"})
-        self.assertEqual(screen.state["features"], ["render_stream", "home_without_ha", "home_playlist"])
+        self.assertEqual(screen.state["features"], ["render_stream", "home_without_ha", "home_playlist", "stream_overlays"])
         self.assertEqual(screen.state["screen"]["width"], 1280)
 
 

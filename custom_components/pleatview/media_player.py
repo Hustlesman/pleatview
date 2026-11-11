@@ -450,6 +450,11 @@ class PleatViewMediaPlayer(PleatViewEntity, MediaPlayerEntity):
 
         if title is None and (camera_state := self.hass.states.get(camera)):
             title = camera_state.name
+        if self._device.stream_overlays:
+            # A screen that only plays the rendered stream gets the camera drawn into it.
+            await self._device.async_command(
+                "show_image", url=self._device.media_url(f"/api/camera_proxy_stream/{camera}"), mode=mode, **layout)
+            return
         try:
             stream_path = await async_request_stream(self.hass, camera, "hls")
         except HomeAssistantError as err:

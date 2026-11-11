@@ -121,6 +121,27 @@ class ApiTest(AioHTTPTestCase):
         self.assertEqual((await self.client.get("/hls/other/s3.ts")).status, 404)
 
 
+class OverlayTest(unittest.TestCase):
+    def test_overlays_are_checked(self) -> None:
+        item = server.parse_overlay({"kind": "notify", "message": "Someone's at the door", "title": "Front door"})
+        self.assertEqual((item["position"], item["duration"]), ("top-right", 10.0))
+        camera = server.parse_overlay({"kind": "image", "url": "http://ha:8123/api/camera_proxy_stream/camera.door?authSig=x"})
+        self.assertEqual((camera["size"], camera["position"]), (30, "bottom-right"))
+        full = server.parse_overlay({"kind": "image", "url": "http://ha/x.jpg", "mode": "fullscreen"})
+        self.assertEqual((full["size"], full["position"]), (100, "center"))
+        self.assertIsNone(server.parse_overlay({"kind": "clear"}))
+        for bad in ({"kind": "notify"}, {"kind": "image", "url": "javascript:alert(1)"}, {"kind": "notify", "message": "x", "position": "nowhere"},
+                    {"kind": "notify", "message": "x", "duration": 99999}, {"kind": "script"}):
+            with self.assertRaises(ValueError, msg=bad):
+                server.parse_overlay(bad)
+
+    def test_the_script_draws_text_as_text(self) -> None:
+        script = page.overlay_script([{"kind": "notify", "message": "<img src=x onerror=alert(1)>", "title": "", "image_url": "",
+                                      "position": "top-right", "duration": 10}])
+        self.assertIn("textContent", script)
+        self.assertNotIn("innerHTML", script)
+
+
 class PairedApiTest(AioHTTPTestCase):
     """A renderer on the network: nothing without a paired client's token."""
 
