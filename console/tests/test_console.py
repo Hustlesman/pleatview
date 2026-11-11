@@ -357,6 +357,29 @@ class Api(Base):
                                               json={"host": host, "pin": "123456", "site_id": 1})
             self.assertEqual(response.status, 400, host)
 
+    async def test_password_change(self) -> None:
+        await self.setup_console()
+        for _ in range(5):
+            response = await self.client.post("/api/password", headers=HEADERS,
+                                              json={"current": "wrong", "password": PASSWORD + "2"})
+            self.assertEqual(response.status, 403)
+        response = await self.client.post("/api/password", headers=HEADERS,
+                                          json={"current": PASSWORD, "password": PASSWORD + "2"})
+        self.assertEqual(response.status, 429)  # as slow as guessing at the sign-in page
+        self.app_throttle().succeeded("user:ann")
+        response = await self.client.post("/api/password", headers=HEADERS,
+                                          json={"current": PASSWORD, "password": "short"})
+        self.assertEqual(response.status, 400)
+        response = await self.client.post("/api/password", headers=HEADERS,
+                                          json={"current": PASSWORD, "password": PASSWORD + "2"})
+        self.assertEqual(response.status, 200)
+        status = await (await self.client.get("/api/status")).json()
+        self.assertEqual(status["user"]["username"], "ann")  # still signed in here
+
+    def app_throttle(self):
+        from pleatview_console.server import THROTTLE
+        return self.client.server.app[THROTTLE]
+
     async def test_sign_in_slows_down(self) -> None:
         await self.setup_console()
         for _ in range(5):

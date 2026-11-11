@@ -235,8 +235,13 @@ async def change_password(request: web.Request) -> web.Response:
     current, new = data.get("current"), data.get("password")
     if not isinstance(current, str) or not isinstance(new, str):
         raise fail(400, "The current and the new password are required")
+    throttle, key = request.app[THROTTLE], f"user:{user['username'].lower()}"
+    if wait := throttle.wait(key):
+        raise fail(429, f"Too many tries. Wait {wait} seconds.", retry_after=wait)
     if not await asyncio.to_thread(check_password, current, user["password"]):
+        throttle.failed(key)
         raise fail(403, "The current password is wrong")
+    throttle.succeeded(key)
     if problem := check_new_password(new):
         raise fail(400, problem)
     store.set_password(user["id"], await asyncio.to_thread(hash_password, new))
@@ -373,7 +378,8 @@ async def change_screen(request: web.Request) -> web.Response:
     if "name" in data:
         changes["name"] = name_field(data, "name", "A name")
     if "site_id" in data:
-        if not isinstance(data["site_id"], int) or not tenant.site(data["site_id"]):
+        site_id = data["site_id"]
+        if not isinstance(site_id, int) or isinstance(site_id, bool) or not tenant.site(site_id):
             raise fail(400, "No such site")
         changes["site_id"] = data["site_id"]
     if not changes:
@@ -435,10 +441,15 @@ async def events(request: web.Request) -> web.StreamResponse:
             try:
                 event = await asyncio.wait_for(queue.get(), timeout=20)
             except asyncio.TimeoutError:
+                # The stream ends with the session or the membership, like any other request.
+                try:
+                    member(request, "view")
+                except web.HTTPException:
+                    break
                 await response.write(b": ping\n\n")
                 continue
             await response.write(f"data: {json.dumps(event)}\n\n".encode())
-    except (ConnectionResetError, asyncio.CancelledError):
+    except ConnectionResetError:
         pass
     finally:
         screens.unsubscribe(tenant_id, queue)
