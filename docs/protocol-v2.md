@@ -1,8 +1,8 @@
 # PleatView protocol v2: screens connect out (design)
 
 Status: a design for [S1](../ROADMAP.md#s1--secure-remote-management) and the web player
-([M4](../ROADMAP.md#m4--web-player)), 12 Nov 2026. Nothing implements it yet. The decisions
-marked **Decide** are open.
+([M4](../ROADMAP.md#m4--web-player)), 12 Nov 2026, decided the same day. It's built with M4,
+so Home Assistant and the console get it in the same app version.
 
 ## Why
 
@@ -67,17 +67,11 @@ Once enrolled with a v2 controller, a screen can turn its v1 server off (a setti
 controller sets). Home Assistant's integration serves `/api/pleatview/v2` itself, so the
 same app works with Home Assistant and with the console.
 
-## To decide
+## Decided (12 Nov 2026)
 
-- **Decide: the key algorithm.** ECDSA P-256 is in every Android Keystore since Android 6
-  and in browsers' WebCrypto (the web player). Ed25519 is simpler but needs Android 13 or
-  later in the keystore. Recommendation: P-256.
-- **Decide: a library for PleatView Light.** Python's standard library can't sign. Either
-  `python3-cryptography` from Debian (already approved for the console), or Light signs
-  with an HMAC key agreed at enrolment instead of a key pair (weaker: the controller then
-  holds a secret that can act as the screen). Recommendation: `python3-cryptography`.
-- **Decide: the controller's certificate.** A certificate the screen's system trusts (for a
-  console reached through a reverse proxy or ZTNA, usually so), or one pinned at enrolment.
-  Recommendation: both, as above.
-- **Decide: v2 in Home Assistant at the same time as the console,** so one app version
-  covers both. Recommendation: yes, together with M4.
+- **Keys:** ECDSA P-256, which every Android Keystore has since Android 6 and browsers'
+  WebCrypto has too (the web player).
+- **PleatView Light** signs with `python3-cryptography` from Debian (approved).
+- **The controller's certificate:** one the screen's system trusts, or one pinned at
+  enrolment.
+- **Home Assistant and the console together,** with M4.

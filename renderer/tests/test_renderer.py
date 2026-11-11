@@ -160,6 +160,18 @@ class PairedApiTest(AioHTTPTestCase):
         self.assertEqual((await self.client.put("/api/sessions/tv-1", json=body, headers=auth)).status, 401)
 
 
+class Certificate(unittest.TestCase):
+    def test_made_once_and_private(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            cert, key = Path(tmp) / "cert.pem", Path(tmp) / "key.pem"
+            server.make_certificate(cert, key)
+            first = server.certificate_fingerprint(cert)
+            server.make_certificate(cert, key)
+            self.assertEqual(first, server.certificate_fingerprint(cert))
+            self.assertEqual(key.stat().st_mode & 0o777, 0o600)
+            self.assertRegex(first, r"^([0-9A-F]{2}:){31}[0-9A-F]{2}$")
+
+
 class SharedCode(unittest.TestCase):
     def test_same_as_the_light_client(self) -> None:
         light = Path(__file__).resolve().parents[2] / "light" / "pleatview_light"

@@ -216,9 +216,8 @@ to the network.
       reports to PleatView in Home Assistant (12 Nov: Docker; the entry's name is the alias)
 - [ ] **Renderer sign-in, encrypted:** the renderer's API takes only the token from pairing,
       over TLS with the renderer's own certificate, which Home Assistant pins when pairing.
-      A renderer on another machine is then safe on the network (12 Nov: tokens, and TLS
-      with a certificate you give it, pinned; making its own certificate needs
-      python3-cryptography in the renderer image, waiting for approval)
+      A renderer on another machine is then safe on the network (12 Nov: tokens, and HTTPS
+      with its own certificate or yours, pinned when pairing)
 - [x] **A renderer per TV from a list:** *The TV renders itself*, each renderer by its alias, or
       *Automatic* (the least busy renderer) (12 Nov)
 - [x] **Load in Home Assistant:** each renderer as a device, with screens in use out of its
@@ -259,8 +258,8 @@ and policies live in the controller.
       EU Cyber Resilience Act's essential requirements. A self-assessment that anyone can
       verify, not a certificate (12 Nov, with its gaps listed)
 - [ ] **Protocol v2** ([design](docs/protocol-v2.md), 12 Nov): screens connect out over TLS 1.3,
-      enrol with a code and a key pair, and prove the key on every connection. Waiting for
-      decisions on the key type, Light's library and the controller's certificate
+      enrol with a code and a key pair, and prove the key on every connection. Decided on
+      12 Nov (P-256 keys, python3-cryptography in Light); built with M4
 
 **Exit:** a screen on another network is paired, controlled and removed through a ZTNA
 connector and over the open internet, with no open port at the screen's end, and the

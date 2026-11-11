@@ -96,9 +96,9 @@ It announces itself, so Home Assistant shows it under *Settings → Devices & se
 discovered PleatView device. Give it a name and enter the PIN from its log
 (`docker logs pleatview-renderer`). It then appears as a device of its own, with sensors for
 its screens in use, its processor load and its memory, so you can see when to add another.
-The volume keeps its pairings across restarts. Give it a certificate with
-`-e TLS_CERT=/data/cert.pem -e TLS_KEY=/data/key.pem` and Home Assistant talks to it over
-HTTPS, pinning that certificate when pairing.
+The volume keeps its pairings across restarts. On the network it serves HTTPS with a
+certificate it makes for itself (its fingerprint is in the log), which Home Assistant pins
+when pairing; give it your own with `-e TLS_CERT=/data/cert.pem -e TLS_KEY=/data/key.pem`.
 
 </details>
 
