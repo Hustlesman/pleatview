@@ -1,0 +1,86 @@
+name: Bug report
+description: Something in PleatView doesn't work as it should
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time. Please don't post passwords, tokens or your Home Assistant address if it's reachable from the internet. Security problems go to [private reporting](https://github.com/Hustlesman/pleatview/security/policy) instead.
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: What you saw, and what you expected instead.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: How to make it happen
+      description: The steps, if you know them. "It happens after a few hours" helps too.
+      placeholder: |
+        1. Show the Cameras dashboard on the TV
+        2. Ring the doorbell
+        3. ...
+  - type: dropdown
+    id: screen
+    attributes:
+      label: Which PleatView
+      options:
+        - Android TV or Google TV
+        - Fire TV
+        - Android phone or tablet
+        - Linux app (Raspberry Pi, mini PC)
+        - PleatView Light
+        - PleatView Renderer
+        - PleatView Console
+        - Home Assistant integration only
+    validations:
+      required: true
+  - type: input
+    id: device
+    attributes:
+      label: Device
+      description: Make and model, and its Android or OS version if you know it.
+      placeholder: Chromecast with Google TV (HD), Android TV 14
+    validations:
+      required: true
+  - type: input
+    id: versions
+    attributes:
+      label: Versions
+      description: PleatView's version (in its menu, or Home Assistant's device page), and Home Assistant's (Settings → About).
+      placeholder: PleatView 1.0.17, Home Assistant 2026.11.1
+    validations:
+      required: true
+  - type: dropdown
+    id: source
+    attributes:
+      label: Installed from
+      options:
+        - Google Play
+        - Amazon Appstore
+        - GitHub (Downloader or the APK)
+        - The .deb package
+        - Built from source
+  - type: dropdown
+    id: render
+    attributes:
+      label: Render on Home Assistant
+      description: Whether this screen's dashboards are rendered by a PleatView Renderer.
+      options:
+        - "No"
+        - "Yes"
+        - I don't know
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs
+      description: |
+        Home Assistant: Settings → System → Logs, search "pleatview", and paste what's there. Linux: `journalctl -u pleatview-kiosk -n 100` (or `pleatview-light`). Android: the last error in the TV's state shows on Home Assistant's device page.
+      render: text
+  - type: textarea
+    id: more
+    attributes:
+      label: Anything else
+      description: Screenshots or photos of the screen help a lot.

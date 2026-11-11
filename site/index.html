@@ -340,6 +340,8 @@ sudo apt install /tmp/pleatview.deb</code></pre>
               <tr><td><div class="device"><svg class="platform-icon" aria-hidden="true"><use href="#i-googletv"/></svg><div>Google TV, Android TV 16<small>Emulator, every release</small></div></div></td><td><span class="state pass">Compatible</span></td></tr>
               <tr><td><div class="device"><svg class="platform-icon" aria-hidden="true"><use href="#i-tv"/></svg><div>Fire TV Stick, 3rd generation<small>Fire OS 7.7 (Android 9). Pictures in notifications don't animate before Android 10.</small></div></div></td><td><span class="state pass">Compatible</span><small>42-hour soak test, no crashes</small></td></tr>
               <tr><td><div class="device"><svg class="platform-icon" aria-hidden="true"><use href="#i-googletv"/></svg><div>Chromecast with Google TV (HD)<small>Android TV 14, 1.4 GB</small></div></div></td><td><span class="state pass">Compatible</span><small>42-hour soak test, no crashes</small></td></tr>
+              <tr><td><div class="device"><svg class="platform-icon" aria-hidden="true"><use href="#i-googletv"/></svg><div>Xiaomi TV Box S, 2nd generation<small>Google TV. Reported by a user: walls of many video streams need <a href="https://github.com/Hustlesman/pleatview/blob/main/docs/render-on-home-assistant.md">Render on Home Assistant</a></small></div></div></td><td><span class="state pass">Works</span><small>Reported</small></td></tr>
+              <tr><td><div class="device"><svg class="platform-icon" aria-hidden="true"><use href="#i-tv"/></svg><div>KONKA TV with Google TV<small>Reported by a user running twelve screens</small></div></div></td><td><span class="state pass">Works</span><small>Reported</small></td></tr>
               <tr><td><div class="device"><svg class="platform-icon" aria-hidden="true"><use href="#i-googletv"/></svg><div>Google TV Streamer</div></div></td><td><span class="state planned">Planned</span></td></tr>
               <tr><td><div class="device"><svg class="platform-icon" aria-hidden="true"><use href="#i-tv"/></svg><div>Samsung (Tizen), LG (webOS)<small>As a web app</small></div></div></td><td><span class="state planned">On the roadmap</span></td></tr>
             </tbody>
@@ -354,6 +356,7 @@ sudo apt install /tmp/pleatview.deb</code></pre>
               <tr><td><div class="device"><svg class="platform-icon" aria-hidden="true"><use href="#i-android"/></svg><div>Chromebook<small>The Android app on ChromeOS</small></div></div></td><td><span class="state testing">Testing</span></td></tr>
               <tr><td><div class="device"><svg class="platform-icon" aria-hidden="true"><use href="#i-raspberrypi"/></svg><div>Raspberry Pi 5<small>Raspberry Pi OS 13, 64-bit, on a monitor and a Sony TV</small></div></div></td><td><span class="state pass">Compatible</span><small>Beta. Checked by hand, sound over HDMI</small></td></tr>
               <tr><td><div class="device"><svg class="platform-icon" aria-hidden="true"><use href="#i-raspberrypi"/></svg><div>Raspberry Pi 4<small>Raspberry Pi OS, 64-bit, 2 GB or more</small></div></div></td><td><span class="state testing">Testing</span></td></tr>
+              <tr><td><div class="device"><svg class="platform-icon" aria-hidden="true"><use href="#i-raspberrypi"/></svg><div>Raspberry Pi Zero 2 W<small><a href="https://github.com/Hustlesman/pleatview/blob/main/light/README.md">PleatView Light</a>, Raspberry Pi OS Lite: plays dashboards Home Assistant renders, 1080p</small></div></div></td><td><span class="state pass">Compatible</span><small>Checked by hand</small></td></tr>
               <tr><td><div class="device"><svg class="platform-icon" aria-hidden="true"><use href="#i-ubuntu"/></svg><div>Ubuntu mini PC<small>Ubuntu 24.04, Intel or AMD (x86-64)</small></div></div></td><td><span class="state beta">Beta</span><small>Checked in a container</small></td></tr>
               <tr><td><div class="device"><svg class="platform-icon" aria-hidden="true"><use href="#i-handheld"/></svg><div>iPhone and iPad<small>In Safari, then as an app</small></div></div></td><td><span class="state planned">On the roadmap</span></td></tr>
             </tbody>
@@ -371,7 +374,7 @@ sudo apt install /tmp/pleatview.deb</code></pre>
           </table>
         </div>
       </div>
-      <p class="matrix-foot">Last run on 5 November 2026, and on the Raspberry Pi 5 on 6 November. The full list of checks is in the <a href="https://github.com/Hustlesman/pleatview/blob/main/docs/test-plan.md">test plan</a>.</p>
+      <p class="matrix-foot">Last run on 12 November 2026 against Home Assistant 2026.11.1; the Raspberry Pi 5 on 6 November and the Pi Zero 2 W on 12 November by hand. The full list of checks is in the <a href="https://github.com/Hustlesman/pleatview/blob/main/docs/test-plan.md">test plan</a>. Run it on something else? <a href="https://github.com/Hustlesman/pleatview/issues/new?template=device_report.yml">Tell us how it went</a>, and it goes in the table.</p>
     </div>
   </section>
 

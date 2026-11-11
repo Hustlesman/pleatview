@@ -1,0 +1,51 @@
+name: Device report
+description: Tell us how PleatView runs on your TV, box, tablet or computer
+labels: [device report]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Reports like this fill the [compatibility table](https://pleatview.hustlesman.com/#tested). Both "it works" and "it doesn't" help.
+  - type: input
+    id: device
+    attributes:
+      label: Device
+      description: Make and model, and its operating system and version.
+      placeholder: KONKA 55" Google TV, Android TV 12
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: PleatView version, and where you installed it from
+      placeholder: 1.0.17 from Google Play
+    validations:
+      required: true
+  - type: dropdown
+    id: overall
+    attributes:
+      label: Overall
+      options:
+        - Works well
+        - Works, with problems (below)
+        - Doesn't work
+    validations:
+      required: true
+  - type: checkboxes
+    id: works
+    attributes:
+      label: What you tried and it worked
+      options:
+        - label: Found by Home Assistant and paired with the PIN
+        - label: Dashboards, signed in by themselves
+        - label: Notifications
+        - label: Cameras in a corner
+        - label: Video and music
+        - label: Standby and waking (turn_off and turn_on)
+        - label: Opens by itself after the device restarts
+        - label: Render on Home Assistant
+  - type: textarea
+    id: problems
+    attributes:
+      label: Problems, or anything worth knowing
+      description: What didn't work, how much memory it has, how long it has run, what else it runs.

@@ -183,7 +183,8 @@ screens (setup, cards, media, menu) are web pages, a start for the M4 web player
       v1.0.9, 7 Nov); an APT repository later
 - [ ] Starts with the computer: a desktop autostart entry, or a kiosk session (cage) on
       Ubuntu Server and Raspberry Pi OS Lite, set up by one command (the desktop entry
-      checked on a Raspberry Pi 5 on 6 Nov; the kiosk session still to check)
+      checked on a Raspberry Pi 5 on 6 Nov; the kiosk session on Raspberry Pi OS Lite on a
+      Raspberry Pi Zero 2 W on 11 Nov; Ubuntu Server still to check)
 - [ ] End-to-end checks against a real Home Assistant, as `tools/e2e/run.py` does for
       Android, in Docker on a virtual screen
 - [x] **Rendered dashboards** ([Render on Home Assistant](docs/render-on-home-assistant.md)),
@@ -309,8 +310,8 @@ one console; isolation tests show neither tenant can see or reach the other's.
 requires.
 
 - [ ] The public beta announced on the Home Assistant Community forum and r/homeassistant
-- [ ] GitHub issue templates: bug report (device, OS, Home Assistant version, logs) and
-      device report
+- [x] GitHub issue templates: bug report (device, OS, Home Assistant version, logs) and
+      device report (12 Nov)
 - [x] **Demo for reviewers:** *Try the demo* on the setup screen shows a sample home and
       a 90-second tour of what Home Assistant can show on top of it: a notification, a
       doorbell camera in a corner, another dashboard for a while and a video, each with a
@@ -334,7 +335,8 @@ requires.
       public. Sign up in
       [#9](https://github.com/Hustlesman/pleatview/issues/9)
 - [ ] P1 bugs fixed within 48 hours; a beta build every week
-- [ ] Device compatibility table on the website, filled from tester reports
+- [x] Device compatibility table on the website, filled from tester reports (12 Nov: the
+      table takes reported devices, and its footer asks for device reports)
 - [ ] One-press pairing: approve Home Assistant on the TV with OK, instead of typing the PIN
 - [x] Sign-ins for dashboards behind a login form or a password prompt: entered from a phone
       code, saved encrypted on the TV only, used again by themselves
