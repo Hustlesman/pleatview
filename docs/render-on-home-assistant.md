@@ -151,10 +151,10 @@ address, after `#pleatview=`, separated by `;`:
 | `scroll:50,50,-300` | Turns the mouse wheel there by 300 pixels: up, or zoom in on many maps |
 
 For example, Radware's live threat map with its side bar collapsed, turned left and tilted
-slightly so New Zealand shows:
+slightly so New Zealand shows with Europe, Africa and Asia:
 
 ```text
-https://livethreatmap.radware.com/#pleatview=wait:5;click:Collapse;wait:2;drag:80,60,30,45;wait:2;click:Reject all
+https://livethreatmap.radware.com/#pleatview=wait:5;click:Collapse;wait:2;drag:80,65,45,43;wait:2;click:Reject all
 ```
 
 Use the address for a Webpage dashboard (*Settings → Dashboards → Add dashboard →
