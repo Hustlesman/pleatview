@@ -39,7 +39,7 @@ Last updated 11 November 2026. **Current milestone: M1** (M0 finished early).
 | [M2](#m2--public-beta) Public beta, Google Play closed test, phones and tablets | Fri 4 Dec 2026 | M1, 12 beta testers | Not started |
 | [R1](#r1--rendering-for-many-screens) Rendering for many screens: several renderers, chosen per TV | To be scheduled | — | Not started |
 | [S1](#s1--secure-remote-management) Secure remote management: over the internet, a VPN or zero-trust access | To be scheduled | M3's encryption, M4's protocol v2 | Not started |
-| [C1](#c1--pleatview-console) PleatView Console: many sites and tenants, with or without Home Assistant | To be scheduled | M4, S1 | Not started |
+| [C1](#c1--pleatview-console) PleatView Console: many sites and tenants, with or without Home Assistant | No date yet | Its later parts: M4, S1 | In progress (started 11 Nov) |
 | [M3](#m3--google-play-and-amazon-appstore) Google Play and Amazon Appstore | Fri 15 Jan 2027 | M2, store reviews | Not started |
 | [M4](#m4--web-player) Web player for any TV browser | Fri 29 Jan 2027 | M3 submitted | Not started |
 | [M5](#m5--lg-and-samsung-apps) LG and Samsung apps submitted | Fri 5 Mar 2027 | M4, test TVs | Not started |
@@ -274,10 +274,14 @@ pinned and listed, like the renderer's.
 
 The work, in order:
 
-- [ ] **Design** (`docs/console.md`): the data model, tenant isolation, how a site's own
-      Home Assistant fits in, and the threat model, with the stack and every package put
-      forward for approval
-- [ ] **One site:** pair screens, show pages and media, groups, schedules, the audit log
+- [x] **Design** ([docs/console.md](docs/console.md)): the data model, tenant isolation, how a
+      site's own Home Assistant fits in, and the threat model. The stack and its packages were
+      approved on 11 Nov: Debian 13 with Python, aiohttp, cryptography, ffmpeg and tini
+- [ ] **One site:** pair screens, show pages and media, groups, schedules, the audit log.
+      Started 11 Nov with the foundation: first start, sign-in, tenants and sites in separate
+      databases with their own keys, screens found on the network, paired, followed live and
+      sent commands, the activity log, and the installable web app. Checked with a Fire TV
+      Stick
 - [ ] **Many sites:** sites, a renderer per site, sites that keep playing offline
 - [ ] **Many tenants:** silos, roles, a key per tenant, export and deletion
 

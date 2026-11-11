@@ -42,6 +42,11 @@ PleatView is built for a home network you trust. What it does, and what it can't
   Assistant, at an address with a secret only that TV gets. The image holds only free
   software from Debian's main archive on a pinned base; `/api/packages` lists every
   package and version.
+- **The PleatView Console** (in development, [docs/console.md](docs/console.md)) keeps each
+  organisation's data in its own database, with secrets encrypted by the organisation's own
+  key. Passwords are hashed with scrypt, sign-ins slow down after five failures, and every
+  change is in the organisation's activity log. It serves HTTPS with its own certificate,
+  or plain HTTP on `127.0.0.1` behind a proxy that adds TLS.
 - **Releases** are built on GitHub from the tagged source, signed with the same key every
   time, and come with build provenance: `gh attestation verify pleatview.apk --repo
   Hustlesman/pleatview`.
