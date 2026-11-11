@@ -19,7 +19,8 @@ from urllib.parse import urlsplit
 import aiohttp
 
 from . import schedule
-from .mdns import Browser
+from .mdns import RENDERER_SERVICE, Browser
+from .rendering import Rendering, Target
 from .store import Store
 from .tvapi import CannotConnect, InvalidAuth, PleatViewClient, PleatViewError
 
@@ -190,7 +191,9 @@ class Link:
             return
         self.managed_by = "home_assistant" if config.get("ha_url") else None
         self.applied_rev = config.get("rev")
-        await self.push_config()
+        screen = self.screens.store.tenant(self.tenant_id).screen(self.screen_id)
+        if screen:
+            await self.screens.apply(self.tenant_id, screen, self)
         self.screens.publish(self.tenant_id, self.screen_id)
 
     async def push_config(self) -> None:
@@ -220,6 +223,7 @@ class Screens:
         self.session = session
         # Where screens load the console's pages and media (the content listener).
         self.screen_url = screen_url.rstrip("/")
+        self.rendering = Rendering(session, store.master)
         self.links: dict[tuple[str, int], Link] = {}
         self.browser = Browser(self._on_discovery) if discovery else None
         self._listeners: dict[str, set[asyncio.Queue]] = {}
@@ -264,9 +268,10 @@ class Screens:
         site = tenant.site(screen["site_id"]) or {"timezone": "UTC"}
         return schedule.active(entries, screen, tenant.groups_of(screen["id"]), site["timezone"])
 
-    def desired(self, tenant_id: str, screen: dict[str, Any]) -> dict[str, Any]:
+    def desired(self, tenant_id: str, screen: dict[str, Any], features: list[str] | None = None) -> dict[str, Any]:
         """The settings the console keeps on a screen: its own, with the home page from the
-        schedule that's on, else from the page chosen for it."""
+        schedule that's on, else from the page chosen for it; and, for a screen a renderer
+        draws, the stream (only to apps that play one)."""
         config = dict(screen["config"])
         on = self.scheduled(tenant_id, screen)
         page_id = on["page_id"] if on else screen.get("home_page")
@@ -274,7 +279,39 @@ class Screens:
             page = self.store.tenant(tenant_id).page(page_id)
             if page:
                 config["home_dashboard"] = self.page_url(tenant_id, page)
+        if "render_stream" in (features or []):
+            target = self.render_target(tenant_id, screen)
+            config["render_stream"] = (f"{self.screen_url}/play/{tenant_id}/r/"
+                                       f"{self.rendering.secret(tenant_id, screen['id'])}/index.m3u8") if target else ""
         return config
+
+    def render_target(self, tenant_id: str, screen: dict[str, Any]) -> Target | None:
+        if not screen.get("renderer_id"):
+            return None
+        tenant = self.store.tenant(tenant_id)
+        row = tenant.renderer(screen["renderer_id"])
+        if not row:
+            return None
+        token = self.store.sealer(tenant_id).open(row["token"], f"renderer:{row['device_id']}")
+        return Target(f"{row['scheme']}://{row['host']}:{row['port']}", token, row["fingerprint"])
+
+    async def apply(self, tenant_id: str, screen: dict[str, Any], link: Link) -> bool:
+        """Puts the console's current settings on a screen it manages, and has its renderer
+        show its home page. Whether anything changed."""
+        if link.managed_by:
+            return False
+        features = (link.state or {}).get("features") or []
+        desired = self.desired(tenant_id, screen, features)
+        target = self.render_target(tenant_id, screen) if "render_stream" in features else None
+        if target and desired.get("home_dashboard"):
+            await self.rendering.show(tenant_id, screen["id"], target, desired["home_dashboard"], link.state)
+        elif not target:
+            await self.rendering.stop(tenant_id, screen["id"])
+        if desired == link.config and link.applied_rev == config_rev(desired):
+            return False
+        link.config = desired
+        await link.push_config()
+        return True
 
     async def follow_schedules(self) -> None:
         """Every half minute: screens whose schedule changed get their new home page."""
@@ -288,10 +325,7 @@ class Screens:
                     link = self.links.get((tenant["id"], screen["id"]))
                     if not link or link.managed_by:
                         continue
-                    desired = self.desired(tenant["id"], screen)
-                    if desired != link.config:
-                        link.config = desired
-                        await link.push_config()
+                    if await self.apply(tenant["id"], screen, link):
                         self.publish(tenant["id"], screen["id"])
             await asyncio.sleep(30)
 
@@ -302,9 +336,8 @@ class Screens:
             if screen_ids is not None and screen["id"] not in screen_ids:
                 continue
             link = self.links.get((tenant_id, screen["id"]))
-            if link and not link.managed_by:
-                link.config = self.desired(tenant_id, screen)
-                await link.push_config()
+            if link:
+                await self.apply(tenant_id, screen, link)
             self.publish(tenant_id, screen["id"])
 
     # Reading
@@ -323,6 +356,8 @@ class Screens:
             "app_version": (link.state or {}).get("app_version") if link else None,
             "config": screen["config"],
             "home_page": screen.get("home_page"),
+            "renderer_id": screen.get("renderer_id"),
+            "plays_stream": "render_stream" in ((link.state or {}).get("features") or []) if link else False,
             "schedule": (self.scheduled(tenant_id, screen) or {}).get("name"),
             "home_without_ha": "home_without_ha" in ((link.state or {}).get("features") or []) if link else False,
             **(link.view() if link else {"online": False, "rejected": False, "managed_by": None,
@@ -331,6 +366,14 @@ class Screens:
 
     def list(self, tenant_id: str) -> list[dict[str, Any]]:
         return [self.view(tenant_id, s) for s in self.store.tenant(tenant_id).screens()]
+
+    def discovered_renderers(self, tenant_id: str) -> list[dict[str, Any]]:
+        """Renderers announced on the network that this tenant hasn't paired."""
+        if not self.browser:
+            return []
+        tenant = self.store.tenant(tenant_id)
+        return sorted((r for r in self.browser.found(RENDERER_SERVICE).values()
+                       if not tenant.renderer_by_device(r["id"])), key=lambda r: r["name"].lower())
 
     def discovered(self, tenant_id: str) -> list[dict[str, Any]]:
         """Screens announced on the network that this tenant hasn't paired."""
@@ -374,6 +417,7 @@ class Screens:
 
     async def unpair(self, tenant_id: str, screen_id: int) -> None:
         """Revokes the console's token on the screen when it can be reached, and forgets it."""
+        await self.rendering.stop(tenant_id, screen_id)
         link = self.links.pop((tenant_id, screen_id), None)
         if link:
             await link.stop()

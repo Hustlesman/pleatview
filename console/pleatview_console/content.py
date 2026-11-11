@@ -118,11 +118,30 @@ async def asset(request: web.Request) -> web.Response:
                         headers={"Cache-Control": "no-cache"})
 
 
-def create_content_app(store: Store) -> web.Application:
+STREAM_FILE = re.compile(r"^(index\.m3u8|s\d{1,9}\.ts)$")
+RENDERING = web.AppKey("rendering", object)
+
+
+async def rendered(request: web.Request) -> web.Response:
+    """A rendered screen's stream, passed on from its renderer (rendering.py)."""
+    name, secret = request.match_info["file"], request.match_info["secret"]
+    rendering = request.app.get(RENDERING)
+    if rendering is None or not STREAM_FILE.match(name) or not re.fullmatch(r"[0-9a-f]{32}", secret):
+        raise web.HTTPNotFound()
+    status, body, content_type, cache = await rendering.fetch(secret, name)
+    if status != 200:
+        raise web.HTTPNotFound() if status == 404 else web.HTTPBadGateway()
+    return web.Response(body=body, content_type=content_type, headers={"Cache-Control": cache})
+
+
+def create_content_app(store: Store, rendering: object | None = None) -> web.Application:
     app = web.Application(middlewares=[headers], client_max_size=1024)
     app[STORE] = store
+    if rendering is not None:
+        app[RENDERING] = rendering
     app.router.add_get("/play/{name:player\\.(js|css)}", asset)
     app.router.add_get("/play/{tenant}/p/{token}", player)
     app.router.add_get("/play/{tenant}/p/{token}/items", items)
     app.router.add_get("/play/{tenant}/m/{token}/{file}", media_file)
+    app.router.add_get("/play/{tenant}/r/{secret}/{file}", rendered)
     return app

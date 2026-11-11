@@ -47,7 +47,7 @@ async def main() -> None:
                                           media_max=settings.media_max_mb * 1024 * 1024), access_log=None)
         await runner.setup()
         await web.TCPSite(runner, settings.host, settings.port, ssl_context=context).start()
-        content = web.AppRunner(create_content_app(store), access_log=None)
+        content = web.AppRunner(create_content_app(store, screens.rendering), access_log=None)
         await content.setup()
         await web.TCPSite(content, settings.screen_host, settings.screen_port).start()
         scheme = "https" if context else "http"

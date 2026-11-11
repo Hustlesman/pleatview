@@ -14,13 +14,14 @@ import re
 import secrets
 from typing import Any, Awaitable, Callable
 
+import aiohttp
 from aiohttp import web
 
-from . import VERSION
-from . import schedule, totp
+from . import VERSION, rendering, schedule, totp
 from .auth import DUMMY_HASH, Throttle, check_new_password, check_password, hash_password
-from .screens import Invalid, Screens, check_address, command_params, web_url
+from .mdns import RENDERER_SERVICE
 from .media import Library, folder
+from .screens import Invalid, Screens, check_address, command_params, web_url
 from .store import ROLES, TENANT_ID, Store
 from .tvapi import CannotConnect, InvalidPin, PleatViewError, RequestRejected, TooManyAttempts
 
@@ -667,6 +668,14 @@ async def change_screen(request: web.Request) -> web.Response:
             config["zoom"] = zoom
         else:
             raise fail(400, "Zoom is a percentage from 25 to 400")
+    if "renderer_id" in data:
+        renderer_id = data["renderer_id"]
+        if renderer_id is not None and (not isinstance(renderer_id, int) or not tenant.renderer(renderer_id)):
+            raise fail(400, "No such renderer")
+        if renderer_id != screen["renderer_id"]:
+            tenant.set_screen_renderer(screen["id"], renderer_id)
+            changes["renderer_id"] = renderer_id
+            await request.app[SCREENS].refresh(tenant_id, [screen["id"]])
     if config != screen["config"] or (home_page is not False and home_page != screen["home_page"]):
         try:
             await request.app[SCREENS].configure(tenant_id, screen["id"], config, home_page)
@@ -675,8 +684,8 @@ async def change_screen(request: web.Request) -> web.Response:
         changes["config"] = {**config, **({"home_page": home_page} if home_page is not False else {})}
     if not changes:
         raise fail(400, "Nothing to change")
-    if set(changes) - {"config"}:
-        tenant.update_screen(screen["id"], **{k: v for k, v in changes.items() if k != "config"})
+    if set(changes) - {"config", "renderer_id"}:
+        tenant.update_screen(screen["id"], **{k: v for k, v in changes.items() if k not in ("config", "renderer_id")})
     tenant.log("screen_changed", user=user["username"], target=f"screen:{screen['id']}", detail=changes,
                address=client_address(request))
     request.app[SCREENS].publish(tenant_id, screen["id"])
@@ -1010,6 +1019,93 @@ async def media_thumbnail(request: web.Request) -> web.StreamResponse:
     return web.FileResponse(path, headers={"Content-Type": "image/jpeg", "Cache-Control": "private, max-age=600"})
 
 
+# ---- Renderers -------------------------------------------------------------------------
+
+
+async def list_renderers(request: web.Request) -> web.Response:
+    _, tenant_id, _ = member(request, "view")
+    screens = request.app[SCREENS]
+    tenant = request.app[STORE].tenant(tenant_id)
+    out = []
+    for row in tenant.renderers():
+        target = rendering.Target(f"{row['scheme']}://{row['host']}:{row['port']}",
+                                  request.app[STORE].sealer(tenant_id).open(row["token"], f"renderer:{row['device_id']}"),
+                                  row["fingerprint"])
+        try:
+            live = await rendering.info(screens.session, target.base_url, target.fingerprint, target.token)
+        except Exception:  # noqa: BLE001 - one that doesn't answer is shown as such
+            live = None
+        out.append({"id": row["id"], "name": row["name"], "address": target.base_url,
+                    "online": live is not None, "screens": len((live or {}).get("sessions") or {}),
+                    "max_screens": (live or {}).get("max_screens"), "load": (live or {}).get("load")})
+    return web.json_response({"renderers": out, "discovered": screens.discovered_renderers(tenant_id)})
+
+
+async def pair_renderer(request: web.Request) -> web.Response:
+    user, tenant_id, _ = member(request, "operate")
+    store, screens = request.app[STORE], request.app[SCREENS]
+    tenant = store.tenant(tenant_id)
+    data = await body(request)
+    name = name_field(data, "name", "A name")
+    pin = data.get("pin")
+    if not (isinstance(pin, str) and pin.strip().isdigit() and len(pin.strip()) == 6):
+        raise fail(400, "The PIN is the 6 digits in the renderer's log")
+    if device_id := data.get("device_id"):
+        found = screens.browser.found(RENDERER_SERVICE).get(device_id) if screens.browser else None
+        if not found:
+            raise fail(404, "That renderer isn't on the network any more")
+        host, port, scheme = found["host"], found["port"], found.get("scheme") or "http"
+    else:
+        try:
+            host, port = check_address(data.get("host", ""), data.get("port", 8780))
+        except Invalid as err:
+            raise fail(400, str(err)) from None
+        scheme = "https" if data.get("https") else "http"
+    url = f"{scheme}://{host}:{port}"
+    try:
+        fingerprint = await rendering.fetch_certificate(screens.session, url) if scheme == "https" else None
+        live = await rendering.info(screens.session, url, fingerprint)
+        if tenant.renderer_by_device(str(live.get("id"))):
+            raise fail(409, "That renderer is already paired")
+        token = await rendering.pair(screens.session, url, pin.strip(), fingerprint)
+    except ValueError as err:
+        raise fail(400, str(err)) from None
+    except (aiohttp.ClientError, TimeoutError):
+        raise fail(502, "The renderer can't be reached at that address") from None
+    device = str(live.get("id") or url)
+    renderer_id = tenant.add_renderer(name=name, device_id=device, host=host, port=port, scheme=scheme,
+                                      token=store.sealer(tenant_id).seal(token, f"renderer:{device}"),
+                                      fingerprint=fingerprint)
+    tenant.log("renderer_paired", user=user["username"], target=f"renderer:{renderer_id}",
+               detail={"name": name, "address": url}, address=client_address(request))
+    return web.json_response({"id": renderer_id})
+
+
+async def remove_renderer(request: web.Request) -> web.Response:
+    user, tenant_id, _ = member(request, "operate")
+    store, screens = request.app[STORE], request.app[SCREENS]
+    tenant = store.tenant(tenant_id)
+    row = tenant.renderer(_number_id(request, "renderer"))
+    if not row:
+        raise fail(404, "No such renderer")
+    affected = [s["id"] for s in tenant.screens() if s["renderer_id"] == row["id"]]
+    for screen_id in affected:
+        await screens.rendering.stop(tenant_id, screen_id)
+    token = store.sealer(tenant_id).open(row["token"], f"renderer:{row['device_id']}")
+    target = rendering.Target(f"{row['scheme']}://{row['host']}:{row['port']}", token, row["fingerprint"])
+    try:
+        async with screens.session.post(f"{target.base_url}/api/unpair", json={}, timeout=rendering.TIMEOUT,
+                                        **target.kwargs()):
+            pass
+    except (aiohttp.ClientError, TimeoutError):
+        pass
+    tenant.delete_renderer(row["id"])
+    tenant.log("renderer_removed", user=user["username"], target=f"renderer:{row['id']}",
+               detail={"name": row["name"]}, address=client_address(request))
+    await screens.refresh(tenant_id, affected)
+    return web.json_response({})
+
+
 # ---- Schedules ------------------------------------------------------------------------
 
 
@@ -1181,6 +1277,9 @@ def create_app(store: Store, screens: Screens, *, https: bool, library: Library 
     app.router.add_get(t, tenant_overview)
     app.router.add_patch(t, rename_tenant)
     app.router.add_get(t + "/export", export_tenant)
+    app.router.add_get(t + "/renderers", list_renderers)
+    app.router.add_post(t + "/renderers", pair_renderer)
+    app.router.add_delete(t + "/renderers/{renderer}", remove_renderer)
     app.router.add_get(t + "/schedules", list_schedules)
     app.router.add_post(t + "/schedules", save_schedule)
     app.router.add_patch(t + "/schedules/{schedule}", save_schedule)

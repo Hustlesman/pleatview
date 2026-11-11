@@ -223,6 +223,8 @@ to the network.
       *Automatic* (the least busy renderer) (12 Nov)
 - [x] **Load in Home Assistant:** each renderer as a device, with screens in use out of its
       maximum, processor and memory, so you can see when to add one (12 Nov)
+- [x] **The console drives renderers too** (12 Nov): paired from the console, chosen per screen,
+      so PleatView Light works on sites without Home Assistant
 - [ ] **One stream for several TVs** showing the same dashboard at the same size, rendered once
 - [ ] **Notifications, cameras and sound in the stream**, so a screen that only plays the
       stream (the light client) gets them too

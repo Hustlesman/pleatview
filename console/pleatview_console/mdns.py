@@ -20,6 +20,7 @@ _LOGGER = logging.getLogger(__name__)
 GROUP = "224.0.0.251"
 PORT = 5353
 SERVICE = "_pleatview._tcp.local."
+RENDERER_SERVICE = "_pleatview-renderer._tcp.local."
 A, PTR, TXT, SRV = 1, 12, 16, 33
 QUERY_EVERY = 60.0
 FIRST_QUERIES = (0.0, 1.0, 3.0)
@@ -109,6 +110,7 @@ class Browser(asyncio.DatagramProtocol):
         self._transport: asyncio.DatagramTransport | None = None
         self._task: asyncio.Task | None = None
         self._ptr: dict[str, float] = {}
+        self._service: dict[str, str] = {}  # instance -> the service it was announced for
         self._srv: dict[str, tuple[str, int, float]] = {}
         self._txt: dict[str, tuple[dict[str, str], float]] = {}
         self._addr: dict[str, tuple[str, float]] = {}
@@ -125,11 +127,13 @@ class Browser(asyncio.DatagramProtocol):
         if self._transport:
             self._transport.close()
 
-    def found(self) -> dict[str, dict[str, Any]]:
-        """Screens by their id: host, port, name, version and api."""
+    def found(self, service: str = SERVICE) -> dict[str, dict[str, Any]]:
+        """Screens (or renderers) by their id: host, port, name, version, api or scheme."""
         now = time.monotonic()
         screens: dict[str, dict[str, Any]] = {}
         for instance, until in self._ptr.items():
+            if self._service.get(instance, SERVICE) != service:
+                continue
             srv, txt = self._srv.get(instance), self._txt.get(instance)
             if until < now or not srv or srv[2] < now or not txt or not txt[0].get("id"):
                 continue
@@ -144,6 +148,7 @@ class Browser(asyncio.DatagramProtocol):
                 "port": srv[1],
                 "version": values.get("version", ""),
                 "api": values.get("api", ""),
+                "scheme": values.get("scheme", "http"),
             }
         return screens
 
@@ -158,8 +163,9 @@ class Browser(asyncio.DatagramProtocol):
         now = time.monotonic()
         for name, rtype, ttl, value in parse(data):
             until = now + ttl
-            if rtype == PTR and name == SERVICE:
+            if rtype == PTR and name in (SERVICE, RENDERER_SERVICE):
                 self._ptr[value] = until
+                self._service[value] = name
             elif rtype == SRV:
                 self._srv[name] = (value[0], value[1], until)
             elif rtype == TXT:
@@ -174,7 +180,7 @@ class Browser(asyncio.DatagramProtocol):
     # Inside
 
     def _changed(self) -> None:
-        current = self.found()
+        current = {**self.found(), **{f"renderer:{k}": v for k, v in self.found(RENDERER_SERVICE).items()}}
         if current != self._last:
             self._last = current
             if self._on_change:
@@ -192,7 +198,7 @@ class Browser(asyncio.DatagramProtocol):
     def _send(self) -> None:
         if not self._transport:
             return
-        questions = [(SERVICE, PTR)]
+        questions = [(SERVICE, PTR), (RENDERER_SERVICE, PTR)]
         now = time.monotonic()
         # Ask again for whatever an announcement left out.
         for instance, until in self._ptr.items():

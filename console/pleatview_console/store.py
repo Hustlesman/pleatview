@@ -157,7 +157,23 @@ CREATE TABLE schedules (
 );
 """
 
-TENANT_SCHEMA = [TENANT_V1, TENANT_V2, TENANT_V3, TENANT_V4]
+# PleatView Renderers the console pairs with, and which one renders each screen.
+TENANT_V5 = """
+CREATE TABLE renderers (
+    id INTEGER PRIMARY KEY,
+    name TEXT NOT NULL,
+    device_id TEXT NOT NULL UNIQUE,
+    host TEXT NOT NULL,
+    port INTEGER NOT NULL,
+    scheme TEXT NOT NULL DEFAULT 'http',
+    token TEXT NOT NULL,
+    fingerprint TEXT,
+    created REAL NOT NULL
+);
+ALTER TABLE screens ADD COLUMN renderer_id INTEGER REFERENCES renderers(id) ON DELETE SET NULL;
+"""
+
+TENANT_SCHEMA = [TENANT_V1, TENANT_V2, TENANT_V3, TENANT_V4, TENANT_V5]
 
 
 def _connect(path: Path, migrations: list[str]) -> sqlite3.Connection:
@@ -205,6 +221,32 @@ class TenantDb:
 
     def groups_of(self, screen_id: int) -> list[int]:
         return [r[0] for r in self.db.execute("SELECT group_id FROM group_screens WHERE screen_id = ?", (screen_id,))]
+
+    # Renderers. `token` is sealed with the tenant's key.
+
+    def renderers(self) -> list[dict[str, Any]]:
+        return [dict(r) for r in self.db.execute("SELECT * FROM renderers ORDER BY name, id")]
+
+    def renderer(self, renderer_id: int) -> dict[str, Any] | None:
+        row = self.db.execute("SELECT * FROM renderers WHERE id = ?", (renderer_id,)).fetchone()
+        return dict(row) if row else None
+
+    def renderer_by_device(self, device_id: str) -> dict[str, Any] | None:
+        row = self.db.execute("SELECT * FROM renderers WHERE device_id = ?", (device_id,)).fetchone()
+        return dict(row) if row else None
+
+    def add_renderer(self, *, name: str, device_id: str, host: str, port: int, scheme: str, token: str,
+                     fingerprint: str | None) -> int:
+        cur = self.db.execute(
+            "INSERT INTO renderers (name, device_id, host, port, scheme, token, fingerprint, created)"
+            " VALUES (?, ?, ?, ?, ?, ?, ?, ?)", (name, device_id, host, port, scheme, token, fingerprint, time.time()))
+        return int(cur.lastrowid)
+
+    def delete_renderer(self, renderer_id: int) -> None:
+        self.db.execute("DELETE FROM renderers WHERE id = ?", (renderer_id,))
+
+    def set_screen_renderer(self, screen_id: int, renderer_id: int | None) -> None:
+        self.db.execute("UPDATE screens SET renderer_id = ? WHERE id = ?", (renderer_id, screen_id))
 
     # Schedules
 
