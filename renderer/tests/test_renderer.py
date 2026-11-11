@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import json
 from pathlib import Path
 import tempfile
@@ -10,7 +11,7 @@ from unittest import mock
 
 from aiohttp.test_utils import AioHTTPTestCase
 
-from pleatview_renderer import page, pairing, server, session
+from pleatview_renderer import actions, page, pairing, server, session
 from pleatview_renderer.session import Screen
 
 APP_HELPER = Path(__file__).parents[2] / "android/app/src/main/assets/pleatview.js"
@@ -48,6 +49,8 @@ class ChromiumTest(unittest.TestCase):
         self.assertIn("--window-size=1433,806", args)
         self.assertIn("--force-device-scale-factor=1.34", args)
         self.assertIn("--remote-debugging-address=127.0.0.1", args)
+        # WebGL pages (maps) need a GL on Xvfb; the rest stays drawn in software, which costs less.
+        self.assertTrue({"--use-angle=gl", "--ignore-gpu-blocklist", "--disable-gpu-compositing"} <= set(args))
         self.assertEqual(args[-1], "about:blank")
 
     def test_every_segment_starts_with_a_keyframe(self) -> None:
@@ -140,6 +143,56 @@ class OverlayTest(unittest.TestCase):
                                       "position": "top-right", "duration": 10}])
         self.assertIn("textContent", script)
         self.assertNotIn("innerHTML", script)
+
+
+class StepsTest(unittest.TestCase):
+    MAP = "https://map.example/live?x=1#pleatview=click:Reject%20all;click:Collapse;wait:1.5;drag:70,60,35,45;rightdrag:50,60,50,50;scroll:50,50,-300"
+
+    def test_the_steps_come_out_of_the_address(self) -> None:
+        url, steps = actions.split(self.MAP)
+        self.assertEqual(url, "https://map.example/live?x=1")
+        self.assertEqual([s.kind for s in steps], ["click", "click", "wait", "drag", "rightdrag", "scroll"])
+        self.assertEqual((steps[0].text, steps[2].numbers, steps[3].numbers), ("Reject all", (1.5,), (70, 60, 35, 45)))
+        # The page keeps the rest of its own fragment; addresses without steps are left alone.
+        self.assertEqual(actions.split("https://a.example/#/route&pleatview=wait:1")[0], "https://a.example/#/route")
+        for plain in ("https://a.example/", "https://a.example/#/route", "https://a.example/#top"):
+            self.assertEqual(actions.split(plain), (plain, ()))
+        self.assertEqual(actions.split("https://a.example/#pleatview=click:40,60")[1][0].numbers, (40, 60))
+
+    def test_wrong_steps_are_refused(self) -> None:
+        for bad in ("jump:1", "wait:600", "drag:1,2,3", "drag:0,0,0,101", "scroll:50,50", "click:", "wait:" + ";wait:1" * 40):
+            with self.assertRaises(ValueError, msg=bad):
+                actions.parse(bad)
+        with self.assertRaisesRegex(ValueError, "steps"):
+            server.parse_screen({"url": "https://a.example/#pleatview=fly:1"})
+        self.assertEqual(server.parse_screen({"url": self.MAP}).page[0], "https://map.example/live?x=1")
+
+    def test_the_steps_move_the_mouse(self) -> None:
+        class Browser:
+            def __init__(self) -> None:
+                self.calls: list[tuple[str, dict]] = []
+
+            async def call(self, method: str, **params):
+                self.calls.append((method, params))
+                if method == "Runtime.evaluate":
+                    if params["expression"] == "[innerWidth, innerHeight]":
+                        return {"result": {"value": [1000, 500]}}
+                    return {"result": {"value": [10, 20] if '"collapse"' in params["expression"] else None}}
+                return {}
+
+        browser = Browser()
+        steps = actions.parse("click:Collapse;click:Missing;drag:50,50,10,50;rightdrag:50,50,50,40;scroll:20,40,-100")
+        with mock.patch.object(actions, "FIND_SECONDS", 0), mock.patch.object(actions, "PAUSE", 0):
+            asyncio.run(actions.perform(browser, steps))
+        mouse = [p for m, p in browser.calls if m == "Input.dispatchMouseEvent"]
+        presses = [p for p in mouse if p["type"] == "mousePressed"]
+        self.assertEqual([(p["x"], p["y"], p["button"]) for p in presses], [(10, 20, "left"), (500, 250, "left"), (500, 250, "right")])
+        released = [p for p in mouse if p["type"] == "mouseReleased"]
+        self.assertEqual([(p["x"], p["y"]) for p in released], [(10, 20), (100, 250), (500, 200)])
+        drag = [p for p in mouse if p["type"] == "mouseMoved" and p.get("buttons") == 1]
+        self.assertEqual(len(drag), actions.DRAG_MOVES)
+        wheel = [p for p in mouse if p["type"] == "mouseWheel"]
+        self.assertEqual([(w["x"], w["y"], w["deltaY"]) for w in wheel], [(200, 200, -100)])
 
 
 class PairedApiTest(AioHTTPTestCase):

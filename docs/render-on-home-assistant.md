@@ -130,6 +130,43 @@ back.
   notifications and cameras into the stream instead.
 - When the TV is off or in another app, the renderer stops its screen after 90 seconds and
   starts it again when the TV is back.
+- Pages drawn with WebGL, such as 3D maps and Windy, are drawn by the processor: the
+  renderer's browser has no graphics chip (the chip only encodes the video). They can be
+  heavy. Radware's live threat map takes about three cores of an Intel Core i5-7500 and moves
+  at about ten frames a second.
+
+## Clicks and drags after a page loads
+
+Some pages keep nothing in their address: a map's view, a side bar, a cookie banner. The
+renderer can click and drag on them once they load. Add the steps to the end of the page's
+address, after `#pleatview=`, separated by `;`:
+
+| Step | What it does |
+| --- | --- |
+| `wait:3` | Waits 3 seconds (60 at most) |
+| `click:Reject all` | Clicks the first button, link or other element showing that text, whatever its capitals. It waits up to 20 seconds for it, and goes on without it if it never shows |
+| `click:50,20` | Clicks at 50 % of the screen's width and 20 % of its height |
+| `drag:80,60,30,45` | Drags from one place to another with the left mouse button, in percent |
+| `rightdrag:50,60,50,50` | The same with the right button, which turns or tilts many 3D maps |
+| `scroll:50,50,-300` | Turns the mouse wheel there by 300 pixels: up, or zoom in on many maps |
+
+For example, Radware's live threat map with its side bar collapsed, turned left and tilted
+slightly so New Zealand shows:
+
+```text
+https://livethreatmap.radware.com/#pleatview=wait:5;click:Collapse;wait:2;drag:80,60,30,45;wait:2;click:Reject all
+```
+
+Use the address for a Webpage dashboard (*Settings → Dashboards → Add dashboard →
+Webpage*) or with `pleatview.show_url`.
+
+- The steps run again after every load, because a reload loses what they did. A click
+  that reloads the page, as many cookie banners do, starts them again: put such clicks last.
+- Places are percentages, so the same steps fit every TV. A TV at a higher density gets the
+  page's narrower layout (a 1080p TV at density 2 shows it 960 pixels wide), where a button
+  can be elsewhere or missing. A click on text finds the button wherever it is.
+- Steps act on the page itself, not inside its frames, and only when the renderer shows
+  it. A TV that runs its own pages ignores them.
 
 ## Privacy and security
 
@@ -138,7 +175,9 @@ back.
 - The renderer's own interface has no sign-in, so it must not be reachable from the
   network: the app is only on Home Assistant's internal network, and the `docker run`
   above listens on 127.0.0.1 only.
-- Chromium, which shows the pages, runs as an unprivileged user.
+- Chromium, which shows the pages, runs as an unprivileged user. It draws WebGL with Mesa's
+  software renderer, which Chromium refuses for browsing at large; the renderer allows it
+  because it shows only the pages you choose.
 - The renderer is free software from Debian's main archive (Chromium, Xvfb, ffmpeg, Python's
   aiohttp, tini, the Mesa and Intel VA-API drivers and two font packages) on a pinned Debian
   12 base image. `http://<renderer>/api/packages` lists every installed package and version,

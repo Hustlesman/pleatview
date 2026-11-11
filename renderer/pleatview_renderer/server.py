@@ -29,6 +29,7 @@ from urllib.parse import urlsplit
 
 from aiohttp import web
 
+from . import actions
 from .mdns import Responder, local_address
 from .pairing import Pairing
 from .session import Screen, Session
@@ -65,6 +66,10 @@ def parse_screen(body: Any) -> Screen:
     url = body.get("url")
     if not isinstance(url, str) or urlsplit(url).scheme not in ("http", "https") or not urlsplit(url).netloc:
         raise ValueError("url must be an http or https address")
+    try:
+        actions.split(url)
+    except ValueError as err:
+        raise ValueError(f"the page's steps (#{actions.PARAM}…): {err}") from None
     width, height = body.get("width", 1920), body.get("height", 1080)
     if not all(isinstance(v, int) and 160 <= v <= 3840 for v in (width, height)):
         raise ValueError("width and height must be whole pixels from 160 to 3840")

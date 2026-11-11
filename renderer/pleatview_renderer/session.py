@@ -11,12 +11,12 @@ import os
 from pathlib import Path
 import shutil
 import time
-from typing import Any
+from typing import Any, Callable
 from urllib.parse import urlsplit
 
 import aiohttp
 
-from . import page
+from . import actions, page
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -48,6 +48,11 @@ class Screen:
     def ha_origin(self) -> str:
         parts = urlsplit(self.ha_url)
         return f"{parts.scheme}://{parts.netloc}" if parts.scheme in ("http", "https") and parts.netloc else ""
+
+    @property
+    def page(self) -> tuple[str, tuple[actions.Step, ...]]:
+        """The address to open, and the steps to take on it once it loads (actions.split)."""
+        return actions.split(self.url)
 
     def restart_needed(self, other: Screen) -> bool:
         """Size and scale are fixed for a Chromium window; the rest changes in place."""
@@ -90,6 +95,15 @@ def chromium_args(screen: Screen, profile: Path, port: int) -> list[str]:
         "--mute-audio",  # the stream is video only
         "--autoplay-policy=no-user-gesture-required",
         "--password-store=basic",
+        # WebGL (3D maps, Windy) drawn by Mesa on the processor (llvmpipe, through the display's
+        # GLX): the display has no graphics chip, and Chromium otherwise leaves such pages blank.
+        # Its list of unreliable drivers names every software one; the rest of the page stays
+        # drawn as before, which costs half as much as drawing it all through the GL.
+        "--use-gl=angle",
+        "--use-angle=gl",
+        "--ignore-gpu-blocklist",
+        "--disable-gpu-compositing",
+        "--disable-gpu-rasterization",
         # In Chromium's own pixels, which the scale factor enlarges to fill the display.
         f"--window-size={round(screen.width / screen.scale)},{round(screen.height / screen.scale)}",
         "--window-position=0,0",
@@ -120,6 +134,7 @@ class Session:
         # Notifications and cameras on top of the page: kind -> (what, until).
         self.overlays: dict[str, tuple[dict[str, Any], float]] = {}
         self._overlay_task: asyncio.Task[None] | None = None
+        self._steps_task: asyncio.Task[None] | None = None
 
     @property
     def playlist(self) -> Path:
@@ -155,9 +170,11 @@ class Session:
             try:
                 if (old.ha_origin, old.token, old.kiosk) != (screen.ha_origin, screen.token, screen.kiosk):
                     await self._install_script()
-                    await self._cdp.call("Page.navigate", url=screen.url)
+                    await self._cdp.call("Page.navigate", url=screen.page[0])
+                elif old.page[0] == screen.page[0] and old.page[1] != screen.page[1]:
+                    await self._cdp.call("Page.reload")  # other steps for the same page: from the start
                 elif old.url != screen.url:
-                    await self._navigate(old.url, screen.url)
+                    await self._navigate(old.page[0], screen.page[0])
             except CdpError as err:
                 _LOGGER.warning("%s: could not show %s (%s); starting again", self.key, screen.url, err)
                 await self.stop()
@@ -210,9 +227,10 @@ class Session:
         env = {**os.environ, "DISPLAY": display}
         self._procs.append(await _spawn("chromium", *chromium_args(screen, profile, self.port), env=env))
         self._cdp = await Cdp.connect(self.port)
+        self._cdp.on_event = self._on_event
         await self._cdp.call("Page.enable")
         await self._install_script()
-        await self._cdp.call("Page.navigate", url=screen.url)
+        await self._cdp.call("Page.navigate", url=screen.page[0])
         self._procs.append(await _spawn(
             "ffmpeg", "-loglevel", "error", "-nostdin",
             *(["-vaapi_device", "/dev/dri/renderD128"] if self.encoder == "vaapi" else []),
@@ -255,6 +273,26 @@ class Session:
             if not self.overlays:
                 return
 
+    def _on_event(self, method: str, params: dict[str, Any]) -> None:
+        if method == "Page.loadEventFired":
+            self._start_steps()
+
+    def _start_steps(self) -> None:
+        """Takes the page's steps (actions) from the start, after every load: a reload loses them."""
+        if self._steps_task:
+            self._steps_task.cancel()
+            self._steps_task = None
+        steps = self.screen.page[1]
+        if steps and self._cdp:
+            self._steps_task = asyncio.create_task(self._take_steps(self._cdp, steps))
+
+    async def _take_steps(self, cdp: Cdp, steps: tuple[actions.Step, ...]) -> None:
+        try:
+            await actions.perform(cdp, steps, self.key)
+            _LOGGER.info("%s: took the page's %d steps", self.key, len(steps))
+        except CdpError as err:
+            _LOGGER.info("%s: the page's steps stopped: %s", self.key, err)
+
     async def _install_script(self) -> None:
         assert self._cdp
         if self._script_id:
@@ -277,6 +315,7 @@ class Session:
                 returnByValue=True,
             )
             if result.get("result", {}).get("value"):
+                self._start_steps()  # no load in place
                 return
         await self._cdp.call("Page.navigate", url=url)
 
@@ -291,6 +330,9 @@ class Session:
                 task.cancel()
 
     async def _kill(self) -> None:
+        if self._steps_task:
+            self._steps_task.cancel()
+            self._steps_task = None
         if self._cdp:
             await self._cdp.close()
             self._cdp = None
@@ -341,6 +383,8 @@ class Cdp:
         self._ids = itertools.count(1)
         self._pending: dict[int, asyncio.Future[dict[str, Any]]] = {}
         self.closed = asyncio.Event()
+        # Called with each event's method and parameters (the domains enabled, e.g. Page).
+        self.on_event: Callable[[str, dict[str, Any]], None] | None = None
         self._reader = asyncio.create_task(self._read())
 
     @classmethod
@@ -390,6 +434,10 @@ class Cdp:
                 if message.type != aiohttp.WSMsgType.TEXT:
                     continue
                 data = json.loads(message.data)
+                if "method" in data and "id" not in data:
+                    if self.on_event:
+                        self.on_event(data["method"], data.get("params", {}))
+                    continue
                 future = self._pending.get(data.get("id"))
                 if future and not future.done():
                     if "error" in data:
