@@ -29,7 +29,7 @@ In `/etc/default/pleatview-light`, then `sudo systemctl restart pleatview-light`
 | Setting | Meaning |
 | --- | --- |
 | `PLEATVIEW_LIGHT_SCREEN=1280x720` | Have Home Assistant render at this size instead of the screen's |
-| `PLEATVIEW_LIGHT_MPV_OPTIONS=...` | mpv's video options; the default, `--vo=gpu --gpu-context=drm --hwdec=v4l2m2m`, decodes in hardware on Raspberry Pis |
+| `PLEATVIEW_LIGHT_MPV_OPTIONS=...` | mpv's video options. The default decodes in hardware on Raspberry Pis and puts the video on its own display plane: `--vo=gpu --gpu-context=drm --hwdec=v4l2m2m --gpu-hwdec-interop=drmprime-overlay --drm-draw-plane=overlay --drm-drmprime-video-plane=primary` |
 | `PLEATVIEW_LIGHT_PORT=8765` | The control port |
 
 Only Python's standard library and mpv: nothing else is installed.

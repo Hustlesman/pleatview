@@ -7,7 +7,7 @@ FROM ${DEBIAN}
 
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
-        chromium xvfb ffmpeg python3 python3-aiohttp tini ca-certificates \
+        chromium xvfb ffmpeg python3 python3-aiohttp python3-cryptography tini ca-certificates \
         fonts-dejavu-core fonts-noto-color-emoji mesa-va-drivers \
         $([ "$(dpkg --print-architecture)" = amd64 ] && echo intel-media-va-driver i965-va-driver) \
     && rm -rf /var/lib/apt/lists/* \

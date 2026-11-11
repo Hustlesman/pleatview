@@ -284,6 +284,44 @@ def write_private(path: Path, text: str) -> None:
     os.replace(path.with_suffix(".tmp"), path)
 
 
+def make_certificate(cert: Path, key: Path) -> None:
+    """A self-signed certificate for this machine's name and address, once."""
+    if cert.exists() and key.exists():
+        return
+    import datetime
+
+    from cryptography import x509
+    from cryptography.hazmat.primitives import hashes, serialization
+    from cryptography.hazmat.primitives.asymmetric import ec
+    from cryptography.x509.oid import NameOID
+
+    private = ec.generate_private_key(ec.SECP256R1())
+    host = socket.gethostname()
+    names: list[x509.GeneralName] = [x509.DNSName(host), x509.DNSName("localhost")]
+    for address in {local_address(), "127.0.0.1"}:
+        names.append(x509.IPAddress(ipaddress.ip_address(address)))
+    subject = x509.Name([x509.NameAttribute(NameOID.COMMON_NAME, f"PleatView Renderer on {host}"[:64])])
+    now = datetime.datetime.now(datetime.timezone.utc)
+    certificate = (
+        x509.CertificateBuilder().subject_name(subject).issuer_name(subject).public_key(private.public_key())
+        .serial_number(x509.random_serial_number())
+        .not_valid_before(now - datetime.timedelta(minutes=5)).not_valid_after(now + datetime.timedelta(days=3650))
+        .add_extension(x509.SubjectAlternativeName(names), critical=False)
+        .add_extension(x509.BasicConstraints(ca=False, path_length=None), critical=True)
+        .sign(private, hashes.SHA256())
+    )
+    write_private(key, private.private_bytes(serialization.Encoding.PEM, serialization.PrivateFormat.PKCS8,
+                                             serialization.NoEncryption()).decode())
+    write_private(cert, certificate.public_bytes(serialization.Encoding.PEM).decode())
+
+
+def certificate_fingerprint(cert: Path) -> str:
+    from cryptography import x509
+    from cryptography.hazmat.primitives import hashes
+
+    return x509.load_pem_x509_certificate(cert.read_bytes()).fingerprint(hashes.SHA256()).hex(":").upper()
+
+
 def main() -> None:
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
     env = settings()
@@ -312,10 +350,17 @@ def main() -> None:
     require = env.get("REQUIRE_TOKEN", "auto")
     require_token = require == "1" or (require == "auto" and not addon and not is_loopback(host))
     context = None
-    if env.get("TLS_CERT") and env.get("TLS_KEY"):
+    cert, key = env.get("TLS_CERT"), env.get("TLS_KEY")
+    # On the network the renderer serves HTTPS, with a certificate it makes for itself unless
+    # it's given one; Home Assistant and the console pin it when pairing. TLS=off turns it off.
+    if not (cert and key) and require_token and env.get("TLS", "auto") != "off":
+        cert, key = str(state / "cert.pem"), str(state / "key.pem")
+        make_certificate(Path(cert), Path(key))
+    if cert and key:
         context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
         context.minimum_version = ssl.TLSVersion.TLSv1_2
-        context.load_cert_chain(env["TLS_CERT"], env["TLS_KEY"])
+        context.load_cert_chain(cert, key)
+        _LOGGER.info("Certificate fingerprint (SHA-256): %s", certificate_fingerprint(Path(cert)))
     _LOGGER.info("PleatView Renderer %s, encoding with %s", VERSION, encoder)
     scheme = "https" if context else "http"
     _LOGGER.info("In PleatView's options, use the renderer address %s",

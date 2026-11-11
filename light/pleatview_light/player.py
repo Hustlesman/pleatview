@@ -17,9 +17,12 @@ from typing import Any, Callable
 
 _LOGGER = logging.getLogger(__name__)
 
-# Zero-copy hardware decoding drawn with the GPU: on a Raspberry Pi Zero 2 W this plays a
-# 1080p stream with almost no dropped frames, where copying frames dropped two in three.
-DEFAULT_OPTIONS = "--vo=gpu --gpu-context=drm --hwdec=v4l2m2m"
+# Zero-copy hardware decoding, with each decoded frame put straight on its own display plane
+# (DRM PRIME) and mpv's drawing (text, pictures) on a plane above it. On a Raspberry Pi Zero
+# 2 W this plays a 1080p stream with almost no dropped frames, where copying frames dropped
+# two in three; and drawing the decoder's tiled frames with the GPU shows only black.
+DEFAULT_OPTIONS = ("--vo=gpu --gpu-context=drm --hwdec=v4l2m2m --gpu-hwdec-interop=drmprime-overlay "
+                   "--drm-draw-plane=overlay --drm-drmprime-video-plane=primary")
 
 
 class Player:
