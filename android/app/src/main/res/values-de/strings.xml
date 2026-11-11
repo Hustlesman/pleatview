@@ -55,4 +55,8 @@
     <string name="menu_demo_info">Ein Beispielzuhause. Um deine eigenen Dashboards zu zeigen, füge dieses Gerät mit der PIN oben zu Home Assistant hinzu.</string>
     <string name="menu_demo_end">Demo beenden</string>
     <string name="menu_demo_tour">Tour noch einmal ansehen</string>
+    <string name="approve_title">Mit %1$s koppeln?</string>
+    <string name="approve_message">%1$s unter %2$s möchte diesen Bildschirm steuern. Drücke OK, um es zu erlauben. Erlaube es nur, wenn du diesen Bildschirm gerade in %1$s einrichtest.</string>
+    <string name="approve_allow">Erlauben</string>
+    <string name="approve_deny">Nicht erlauben</string>
 </resources>

@@ -38,7 +38,10 @@ let qr = { text: "", svg: "" };
 const pairing = new Pairing({
   load: () => store.read("tokens.json"),
   save: (json) => store.write("tokens.json", json),
-  onChanged: () => display?.refreshSetup(),
+  onChanged: () => {
+    display?.refreshSetup();
+    display?.showApproval();
+  },
 });
 
 const name = () => config.deviceName || defaultName();
@@ -86,6 +89,7 @@ const api = createApi(
     signIns: () => [],
     forgetSignIns: () => 0,
     setupPage: () => readFileSync(join(assets, "setup.html")),
+    approvalRequested: () => display?.showApproval(),
   },
   pairing,
 );
@@ -93,7 +97,7 @@ const api = createApi(
 let display = null;
 
 app.whenReady().then(() => {
-  display = new Display({ hub, config: () => config, setup: setupInfo, assets, quit: () => app.quit() });
+  display = new Display({ hub, config: () => config, setup: setupInfo, assets, quit: () => app.quit(), pairing });
   hub.display = display;
   display.open();
   api.listen(PORT, "0.0.0.0", () => console.log(`PleatView ${version}: control API on port ${PORT}`));

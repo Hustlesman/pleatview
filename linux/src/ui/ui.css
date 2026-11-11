@@ -103,3 +103,11 @@ progress::-webkit-progress-value { background: var(--accent); }
 #menu-items button:focus, #menu-items button:hover { outline: none; background: var(--accent); color: #001018; }
 
 #curtain { background: #000; cursor: none; }
+
+#approval { display: flex; align-items: center; justify-content: center; background: rgba(15, 20, 23, 0.85); }
+#approval[hidden] { display: none; }
+.approval-panel { max-width: 60vw; padding: 3rem; border-radius: 1.5rem; background: #172025; color: #edf3f6; font: 1.6rem system-ui, sans-serif; }
+.approval-panel h2 { margin: 0 0 1rem; font-size: 2.2rem; }
+.approval-buttons { display: flex; gap: 1.5rem; margin-top: 2rem; }
+.approval-buttons button { font: inherit; padding: 0.8rem 2rem; border-radius: 0.8rem; border: 2px solid #18bcf2; background: transparent; color: inherit; }
+.approval-buttons button:focus { background: #18bcf2; color: #0f1417; outline: none; }

@@ -29,6 +29,7 @@ class HttpError extends Error {
  * @param {() => object[]} backend.signIns
  * @param {(site: string | null) => number} backend.forgetSignIns
  * @param {() => Buffer} backend.setupPage
+ * @param {() => void} [backend.approvalRequested] someone asked to pair without the PIN
  * @param {import("./pairing.js").Pairing} pairing
  */
 export function createApi(backend, pairing) {
@@ -42,9 +43,19 @@ export function createApi(backend, pairing) {
       case "/setup":
         return get(req, () => send(res, 200, backend.setupPage(), "text/html; charset=utf-8"));
       case "/api/info":
-        return get(req, () => json(res, 200, { ...backend.info(), paired: pairing.isPaired }));
+        return get(req, () => json(res, 200, { ...backend.info(), paired: pairing.isPaired, pairing: ["pin", "approve"] }));
       case "/api/pair":
         return post(req, async () => pair(res, await body(req)));
+      // Pairing approved with OK on the screen instead of the PIN.
+      case "/api/pair/request":
+        return post(req, async () => {
+          const request = await body(req);
+          const approval = pairing.requestApproval(typeof request.client === "string" ? request.client : "client",
+            (req.socket.remoteAddress ?? "?").replace(/^::ffff:/, ""));
+          if (!approval) throw new HttpError(429, "busy", { retry_after: 30 });
+          backend.approvalRequested?.();
+          json(res, 202, { request: approval.id, expires_in: Math.max(1, Math.round((approval.expires - Date.now()) / 1000)) });
+        });
       // Lets Home Assistant check that a screen announcing itself at a new address is the one
       // it paired with, before it sends that address its token.
       case "/api/verify":
@@ -56,6 +67,13 @@ export function createApi(backend, pairing) {
       // The phone that scanned the sign-in code has the PIN instead of a token.
       case "/api/signin":
         return post(req, async () => signIn(req, res, await body(req)));
+    }
+    if (path.startsWith("/api/pair/request/")) {
+      return get(req, () => {
+        const result = pairing.collect(path.slice("/api/pair/request/".length));
+        if (!result) throw new HttpError(404, "no_such_request");
+        json(res, 200, result.token ? { state: result.state, token: result.token } : { state: result.state });
+      });
     }
     if (!path.startsWith("/api/")) throw new HttpError(404, "not found");
     if (!pairing.isValid(bearer(req))) throw new HttpError(401, "unauthorized");

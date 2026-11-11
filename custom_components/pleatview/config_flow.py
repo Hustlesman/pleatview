@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 from collections.abc import Mapping
 from contextlib import suppress
 import logging
@@ -28,7 +29,7 @@ except ImportError:  # Home Assistant 2025.1
     from homeassistant.components.zeroconf import ZeroconfServiceInfo
 
 from . import renderers
-from .api import InvalidPin, PleatViewClient, PleatViewError, TooManyAttempts
+from .api import InvalidAuth, InvalidPin, NotFound, PleatViewClient, PleatViewError, TooManyAttempts
 from .render import async_find_renderers
 from .const import (
     AUTH_MANAGED,
@@ -71,6 +72,7 @@ USER_SCHEMA = vol.Schema(
     }
 )
 PIN_SCHEMA = vol.Schema({vol.Required("pin"): str})
+APPROVAL_POLL_SECONDS = 1
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -87,6 +89,8 @@ class PleatViewConfigFlow(ConfigFlow, domain=DOMAIN):
         self._info: dict[str, Any] = {}
         self._token: str | None = None
         self._scheme = "http"
+        self._approve_task: asyncio.Task[str | None] | None = None
+        self._approval_tried = False
 
     @staticmethod
     @callback
@@ -181,9 +185,60 @@ class PleatViewConfigFlow(ConfigFlow, domain=DOMAIN):
                 )
         self._abort_if_unique_id_configured()
 
+    async def async_step_approve(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
+        """Ask the TV to allow Home Assistant: one press of OK there, no PIN to type."""
+        if self._approve_task is None:
+            self._approve_task = self.hass.async_create_task(self._async_wait_for_approval())
+        if not self._approve_task.done():
+            return self.async_show_progress(
+                step_id="approve", progress_action="approve", progress_task=self._approve_task,
+                description_placeholders={"name": self._name},
+            )
+        token = self._approve_task.result()
+        self._approve_task = None
+        self._approval_tried = True
+        if token:
+            self._token = token
+            return self.async_show_progress_done(next_step_id="paired")
+        return self.async_show_progress_done(next_step_id="pair")
+
+    async def _async_wait_for_approval(self) -> str | None:
+        """The token once someone at the TV presses OK; None when refused, too late or unsupported."""
+        client = self._client()
+        try:
+            request = await client.request_approval("Home Assistant")
+        except PleatViewError:
+            return None
+        request_id = str(request.get("request") or "")
+        if not request_id:
+            return None
+        loop = asyncio.get_running_loop()
+        deadline = loop.time() + min(int(request.get("expires_in") or 120), 180)
+        while loop.time() < deadline:
+            await asyncio.sleep(APPROVAL_POLL_SECONDS)
+            try:
+                state = await client.approval_state(request_id)
+            except (NotFound, InvalidAuth):
+                return None
+            except PleatViewError:
+                continue
+            if state.get("state") == "approved" and state.get("token"):
+                return str(state["token"])
+            if state.get("state") in ("denied", "expired"):
+                return None
+        return None
+
+    async def async_step_paired(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
+        """Approved on the TV."""
+        return self._async_paired()
+
     async def async_step_pair(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
-        """Ask for the PIN shown on the TV."""
+        """Ask for the PIN shown on the TV (after offering to approve on the TV, where it can)."""
         errors: dict[str, str] = {}
+        if user_input is None and not self._approval_tried and "approve" in (self._info.get("pairing") or []):
+            return await self.async_step_approve()
+        if user_input is None and self._approval_tried:
+            errors["base"] = "approval_failed"
         if user_input is not None:
             try:
                 self._token = await self._client().pair(user_input["pin"], "Home Assistant")
@@ -194,23 +249,7 @@ class PleatViewConfigFlow(ConfigFlow, domain=DOMAIN):
             except PleatViewError:
                 errors["base"] = "cannot_connect"
             else:
-                if self.source == SOURCE_REAUTH:
-                    return self.async_update_reload_and_abort(
-                        self._get_reauth_entry(),
-                        data_updates={CONF_HOST: self._host, CONF_PORT: self._port, CONF_TOKEN: self._token},
-                    )
-                # Pairing is the only question: the TV signs in with a dedicated user.
-                # Other sign-in methods are under Reconfigure.
-                return self.async_create_entry(
-                    title=self._name,
-                    data={
-                        CONF_HOST: self._host,
-                        CONF_PORT: self._port,
-                        CONF_TOKEN: self._token,
-                        CONF_AUTH_MODE: AUTH_MANAGED,
-                        CONF_ALLOW_CONTROL: True,
-                    },
-                )
+                return self._async_paired()
         return self.async_show_form(
             step_id="pair",
             data_schema=PIN_SCHEMA,
@@ -257,6 +296,25 @@ class PleatViewConfigFlow(ConfigFlow, domain=DOMAIN):
         })
         return self.async_show_form(step_id="renderer", data_schema=schema, errors=errors,
                                     description_placeholders={"address": url})
+
+    def _async_paired(self) -> ConfigFlowResult:
+        if self.source == SOURCE_REAUTH:
+            return self.async_update_reload_and_abort(
+                self._get_reauth_entry(),
+                data_updates={CONF_HOST: self._host, CONF_PORT: self._port, CONF_TOKEN: self._token},
+            )
+        # Pairing is the only question: the TV signs in with a dedicated user.
+        # Other sign-in methods are under Reconfigure.
+        return self.async_create_entry(
+            title=self._name,
+            data={
+                CONF_HOST: self._host,
+                CONF_PORT: self._port,
+                CONF_TOKEN: self._token,
+                CONF_AUTH_MODE: AUTH_MANAGED,
+                CONF_ALLOW_CONTROL: True,
+            },
+        )
 
     async def async_step_reconfigure(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
         """Change how the TV signs in to Home Assistant."""

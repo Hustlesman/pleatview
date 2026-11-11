@@ -126,3 +126,16 @@ test("bodies need a Content-Length and stay small", async () => {
   const big = await call("POST", "/api/command", { command: "notify", message: "x".repeat(300 * 1024) }, token);
   assert.equal(big.status, 413);
 });
+
+test("pairing approved on the screen", async () => {
+  const info = await call("GET", "/api/info");
+  assert.deepEqual(info.body.pairing, ["pin", "approve"]);
+  const asked = await call("POST", "/api/pair/request", { client: "Home Assistant" });
+  assert.equal(asked.status, 202);
+  assert.equal((await call("GET", `/api/pair/request/${asked.body.request}`)).body.state, "pending");
+  assert.equal((await call("GET", "/api/pair/request/nope")).status, 404);
+  pairing.decide(asked.body.request, true);
+  const done = await call("GET", `/api/pair/request/${asked.body.request}`);
+  assert.equal(done.body.state, "approved");
+  assert.equal((await call("GET", "/api/state", null, done.body.token)).status, 200);
+});

@@ -43,7 +43,8 @@
       "cannot_connect": "De tv is niet bereikbaar. Controleer het adres en of PleatView open is.",
       "invalid_pin": "Die pincode komt niet overeen met die op de tv.",
       "too_many_attempts": "Te veel verkeerde pincodes. Wacht een minuut en gebruik de nieuwe pincode op de tv.",
-      "invalid_ha_token": "Home Assistant herkent dit token niet."
+      "invalid_ha_token": "Home Assistant herkent dit token niet.",
+      "approval_failed": "De tv stond het niet toe, of niemand drukte op tijd op OK. Voer in plaats daarvan de pincode van de tv in."
     },
     "abort": {
       "already_configured": "Deze tv is al ingesteld.",
@@ -51,6 +52,9 @@
       "invalid_discovery_info": "Het ontdekte apparaat heeft zich niet geïdentificeerd.",
       "reauth_successful": "Opnieuw gekoppeld.",
       "reconfigure_successful": "Inloggen bijgewerkt. De tv laadt zijn dashboard opnieuw."
+    },
+    "progress": {
+      "approve": "Druk op **OK** op {name}. Die vraagt of Home Assistant hem mag bedienen. Staat niemand het binnen twee minuten toe, dan kun je de pincode invoeren."
     }
   },
   "options": {

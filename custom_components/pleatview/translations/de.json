@@ -43,7 +43,8 @@
       "cannot_connect": "Der Fernseher ist nicht erreichbar. Prüfe die Adresse und ob PleatView geöffnet ist.",
       "invalid_pin": "Diese PIN stimmt nicht mit der auf dem Fernseher überein.",
       "too_many_attempts": "Zu viele falsche PINs. Warte eine Minute und verwende die neue PIN auf dem Fernseher.",
-      "invalid_ha_token": "Home Assistant erkennt dieses Token nicht."
+      "invalid_ha_token": "Home Assistant erkennt dieses Token nicht.",
+      "approval_failed": "Der Fernseher hat es nicht erlaubt, oder niemand hat rechtzeitig OK gedrückt. Gib stattdessen die PIN ein, die der Fernseher zeigt."
     },
     "abort": {
       "already_configured": "Dieser Fernseher ist bereits eingerichtet.",
@@ -51,6 +52,9 @@
       "invalid_discovery_info": "Das entdeckte Gerät hat sich nicht zu erkennen gegeben.",
       "reauth_successful": "Erneut gekoppelt.",
       "reconfigure_successful": "Anmeldung aktualisiert. Der Fernseher lädt sein Dashboard neu."
+    },
+    "progress": {
+      "approve": "Drücke **OK** auf {name}. Dort wird gefragt, ob Home Assistant den Bildschirm steuern darf. Erlaubt es niemand innerhalb von zwei Minuten, kannst du stattdessen die PIN eingeben."
     }
   },
   "options": {

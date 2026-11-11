@@ -352,7 +352,43 @@ window.pleatview.onMessage((message) => {
     case "standby":
       $("curtain").hidden = !message.on;
       break;
+    case "approval":
+      showApproval(message.approval);
+      break;
   }
+});
+
+// ---- Pairing approved on the screen ----------------------------------------------------
+
+let approvalId = null;
+
+function showApproval(approval) {
+  approvalId = approval?.id ?? null;
+  $("approval").hidden = !approval;
+  if (approval) {
+    $("approval-title").textContent = `Pair with ${approval.client}?`;
+    $("approval-text").textContent = `${approval.client} at ${approval.address} asks to control this screen. ` +
+      `Press Enter to allow it. Only allow it if you just set this screen up in ${approval.client}.`;
+    $("approval-allow").focus();
+  }
+  regionsChanged();
+}
+
+function decide(allow) {
+  if (!approvalId) return;
+  window.pleatview.send({ type: "approval", id: approvalId, allow });
+  showApproval(null);
+}
+
+$("approval-allow").addEventListener("click", () => decide(true));
+$("approval-deny").addEventListener("click", () => decide(false));
+document.addEventListener("keydown", (event) => {
+  if ($("approval").hidden) return;
+  if (event.key === "Escape") decide(false);
+  else if (event.key === "ArrowRight" || event.key === "ArrowLeft") {
+    (document.activeElement === $("approval-allow") ? $("approval-deny") : $("approval-allow")).focus();
+  } else return;
+  event.preventDefault();
 });
 
 window.innerScreenWidth = window.innerWidth;

@@ -337,7 +337,9 @@ requires.
 - [ ] P1 bugs fixed within 48 hours; a beta build every week
 - [x] Device compatibility table on the website, filled from tester reports (12 Nov: the
       table takes reported devices, and its footer asks for device reports)
-- [ ] One-press pairing: approve Home Assistant on the TV with OK, instead of typing the PIN
+- [x] One-press pairing: approve Home Assistant on the TV with OK, instead of typing the PIN
+      (12 Nov: Android and Linux apps; Home Assistant asks the TV first and falls back to the
+      PIN; checked on an Android TV emulator with the test Home Assistant)
 - [x] Sign-ins for dashboards behind a login form or a password prompt: entered from a phone
       code, saved encrypted on the TV only, used again by themselves
 - [x] **In Home Assistant's Marketplace.** Home Assistant 2026.11 builds HACS in as

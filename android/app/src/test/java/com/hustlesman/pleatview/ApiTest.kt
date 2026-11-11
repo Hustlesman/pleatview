@@ -49,6 +49,10 @@ class ApiTest {
             forgotten = site
             return 1
         }
+        var approvals = 0
+        override fun approvalRequested() {
+            approvals++
+        }
 
         fun publish(json: String) {
             state = json
@@ -102,6 +106,24 @@ class ApiTest {
 
     private fun pair(): String =
         request("POST", "/api/pair", """{"pin":"${pairing.pin}","client":"test"}""").json.getString("token")
+
+    @Test
+    fun `pairing approved on the screen hands the token to the client that asked, once`() {
+        assertEquals("[\"pin\",\"approve\"]", request("GET", "/api/info").json.getJSONArray("pairing").toString())
+        val asked = request("POST", "/api/pair/request", """{"client":"Home Assistant"}""")
+        assertEquals(202, asked.status)
+        assertEquals(1, backend.approvals)
+        val id = asked.json.getString("request")
+        assertEquals("pending", request("GET", "/api/pair/request/$id").json.getString("state"))
+        assertEquals(404, request("GET", "/api/pair/request/someone-else").status)
+        val approval = pairing.pendingApproval!!
+        assertEquals("Home Assistant", approval.client)
+        pairing.decide(id, true)
+        val done = request("GET", "/api/pair/request/$id").json
+        assertEquals("approved", done.getString("state"))
+        assertEquals(200, request("GET", "/api/state", token = done.getString("token")).status)
+        assertEquals(404, request("GET", "/api/pair/request/$id").status) // collected once
+    }
 
     @Test
     fun `info is public and reports pairing`() {

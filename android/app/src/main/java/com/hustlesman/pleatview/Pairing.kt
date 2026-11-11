@@ -30,6 +30,19 @@ class Pairing(
 
     private data class Record(val hash: String, val client: String, val created: Long)
 
+    /**
+     * A client asking to pair without the PIN: someone at the screen approves it with OK.
+     * [id] is random, so only the client that asked can collect the token.
+     */
+    data class Approval(val id: String, val client: String, val address: String, val expires: Long) {
+        var state: String = PENDING
+            internal set
+        internal var token: String? = null
+    }
+
+    private var approval: Approval? = null
+    private val approvalTimes = ArrayDeque<Long>()
+
     private val records = mutableListOf<Record>()
     private var failures = 0
     private var lockedUntil = 0L
@@ -129,6 +142,57 @@ class Pairing(
         rotatePin()
     }
 
+    /** The approval waiting for someone at the screen, if any. */
+    val pendingApproval: Approval?
+        @Synchronized get() = approval?.takeIf { it.state == PENDING && clock() < it.expires }
+
+    /**
+     * Asks the person at the screen to approve [client]. One request waits at a time: the same
+     * address asking again gets the same request, another address waits. At most a few a minute.
+     */
+    @Synchronized
+    fun requestApproval(client: String, address: String): Approval? {
+        val now = clock()
+        approval?.let { current ->
+            if (current.state == PENDING && now < current.expires) return current.takeIf { it.address == address }
+        }
+        while (approvalTimes.isNotEmpty() && now - approvalTimes.first() > 60_000) approvalTimes.removeFirst()
+        if (approvalTimes.size >= MAX_APPROVALS_PER_MINUTE) return null
+        approvalTimes.addLast(now)
+        val created = Approval(newToken().take(32), client.trim().take(40).ifEmpty { "client" }, address, now + APPROVAL_MS)
+        approval = created
+        onChanged?.invoke()
+        return created
+    }
+
+    /** The person at the screen allowed or refused it. */
+    @Synchronized
+    fun decide(id: String, allow: Boolean) {
+        val current = approval?.takeIf { it.id == id && it.state == PENDING && clock() < it.expires } ?: return
+        if (allow) {
+            val token = newToken()
+            records += Record(sha256(token), current.client, clock())
+            while (records.size > MAX_TOKENS) records.removeAt(0)
+            persist()
+            current.token = token
+            current.state = APPROVED
+            rotatePin()
+        } else {
+            current.state = DENIED
+            onChanged?.invoke()
+        }
+    }
+
+    /** The request's state for the client that asked; an approved one hands over its token once. */
+    @Synchronized
+    fun collect(id: String): Pair<String, String?>? {
+        val current = approval?.takeIf { MessageDigest.isEqual(it.id.toByteArray(), id.toByteArray()) } ?: return null
+        if (current.state == PENDING && clock() >= current.expires) current.state = EXPIRED
+        val token = current.token
+        if (current.state != PENDING) approval = null
+        return current.state to token
+    }
+
     @Synchronized
     private fun rotatePin() {
         pin = newPin()
@@ -155,6 +219,12 @@ class Pairing(
         const val MAX_FAILURES = 5
         const val LOCKOUT_MS = 60_000L
         const val MAX_TOKENS = 8
+        const val APPROVAL_MS = 120_000L
+        const val MAX_APPROVALS_PER_MINUTE = 5
+        const val PENDING = "pending"
+        const val APPROVED = "approved"
+        const val DENIED = "denied"
+        const val EXPIRED = "expired"
 
         fun sha256(value: String): String = hex(MessageDigest.getInstance("SHA-256").digest(value.toByteArray()))
 

@@ -55,4 +55,8 @@
     <string name="menu_demo_info">Une maison d\'exemple. Pour afficher vos propres tableaux de bord, ajoutez cet appareil à Home Assistant avec le code PIN ci-dessus.</string>
     <string name="menu_demo_end">Quitter la démo</string>
     <string name="menu_demo_tour">Revoir la visite</string>
+    <string name="approve_title">Associer %1$s ?</string>
+    <string name="approve_message">%1$s à l\'adresse %2$s demande à contrôler cet écran. Appuie sur OK pour l\'autoriser. Ne l\'autorise que si tu viens de configurer cet écran dans %1$s.</string>
+    <string name="approve_allow">Autoriser</string>
+    <string name="approve_deny">Ne pas autoriser</string>
 </resources>

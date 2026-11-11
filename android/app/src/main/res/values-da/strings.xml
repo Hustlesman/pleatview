@@ -55,4 +55,8 @@
     <string name="menu_demo_info">Et eksempelhjem. Tilføj denne enhed til Home Assistant med pinkoden ovenfor for at vise dine egne betjeningspaneler.</string>
     <string name="menu_demo_end">Afslut demoen</string>
     <string name="menu_demo_tour">Se rundturen igen</string>
+    <string name="approve_title">Par med %1$s?</string>
+    <string name="approve_message">%1$s på %2$s vil styre denne skærm. Tryk på OK for at tillade det. Tillad det kun, hvis du lige er ved at sætte skærmen op i %1$s.</string>
+    <string name="approve_allow">Tillad</string>
+    <string name="approve_deny">Tillad ikke</string>
 </resources>

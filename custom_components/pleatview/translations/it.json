@@ -43,7 +43,8 @@
       "cannot_connect": "La TV non è raggiungibile. Controlla l'indirizzo e che PleatView sia aperto.",
       "invalid_pin": "Questo PIN non corrisponde a quello sulla TV.",
       "too_many_attempts": "Troppi PIN sbagliati. Aspetta un minuto e usa il nuovo PIN sulla TV.",
-      "invalid_ha_token": "Home Assistant non riconosce questo token."
+      "invalid_ha_token": "Home Assistant non riconosce questo token.",
+      "approval_failed": "Il televisore non l'ha consentito, o nessuno ha premuto OK in tempo. Inserisci invece il PIN mostrato sul televisore."
     },
     "abort": {
       "already_configured": "Questa TV è già configurata.",
@@ -51,6 +52,9 @@
       "invalid_discovery_info": "Il dispositivo rilevato non si è identificato.",
       "reauth_successful": "Abbinata di nuovo.",
       "reconfigure_successful": "Accesso aggiornato. La TV ricarica la sua plancia."
+    },
+    "progress": {
+      "approve": "Premi **OK** su {name}. Chiede se consentire a Home Assistant di controllarlo. Se nessuno lo consente entro due minuti, puoi inserire il PIN."
     }
   },
   "options": {

@@ -25,8 +25,9 @@ export class Display {
    * @param {string} options.assets folder with pleatview.js
    * @param {() => void} options.quit
    */
-  constructor({ hub, config, setup, assets, quit }) {
+  constructor({ hub, config, setup, assets, quit, pairing = null }) {
     this.hub = hub;
+    this.pairing = pairing;
     this.config = config;
     this.setup = setup;
     this.quit = quit;
@@ -142,6 +143,9 @@ export class Display {
           break;
         case "wake":
           this.wake();
+          break;
+        case "approval":
+          this.pairing?.decide(String(message.id ?? ""), Boolean(message.allow));
           break;
       }
     });
@@ -322,6 +326,17 @@ export class Display {
     this.toUi({ type: "setup", visible: !config.isConfigured, info: this.setup() });
     if (config.isConfigured) this.goHome();
     else this.dashboard.webContents.loadURL("about:blank");
+  }
+
+  /** Asks the person at the screen to allow a client to pair (or hides the question). */
+  showApproval() {
+    const approval = this.pairing?.pendingApproval;
+    this.toUi({ type: "approval", approval: approval ? { id: approval.id, client: approval.client, address: approval.address } : null });
+    if (approval) {
+      this.ui.webContents.focus();
+      clearTimeout(this.timers.approval);
+      this.timers.approval = setTimeout(() => this.showApproval(), Math.max(0, approval.expires - Date.now()) + 500);
+    }
   }
 
   /** The setup screen's PIN, name or address changed. */

@@ -167,6 +167,7 @@ class MainActivity : Activity(), Hub.Display, DashboardController.Callbacks, Med
         }
         app.hub.uiShown()
         drainPending()
+        showApproval()
         demo?.takeIf { !it.finished }?.start() // the tour starts again after another app
     }
 
@@ -274,9 +275,38 @@ class MainActivity : Activity(), Hub.Display, DashboardController.Callbacks, Med
     }
 
     override fun onPairingChanged() {
+        showApproval()
         if (setupScreen.visibility == View.VISIBLE) refreshSetup()
         dashboard.signInRequest?.let(::showSignInCard) // the code on the card carries the PIN
         if (menuVisible) openMenu()
+    }
+
+    private var approvalDialog: AlertDialog? = null
+    private var approvalShown: String? = null
+
+    /** Home Assistant (or another client) asks to pair without the PIN: Allow, with OK, or not. */
+    private fun showApproval() {
+        val approval = app.pairing.pendingApproval
+        if (approval == null) {
+            approvalDialog?.dismiss()
+            approvalDialog = null
+            approvalShown = null
+            return
+        }
+        if (approvalShown == approval.id && approvalDialog?.isShowing == true) return
+        approvalDialog?.dismiss()
+        approvalShown = approval.id
+        val dialog = AlertDialog.Builder(this, android.R.style.Theme_DeviceDefault_Dialog_Alert)
+            .setTitle(getString(R.string.approve_title, approval.client))
+            .setMessage(getString(R.string.approve_message, approval.client, approval.address))
+            .setPositiveButton(R.string.approve_allow) { _, _ -> app.pairing.decide(approval.id, true) }
+            .setNegativeButton(R.string.approve_deny) { _, _ -> app.pairing.decide(approval.id, false) }
+            .setOnCancelListener { app.pairing.decide(approval.id, false) }
+            .show()
+        // One press of OK allows it.
+        dialog.getButton(AlertDialog.BUTTON_POSITIVE)?.requestFocus()
+        approvalDialog = dialog
+        main.postDelayed({ if (approvalShown == approval.id) showApproval() }, Pairing.APPROVAL_MS + 500)
     }
 
     // ---- Callbacks from controllers -------------------------------------------------

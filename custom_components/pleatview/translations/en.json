@@ -43,7 +43,8 @@
       "cannot_connect": "Can't reach the TV. Check the address and that PleatView is open.",
       "invalid_pin": "That PIN doesn't match the one on the TV.",
       "too_many_attempts": "Too many wrong PINs. Wait a minute and use the new PIN on the TV.",
-      "invalid_ha_token": "Home Assistant doesn't recognise this token."
+      "invalid_ha_token": "Home Assistant doesn't recognise this token.",
+      "approval_failed": "The TV didn't allow it, or nobody pressed OK in time. Enter the PIN shown on the TV instead."
     },
     "abort": {
       "already_configured": "This TV is already set up.",
@@ -51,6 +52,9 @@
       "invalid_discovery_info": "The discovered device didn't identify itself.",
       "reauth_successful": "Paired again.",
       "reconfigure_successful": "Sign-in updated. The TV reloads its dashboard."
+    },
+    "progress": {
+      "approve": "Press **OK** on {name}. It asks whether to let Home Assistant control it. If nobody allows it within two minutes, you can enter the PIN instead."
     }
   },
   "options": {

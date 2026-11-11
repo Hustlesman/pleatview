@@ -85,6 +85,15 @@ class PleatViewClient:
         self.token = token
         return token
 
+    async def request_approval(self, client: str) -> dict[str, Any]:
+        """Asks the person at the TV to allow pairing with OK (apps listing "approve" in
+        /api/info's `pairing`). Returns the request's id and how long it waits."""
+        return await self._request("POST", "/api/pair/request", {"client": client}, auth=False)
+
+    async def approval_state(self, request_id: str) -> dict[str, Any]:
+        """pending, approved (with the token, handed over once), denied or expired."""
+        return await self._request("GET", f"/api/pair/request/{request_id}", auth=False)
+
     async def verify(self) -> bool:
         """Check that this address is the TV that issued our token, without sending the token.
 
