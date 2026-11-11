@@ -43,7 +43,8 @@
       "cannot_connect": "Le téléviseur est injoignable. Vérifiez l'adresse et que PleatView est ouvert.",
       "invalid_pin": "Ce code PIN ne correspond pas à celui du téléviseur.",
       "too_many_attempts": "Trop de codes PIN erronés. Attendez une minute et utilisez le nouveau code PIN du téléviseur.",
-      "invalid_ha_token": "Home Assistant ne reconnaît pas ce jeton."
+      "invalid_ha_token": "Home Assistant ne reconnaît pas ce jeton.",
+      "approval_failed": "Le téléviseur ne l'a pas autorisé, ou personne n'a appuyé sur OK à temps. Saisis plutôt le code PIN affiché sur le téléviseur."
     },
     "abort": {
       "already_configured": "Ce téléviseur est déjà configuré.",
@@ -51,6 +52,9 @@
       "invalid_discovery_info": "L'appareil découvert ne s'est pas identifié.",
       "reauth_successful": "Associé à nouveau.",
       "reconfigure_successful": "Connexion mise à jour. Le téléviseur recharge son tableau de bord."
+    },
+    "progress": {
+      "approve": "Appuie sur **OK** sur {name}. Il demande s'il peut laisser Home Assistant le contrôler. Si personne ne l'autorise dans les deux minutes, tu peux saisir le code PIN à la place."
     }
   },
   "options": {

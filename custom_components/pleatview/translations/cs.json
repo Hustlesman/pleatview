@@ -43,7 +43,8 @@
       "cannot_connect": "Televize není dostupná. Zkontrolujte adresu a jestli je PleatView otevřený.",
       "invalid_pin": "Tento PIN neodpovídá PINu na televizi.",
       "too_many_attempts": "Příliš mnoho chybných PINů. Počkejte minutu a použijte nový PIN z televize.",
-      "invalid_ha_token": "Home Assistant tento token nezná."
+      "invalid_ha_token": "Home Assistant tento token nezná.",
+      "approval_failed": "Televize to nepovolila, nebo nikdo včas nestiskl OK. Zadejte místo toho PIN zobrazený na televizi."
     },
     "abort": {
       "already_configured": "Tato televize je už nastavená.",
@@ -51,6 +52,9 @@
       "invalid_discovery_info": "Zjištěné zařízení se neidentifikovalo.",
       "reauth_successful": "Znovu spárováno.",
       "reconfigure_successful": "Přihlášení aktualizováno. Televize znovu načte svůj panel."
+    },
+    "progress": {
+      "approve": "Stiskněte **OK** na zařízení {name}. Ptá se, zda může Home Assistant ovládat obrazovku. Pokud to nikdo do dvou minut nepovolí, můžete místo toho zadat PIN."
     }
   },
   "options": {

@@ -22,6 +22,24 @@ class PairingTest {
     private fun pairing() = Pairing(store, clock = { now })
 
     @Test
+    fun `approvals wait for the screen, expire, and are refused for other addresses meanwhile`() {
+        val pairing = pairing()
+        val first = pairing.requestApproval("Home Assistant", "10.0.0.2")!!
+        assertEquals(first, pairing.requestApproval("Home Assistant", "10.0.0.2")) // the same request
+        assertEquals(null, pairing.requestApproval("Intruder", "10.0.0.9")) // one at a time
+        pairing.decide(first.id, false)
+        assertEquals("denied" to null, pairing.collect(first.id))
+        val second = pairing.requestApproval("Home Assistant", "10.0.0.2")!!
+        now += Pairing.APPROVAL_MS + 1
+        assertEquals(null, pairing.pendingApproval)
+        pairing.decide(second.id, true) // too late
+        assertEquals("expired" to null, pairing.collect(second.id))
+        assertFalse(pairing.isPaired)
+        repeat(Pairing.MAX_APPROVALS_PER_MINUTE) { pairing.decide(pairing.requestApproval("x", "10.0.0.$it")?.id ?: "", false) }
+        assertEquals(null, pairing.requestApproval("y", "10.0.0.99")) // a few a minute at most
+    }
+
+    @Test
     fun `correct pin issues a token and rotates the pin`() {
         val pairing = pairing()
         val pin = pairing.pin

@@ -215,3 +215,34 @@ async def test_options_flow(hass: HomeAssistant, fake_tv: FakeTV) -> None:
     assert result["type"] is FlowResultType.CREATE_ENTRY
     assert entry.options["zoom"] == 75
     assert entry.options["dashboards"] == "Cams = /dashboard-cams"
+
+
+async def test_pairing_approved_on_the_tv(hass: HomeAssistant, fake_tv: FakeTV) -> None:
+    """A TV that can ask its viewer: one press of OK, no PIN."""
+    fake_tv.info["pairing"] = ["pin", "approve"]
+    fake_tv.approve = "allow"
+    with patch("custom_components.pleatview.config_flow.APPROVAL_POLL_SECONDS", 0.01), patch(SETUP, return_value=True):
+        result = await hass.config_entries.flow.async_init(DOMAIN, context={"source": SOURCE_USER})
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"], {CONF_HOST: "127.0.0.1", CONF_PORT: fake_tv.port})
+        assert result["type"] is FlowResultType.SHOW_PROGRESS
+        await hass.async_block_till_done()
+        result = await hass.config_entries.flow.async_configure(result["flow_id"])
+    assert result["type"] is FlowResultType.CREATE_ENTRY
+    assert result["data"][CONF_TOKEN] in fake_tv.tokens
+
+
+async def test_pairing_refused_on_the_tv_falls_back_to_the_pin(hass: HomeAssistant, fake_tv: FakeTV) -> None:
+    fake_tv.info["pairing"] = ["pin", "approve"]
+    fake_tv.approve = "deny"
+    with patch("custom_components.pleatview.config_flow.APPROVAL_POLL_SECONDS", 0.01), patch(SETUP, return_value=True):
+        result = await hass.config_entries.flow.async_init(DOMAIN, context={"source": SOURCE_USER})
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"], {CONF_HOST: "127.0.0.1", CONF_PORT: fake_tv.port})
+        await hass.async_block_till_done()
+        result = await hass.config_entries.flow.async_configure(result["flow_id"])
+        assert result["step_id"] == "pair"
+        assert result["errors"] == {"base": "approval_failed"}
+        result = await _pair(hass, result["flow_id"], fake_tv)
+    assert result["type"] is FlowResultType.CREATE_ENTRY
+

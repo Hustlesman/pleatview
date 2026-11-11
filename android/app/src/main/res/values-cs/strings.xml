@@ -55,4 +55,8 @@
     <string name="menu_demo_info">Ukázková domácnost. Chcete-li zobrazit vlastní panely, přidejte toto zařízení do Home Assistant pomocí PIN výše.</string>
     <string name="menu_demo_end">Ukončit demo</string>
     <string name="menu_demo_tour">Spustit prohlídku znovu</string>
+    <string name="approve_title">Spárovat s %1$s?</string>
+    <string name="approve_message">%1$s na adrese %2$s chce ovládat tuto obrazovku. Stiskněte OK pro povolení. Povolte to jen tehdy, pokud tuto obrazovku právě nastavujete v %1$s.</string>
+    <string name="approve_allow">Povolit</string>
+    <string name="approve_deny">Nepovolit</string>
 </resources>

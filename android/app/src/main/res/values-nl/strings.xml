@@ -55,4 +55,8 @@
     <string name="menu_demo_info">Een voorbeeldhuis. Voeg dit apparaat met de pincode hierboven toe aan Home Assistant om je eigen dashboards te tonen.</string>
     <string name="menu_demo_end">Demo stoppen</string>
     <string name="menu_demo_tour">Rondleiding opnieuw bekijken</string>
+    <string name="approve_title">Koppelen met %1$s?</string>
+    <string name="approve_message">%1$s op %2$s wil dit scherm bedienen. Druk op OK om dat toe te staan. Sta het alleen toe als je dit scherm net in %1$s instelt.</string>
+    <string name="approve_allow">Toestaan</string>
+    <string name="approve_deny">Niet toestaan</string>
 </resources>

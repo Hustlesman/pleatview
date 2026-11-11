@@ -55,4 +55,8 @@
     <string name="menu_demo_info">Uma casa de exemplo. Para mostrar seus próprios dashboards, adicione este dispositivo ao Home Assistant com o PIN acima.</string>
     <string name="menu_demo_end">Sair da demo</string>
     <string name="menu_demo_tour">Ver o tour de novo</string>
+    <string name="approve_title">Emparelhar com %1$s?</string>
+    <string name="approve_message">%1$s em %2$s pede para controlar esta tela. Pressione OK para permitir. Só permita se você acabou de configurar esta tela em %1$s.</string>
+    <string name="approve_allow">Permitir</string>
+    <string name="approve_deny">Não permitir</string>
 </resources>

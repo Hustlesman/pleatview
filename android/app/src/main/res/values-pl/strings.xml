@@ -55,4 +55,8 @@
     <string name="menu_demo_info">Przykładowy dom. Aby wyświetlać własne panele, dodaj to urządzenie do Home Assistant, używając PIN-u powyżej.</string>
     <string name="menu_demo_end">Zakończ demo</string>
     <string name="menu_demo_tour">Obejrzyj prezentację ponownie</string>
+    <string name="approve_title">Sparować z %1$s?</string>
+    <string name="approve_message">%1$s pod adresem %2$s chce sterować tym ekranem. Naciśnij OK, aby zezwolić. Zezwól tylko wtedy, gdy właśnie konfigurujesz ten ekran w %1$s.</string>
+    <string name="approve_allow">Zezwól</string>
+    <string name="approve_deny">Nie zezwalaj</string>
 </resources>

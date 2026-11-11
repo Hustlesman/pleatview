@@ -43,7 +43,8 @@
       "cannot_connect": "Kan inte nå tv:n. Kontrollera adressen och att PleatView är öppet.",
       "invalid_pin": "PIN-koden stämmer inte med den på tv:n.",
       "too_many_attempts": "För många felaktiga PIN-koder. Vänta en minut och använd den nya PIN-koden på tv:n.",
-      "invalid_ha_token": "Home Assistant känner inte igen den här token."
+      "invalid_ha_token": "Home Assistant känner inte igen den här token.",
+      "approval_failed": "Tv:n tillät det inte, eller så tryckte ingen på OK i tid. Ange PIN-koden som tv:n visar i stället."
     },
     "abort": {
       "already_configured": "Den här tv:n är redan inställd.",
@@ -51,6 +52,9 @@
       "invalid_discovery_info": "Den upptäckta enheten identifierade sig inte.",
       "reauth_successful": "Kopplad igen.",
       "reconfigure_successful": "Inloggningen är uppdaterad. Tv:n laddar om sin panel."
+    },
+    "progress": {
+      "approve": "Tryck på **OK** på {name}. Den frågar om Home Assistant får styra den. Om ingen tillåter det inom två minuter kan du ange PIN-koden i stället."
     }
   },
   "options": {

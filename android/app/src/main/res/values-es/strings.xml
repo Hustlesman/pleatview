@@ -55,4 +55,8 @@
     <string name="menu_demo_info">Una casa de ejemplo. Para mostrar tus propios paneles, añade este dispositivo a Home Assistant con el PIN de arriba.</string>
     <string name="menu_demo_end">Salir de la demo</string>
     <string name="menu_demo_tour">Ver el recorrido otra vez</string>
+    <string name="approve_title">¿Vincular con %1$s?</string>
+    <string name="approve_message">%1$s en %2$s pide controlar esta pantalla. Pulsa OK para permitirlo. Permítelo solo si acabas de configurar esta pantalla en %1$s.</string>
+    <string name="approve_allow">Permitir</string>
+    <string name="approve_deny">No permitir</string>
 </resources>

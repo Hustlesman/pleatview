@@ -70,3 +70,21 @@ test("proofs match the protocol's test vector", () => {
 test("unreadable stored records start unpaired", () => {
   assert.ok(!pairing({ stored: "{not json" }).p.isPaired);
 });
+
+test("approvals wait for the screen, hand the token over once, and refuse others meanwhile", () => {
+  let now = 1_000_000;
+  const p = new Pairing({ load: () => null, save: () => {}, clock: () => now });
+  const a = p.requestApproval("Home Assistant", "10.0.0.2");
+  assert.equal(p.requestApproval("Home Assistant", "10.0.0.2"), a);
+  assert.equal(p.requestApproval("Intruder", "10.0.0.9"), null);
+  assert.deepEqual(p.collect(a.id), { state: "pending", token: null });
+  p.decide(a.id, true);
+  const done = p.collect(a.id);
+  assert.equal(done.state, "approved");
+  assert.ok(p.isValid(done.token));
+  assert.equal(p.collect(a.id), null);
+  const b = p.requestApproval("Home Assistant", "10.0.0.2");
+  now += 121_000;
+  p.decide(b.id, true);
+  assert.deepEqual(p.collect(b.id), { state: "expired", token: null });
+});

@@ -55,4 +55,8 @@
     <string name="menu_demo_info">A sample home. To show your own dashboards, add this device to Home Assistant with the PIN above.</string>
     <string name="menu_demo_end">End the demo</string>
     <string name="menu_demo_tour">Watch the tour again</string>
+    <string name="approve_title">Pair with %1$s?</string>
+    <string name="approve_message">%1$s at %2$s asks to control this screen. Press OK to allow it. Only allow it if you just set this screen up in %1$s.</string>
+    <string name="approve_allow">Allow</string>
+    <string name="approve_deny">Don\'t allow</string>
 </resources>

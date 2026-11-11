@@ -55,4 +55,8 @@
     <string name="menu_demo_info">Una casa di esempio. Per mostrare le tue plance, aggiungi questo dispositivo a Home Assistant con il PIN qui sopra.</string>
     <string name="menu_demo_end">Chiudi la demo</string>
     <string name="menu_demo_tour">Rivedi il tour</string>
+    <string name="approve_title">Abbinare %1$s?</string>
+    <string name="approve_message">%1$s all\'indirizzo %2$s chiede di controllare questo schermo. Premi OK per consentirlo. Consentilo solo se hai appena configurato questo schermo in %1$s.</string>
+    <string name="approve_allow">Consenti</string>
+    <string name="approve_deny">Non consentire</string>
 </resources>

@@ -15,11 +15,20 @@ Each request uses its own connection (`Connection: close`). Request bodies need 
 | `GET /api/info` | none | Identity: `id`, `name`, `manufacturer`, `model`, `app_version`, `api_version`, `paired` |
 | `POST /api/pair` | none | `{"pin": "123456", "client": "Home Assistant"}` → `{"token": "…"}` |
 | `POST /api/verify` | none | `{"nonce": "<32–128 hex digits>"}` → `{"proofs": ["…"]}` (app 1.0.4 and later; see below) |
+| `POST /api/pair/request` | none | `{"client": "Home Assistant"}` → `202 {"request": "…", "expires_in": 120}`: asks the person at the screen to allow pairing with OK (apps whose `/api/info` lists `"approve"` in `pairing`) |
+| `GET /api/pair/request/<request>` | none | `{"state": "pending" \| "approved" \| "denied" \| "expired"}`; when approved, also `"token"`, handed over once |
 | `POST /api/unpair` | bearer | Revokes the calling token |
 | `GET /` | none | Phone setup page (it pairs with the PIN itself) |
 | `POST /api/signin` | bearer or PIN | Username and password for the page waiting for one (see [Sign-ins](#sign-ins)) |
 | `GET /api/signins` | bearer | `{"sign_ins": [{"kind": "form", "site": "…", "username": "…"}]}`, never passwords |
 | `DELETE /api/signins` | bearer | `{"site": "…"}` forgets that site's sign-ins, `{}` all → `{"forgotten": 2}` |
+
+**Approving on the screen** (1.0.18 and later, Android and Linux): instead of the PIN, a
+client asks with `POST /api/pair/request`, and the screen shows who asks (its name and
+address) with *Allow* focused, so one press of OK pairs it. One request waits at a time (the
+same address asking again gets the same request, another gets `429 busy`), at most five a
+minute, each for two minutes. Only the client holding the random request id collects the
+token, once. `/api/info` lists the ways a screen pairs in `pairing` (`["pin", "approve"]`).
 
 The 6-digit PIN is shown on the TV's setup screen and in its menu (press Back on
 the home dashboard). It changes after every successful pairing. Wrong PINs return

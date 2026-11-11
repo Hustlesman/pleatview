@@ -61,6 +61,8 @@ class FakeTV:
         app = web.Application(middlewares=[self._auth])
         app.router.add_get("/api/info", self._info)
         app.router.add_post("/api/pair", self._pair)
+        app.router.add_post("/api/pair/request", self._pair_request)
+        app.router.add_get("/api/pair/request/{request}", self._pair_state)
         app.router.add_post("/api/verify", self._verify)
         app.router.add_get("/api/state", self._state)
         app.router.add_get("/api/events", self._events)
@@ -69,6 +71,22 @@ class FakeTV:
         app.router.add_post("/api/config", self._set_config)
         app.router.add_post("/api/unpair", self._unpair)
         return app
+
+    # Pairing approved on the TV: `approve` decides what the person at the TV does.
+    approve: str | None = None  # "allow", "deny", or None (nobody presses anything)
+
+    async def _pair_request(self, request: web.Request) -> web.Response:
+        self.approval_requests = getattr(self, "approval_requests", 0) + 1
+        return web.json_response({"request": "req-1", "expires_in": 3}, status=202)
+
+    async def _pair_state(self, request: web.Request) -> web.Response:
+        if request.match_info["request"] != "req-1":
+            return web.json_response({"error": "no_such_request"}, status=404)
+        if self.approve == "allow":
+            return web.json_response({"state": "approved", "token": self.issue_token()})
+        if self.approve == "deny":
+            return web.json_response({"state": "denied"})
+        return web.json_response({"state": "pending"})
 
     async def push(self, **changes: Any) -> None:
         """Change state and send it to every open event stream."""
@@ -88,7 +106,7 @@ class FakeTV:
     async def _auth(self, request: web.Request, handler):
         if "Authorization" in request.headers:
             self.authorizations.append(request.headers["Authorization"])
-        if request.path not in ("/api/info", "/api/pair", "/api/verify"):
+        if request.path not in ("/api/info", "/api/pair", "/api/verify") and not request.path.startswith("/api/pair/request"):
             header = request.headers.get("Authorization", "")
             if header.removeprefix("Bearer ") not in self.tokens:
                 return web.json_response({"error": "unauthorized"}, status=401)

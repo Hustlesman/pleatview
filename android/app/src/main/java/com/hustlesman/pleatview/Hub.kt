@@ -153,6 +153,13 @@ class Hub(
 
     override fun forgetSignIns(site: String?): Int = signIns.forget(site)
 
+    override fun approvalRequested() {
+        main.post {
+            val display = display
+            if (display != null && display.isVisible) display.onPairingChanged() else bringToFront()
+        }
+    }
+
     // ---- main thread ----
 
     private fun route(command: Command) {

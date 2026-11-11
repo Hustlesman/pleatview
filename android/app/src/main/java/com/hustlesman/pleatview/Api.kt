@@ -29,6 +29,9 @@ class Api(
         fun submitSignIn(username: String, password: String, remember: Boolean): Boolean
         fun signIns(): JSONArray
         fun forgetSignIns(site: String?): Int
+
+        /** Someone asked to pair without the PIN: ask the person at the screen. */
+        fun approvalRequested()
     }
 
     private val openStreams = AtomicInteger()
@@ -37,14 +40,19 @@ class Api(
         val path = request.path.trimEnd('/').ifEmpty { "/" }
         return when (path) {
             "/", "/setup" -> get(request) { HttpResponse.html(setupPage()) }
-            "/api/info" -> get(request) { HttpResponse.json(200, backend.info().put("paired", pairing.isPaired)) }
+            "/api/info" -> get(request) {
+                HttpResponse.json(200, backend.info().put("paired", pairing.isPaired).put("pairing", JSONArray(listOf("pin", "approve"))))
+            }
             "/api/pair" -> post(request) { pair(request) }
+            // Pairing approved with OK on the screen instead of the PIN.
+            "/api/pair/request" -> post(request) { requestApproval(request) }
             // Lets Home Assistant check that a TV announcing itself at a new address is the one
             // it paired with, before it sends that address its token.
             "/api/verify" -> post(request) { verify(request) }
             // The phone that scanned the TV's sign-in code has its PIN instead of a token.
             "/api/signin" -> post(request) { signIn(request) }
             else -> {
+                if (path.startsWith("/api/pair/request/")) return get(request) { approvalState(path.substringAfterLast('/')) }
                 if (!path.startsWith("/api/")) return HttpResponse.error(404, "not found")
                 if (!pairing.isValid(request.bearerToken())) return HttpResponse.error(401, "unauthorized")
                 when (path) {
@@ -85,6 +93,22 @@ class Api(
             is Pairing.Result.LockedOut ->
                 HttpResponse.error(429, "too_many_attempts", mapOf("retry_after" to result.retryAfterSeconds))
         }
+    }
+
+    private fun requestApproval(request: HttpRequest): HttpResponse {
+        val address = request.remote?.hostAddress ?: "?"
+        val approval = pairing.requestApproval(request.jsonBody().optString("client", "client"), address)
+            ?: return HttpResponse.error(429, "busy", mapOf("retry_after" to 30))
+        backend.approvalRequested()
+        val left = ((approval.expires - System.currentTimeMillis()) / 1000).coerceAtLeast(1)
+        return HttpResponse.json(202, JSONObject().put("request", approval.id).put("expires_in", left))
+    }
+
+    private fun approvalState(id: String): HttpResponse {
+        val (state, token) = pairing.collect(id) ?: return HttpResponse.error(404, "no_such_request")
+        val body = JSONObject().put("state", state)
+        if (token != null) body.put("token", token)
+        return HttpResponse.json(200, body)
     }
 
     private fun verify(request: HttpRequest): HttpResponse {

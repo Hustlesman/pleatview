@@ -114,9 +114,10 @@ Requires Home Assistant 2025.1 or newer.
 
 ### 3. Pair
 
-Open PleatView on the TV; it shows a 6-digit PIN. Home Assistant discovers the TV under
-**Settings → Devices & services**: select **Add** and enter the PIN. A few seconds later
-the TV shows your default dashboard.
+Open PleatView on the TV. Home Assistant discovers the TV under **Settings → Devices &
+services**: select **Add**, and the TV asks whether to let Home Assistant control it. Press
+**OK** on the remote. (Or enter the 6-digit PIN the TV shows.) A few seconds later the TV
+shows your default dashboard.
 
 If the TV isn't discovered (for example, mDNS is blocked between VLANs), use this button
 and enter the address shown on the TV:

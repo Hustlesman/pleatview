@@ -55,4 +55,8 @@
     <string name="menu_demo_info">Ett exempelhem. Lägg till den här enheten i Home Assistant med PIN-koden ovan för att visa dina egna paneler.</string>
     <string name="menu_demo_end">Avsluta demon</string>
     <string name="menu_demo_tour">Se rundturen igen</string>
+    <string name="approve_title">Para ihop med %1$s?</string>
+    <string name="approve_message">%1$s på %2$s vill styra den här skärmen. Tryck på OK för att tillåta det. Tillåt det bara om du just ställer in skärmen i %1$s.</string>
+    <string name="approve_allow">Tillåt</string>
+    <string name="approve_deny">Tillåt inte</string>
 </resources>
