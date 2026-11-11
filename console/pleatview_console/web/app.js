@@ -435,6 +435,7 @@ function addTenant() {
 
 async function selectTenant(id) {
   app.tenant = id;
+  app.renderers = null;
   localStorage.setItem("tenant", id);
   app.events?.close();
   try {
@@ -652,7 +653,8 @@ function notify(screen) {
   ], "Send", (data) => ({ command: "notify", title: data.title.trim() || undefined, message: data.message, duration: seconds(data.duration) }));
 }
 
-function editScreen(screen) {
+async function editScreen(screen) {
+  if (!app.renderers) await loadRenderers();
   const own = screen.managed_by !== "home_assistant";
   const fields = [
     { name: "name", label: "Name", value: screen.name },
@@ -668,6 +670,11 @@ function editScreen(screen) {
           : "Needs PleatView 1.0.17 or later on this screen." },
       { name: "zoom", label: "Zoom (%)", type: "number", required: false, value: screen.config.zoom ?? "",
         hint: "Lower fits more on the screen. Empty: 100." });
+    if (screen.plays_stream || screen.renderer_id) {
+      fields.push({ name: "renderer_id", label: "Rendered by", value: screen.renderer_id ?? "", required: false,
+        options: [["", "The screen itself"], ...(app.renderers || []).map((r) => [r.id, r.name])],
+        hint: "A renderer draws the home page and sends the screen a video: for screens that can't show pages, such as PleatView Light." });
+    }
   }
   dialog({
     title: `Edit ${screen.name}`,
@@ -677,6 +684,7 @@ function editScreen(screen) {
       const change = { name: data.name.trim(), site_id: Number(data.site_id) };
       if (own) {
         change.home_page = data.home_page ? Number(data.home_page) : null;
+        if ("renderer_id" in data) change.renderer_id = data.renderer_id ? Number(data.renderer_id) : null;
         change.home = data.home.trim();
         change.zoom = data.zoom.trim() ? Number(data.zoom) : null;
       }
@@ -717,8 +725,77 @@ function zoneOptions(current) {
   return [...new Set(["UTC", current || browserZone(), ...zones])].map((z) => [z, z.replaceAll("_", " ")]);
 }
 
+async function loadRenderers() {
+  try {
+    const data = await api("GET", `/api/t/${app.tenant}/renderers`);
+    app.renderers = data.renderers;
+    app.discoveredRenderers = data.discovered;
+  } catch {
+    app.renderers = app.renderers || [];
+    app.discoveredRenderers = [];
+  }
+}
+
+function renderersSection() {
+  const operate = may("operate");
+  const rows = (app.renderers || []).map((r) => h("div", { class: "row" },
+    h("span", {}, h("strong", { text: r.name }), " ",
+      h("span", { class: "meta", text: [r.address, r.online ? `${r.screens}/${r.max_screens} screens` : "not reached",
+        r.load?.cpu != null ? `processor ${Math.round(r.load.cpu * 100)} %` : null].filter(Boolean).join(" · ") })),
+    operate ? h("button", { type: "button", class: "danger", onclick: () => removeRenderer(r), text: "Remove" }) : null));
+  const found = operate ? (app.discoveredRenderers || []).map((r) => h("div", { class: "row" },
+    h("span", {}, h("strong", { text: r.name }), " ", h("span", { class: "meta", text: `${r.host}:${r.port} · found on the network` })),
+    h("button", { type: "button", onclick: () => pairRenderer(r), text: "Pair" }))) : [];
+  return [
+    h("div", { class: "section-head" }, h("h1", { text: "Renderers" }),
+      operate ? h("button", { type: "button", class: "quiet", onclick: () => pairRenderer(null), text: "Add by address" }) : null),
+    h("p", { class: "hint", text: "PleatView Renderers draw pages for screens that can't, such as PleatView Light on a Raspberry Pi Zero, and send them a video. Choose one for a screen in its Edit dialog." }),
+    rows.length || found.length ? h("section", { class: "panel" }, rows, found) : h("p", { class: "empty", text: "No renderers yet." }),
+  ];
+}
+
+function pairRenderer(found) {
+  const fields = [{ name: "name", label: "Name", value: found?.name || "", hint: "Such as “Rack A”." }];
+  if (!found) {
+    fields.push({ name: "host", label: "IP address" }, { name: "port", label: "Port", type: "number", value: "8780" },
+      { name: "https", label: "Connection", options: [["", "HTTP"], ["1", "HTTPS (the console pins its certificate)"]], required: false });
+  }
+  fields.push({ name: "pin", label: "PIN", autocomplete: "off", hint: "From the renderer's log: docker logs pleatview-renderer" });
+  dialog({
+    title: found ? `Pair ${found.name}` : "Add a renderer by address",
+    fields,
+    ok: "Pair",
+    submit: async (data) => {
+      const payload = { name: data.name.trim(), pin: data.pin.trim() };
+      if (found) payload.device_id = found.id;
+      else Object.assign(payload, { host: data.host.trim(), port: Number(data.port), https: Boolean(data.https) });
+      await api("POST", `/api/t/${app.tenant}/renderers`, payload);
+      await loadRenderers();
+      renderSites();
+    },
+  });
+}
+
+function removeRenderer(r) {
+  dialog({
+    title: `Remove ${r.name}?`,
+    text: "The console unpairs from it. Screens it rendered show their pages themselves again, where they can.",
+    ok: "Remove",
+    danger: true,
+    submit: async () => {
+      await api("DELETE", `/api/t/${app.tenant}/renderers/${r.id}`);
+      await loadRenderers();
+      renderSites();
+    },
+  });
+}
+
 function renderSites() {
   const own = may("own");
+  if (!app.renderers) {
+    loadRenderers().then(() => tab() === "sites" && renderSites());
+    app.renderers = [];
+  }
   const count = (site) => app.screens.filter((s) => s.site_id === site.id).length;
   page(
     h("div", { class: "section-head" },
@@ -733,6 +810,7 @@ function renderSites() {
       h("span", {}, h("strong", { text: site.name }), " ", h("span", { class: "meta", text: `${count(site)} screen${count(site) === 1 ? "" : "s"} · ${site.timezone.replaceAll("_", " ")}` })),
       own ? h("button", { type: "button", class: "quiet", onclick: () => renameSite(site), text: "Edit" }) : null,
       own ? h("button", { type: "button", class: "danger", onclick: () => removeSite(site), text: "Remove", disabled: count(site) > 0, title: count(site) ? "Move or remove its screens first" : null }) : null))),
+    ...renderersSection(),
   );
 }
 
@@ -1300,6 +1378,8 @@ const ACTIONS = {
   media_added: "Uploaded media",
   media_removed: "Removed media",
   schedule_saved: "Saved a schedule",
+  renderer_paired: "Paired a renderer",
+  renderer_removed: "Removed a renderer",
   schedule_removed: "Removed a schedule",
   tenant_renamed: "Renamed the organisation",
   tenant_exported: "Exported the organisation",

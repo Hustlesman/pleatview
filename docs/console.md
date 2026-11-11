@@ -111,6 +111,17 @@ home), and a site holds screens and renderers.
   only once the screen proves it issued the console's token, as Home Assistant does.
 - **Commands:** show a page, play media, notify, home, reload, standby and wake.
 
+## Renderers
+
+A PleatView Renderer draws pages for screens that can't, such as PleatView Light on a
+Raspberry Pi Zero, and sends them a video, as it does for Home Assistant. The console finds
+renderers on its network (`_pleatview-renderer._tcp`), pairs with the PIN in their log, and
+keeps their token sealed with the tenant's key. A screen's *Rendered by* setting picks one:
+the renderer then shows that screen's home page (its page, its schedule's, or a web
+address) at the screen's size, and the screen plays the stream from the console's content
+listener, at an address with a secret only that screen gets. A renderer can serve Home
+Assistant and the console at once.
+
 ## Media in any format
 
 **Pages** are what screens show as their home page: a web page by its address, or a playlist
@@ -210,6 +221,6 @@ device keys), `ffmpeg` and `tini`. Anything more needs approval first.
    can't be reached, screens keep their home page; a web page goes on showing, and a playlist
    plays on from the last list and the screen's cache, which keeps media a week (videos as
    far as the screen's browser keeps them). Still to come: a full offline copy of playlists
-   (it needs HTTPS that screens trust, for a service worker), PleatView Light on screens
-   without Home Assistant (it needs a renderer the console drives, R1), and S1's connections
-   for sites elsewhere.
+   (it needs HTTPS that screens trust, for a service worker), and S1's connections for sites
+   elsewhere. Since 12 Nov the console drives renderers itself, so PleatView Light works on
+   sites without Home Assistant.

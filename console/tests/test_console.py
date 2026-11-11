@@ -24,7 +24,7 @@ from aiohttp.test_utils import TestClient, TestServer
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from pleatview_console import auth, keys, mdns, schedule, totp  # noqa: E402
+from pleatview_console import auth, keys, mdns, rendering, schedule, totp  # noqa: E402
 from pleatview_console import store as store_module  # noqa: E402
 from pleatview_console.screens import Invalid, Screens, check_address, command_params  # noqa: E402
 from pleatview_console.content import create_content_app  # noqa: E402
@@ -250,7 +250,8 @@ class Mdns(unittest.TestCase):
         browser.datagram_received(self.response(), ("192.168.1.20", 5353))
         found = browser.found()
         self.assertEqual(found["tv-1"], {"id": "tv-1", "name": "Lobby TV", "host": "192.168.1.20",
-                                         "port": 8765, "version": "1.0.16", "api": "1"})
+                                         "port": 8765, "version": "1.0.16", "api": "1", "scheme": "http"})
+        self.assertEqual(browser.found(mdns.RENDERER_SERVICE), {})
 
     def test_ignores_garbage_and_loops(self) -> None:
         self.assertEqual(mdns.parse(b"\x00" * 5), [])
@@ -822,6 +823,90 @@ class Organisations(ApiBase):
         self.assertEqual(deleted.status, 200)
         self.assertFalse((self.store.data / "tenants" / other).exists())
         self.assertIsNone(self.store.user(added["id"]))  # Olga had nothing else to open
+
+
+
+
+class FakeRenderer:
+    """A paired PleatView Renderer's API: pairing, sessions and the stream's files."""
+
+    def __init__(self) -> None:
+        self.sessions: dict[str, dict] = {}
+        app = web.Application()
+        app.router.add_get("/api/info", self.info)
+        app.router.add_post("/api/pair", self.pair)
+        app.router.add_put("/api/sessions/{key}", self.put)
+        app.router.add_get("/hls/{key}/{name}", self.hls)
+        self.server = TestServer(app, host="127.0.0.1")
+
+    def authed(self, request) -> None:
+        if request.headers.get("Authorization") != "Bearer r-token":
+            raise web.HTTPUnauthorized()
+
+    async def info(self, request):
+        return web.json_response({"id": "rack-a", "name": "Rack A", "encoder": "x264", "max_screens": 4,
+                                  "paired": True, "sessions": self.sessions})
+
+    async def pair(self, request):
+        if (await request.json()).get("pin") != "654321":
+            return web.json_response({"error": "invalid_pin"}, status=403)
+        return web.json_response({"token": "r-token"})
+
+    async def put(self, request):
+        self.authed(request)
+        self.sessions[request.match_info["key"]] = await request.json()
+        return web.json_response({"playlist": "x"})
+
+    async def hls(self, request):
+        self.authed(request)
+        if request.match_info["key"] not in self.sessions:
+            return web.Response(status=404)
+        return web.Response(text="#EXTM3U", content_type="application/vnd.apple.mpegurl")
+
+
+class ConsoleRenderers(Pairing):
+    async def asyncSetUp(self) -> None:
+        await super().asyncSetUp()
+        self.tv.state["features"] = ["render_stream", "home_without_ha"]
+        self.renderer = FakeRenderer()
+        await self.renderer.server.start_server()
+
+    async def asyncTearDown(self) -> None:
+        await super().asyncTearDown()
+        await self.renderer.server.close()
+
+    async def test_a_renderer_draws_a_light_screen(self) -> None:
+        url = f"http://127.0.0.1:{self.renderer.server.port}"
+        with self.assertRaises(ValueError):
+            await rendering.pair(self.session, url, "000000", None)
+        token = await rendering.pair(self.session, url, "654321", None)
+        tenant = self.store.tenant(self.tenant)
+        renderer_id = tenant.add_renderer(name="Rack A", device_id="rack-a", host="127.0.0.1", port=self.renderer.server.port,
+                                          scheme="http", token=self.store.sealer(self.tenant).seal(token, "renderer:rack-a"),
+                                          fingerprint=None)
+        screen_id = await self.screens.pair(self.tenant, self.site, "127.0.0.1", self.tv.server.port, "123456")
+        await self.wait_online(screen_id)
+        await asyncio.sleep(0.1)
+        page_id = tenant.save_page(None, name="Menu", kind="web", url="https://example.com/menu", items=[])
+        tenant.set_screen_renderer(screen_id, renderer_id)
+        await self.screens.configure(self.tenant, screen_id, {}, page_id)
+        key = f"console-{self.tenant}-{screen_id}"
+        self.assertEqual(self.renderer.sessions[key]["url"], "https://example.com/menu")
+        stream = self.tv.config["render_stream"]
+        secret = self.screens.rendering.secret(self.tenant, screen_id)
+        self.assertEqual(stream, f"http://localhost:8791/play/{self.tenant}/r/{secret}/index.m3u8")
+        content = TestClient(TestServer(create_content_app(self.store, self.screens.rendering)))
+        await content.start_server()
+        try:
+            playlist = await content.get(f"/play/{self.tenant}/r/{secret}/index.m3u8")
+            self.assertEqual((playlist.status, await playlist.text()), (200, "#EXTM3U"))
+            self.assertEqual((await content.get(f"/play/{self.tenant}/r/{'0' * 32}/index.m3u8")).status, 404)
+            self.assertEqual((await content.get(f"/play/{self.tenant}/r/{secret}/../x")).status, 404)
+        finally:
+            await content.close()
+        tenant.set_screen_renderer(screen_id, None)
+        await self.screens.refresh(self.tenant, [screen_id])
+        self.assertEqual(self.tv.config["render_stream"], "")
 
 
 if __name__ == "__main__":
