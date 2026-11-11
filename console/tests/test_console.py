@@ -3,14 +3,17 @@
 from __future__ import annotations
 
 import asyncio
+import base64
 import json
 import os
 from pathlib import Path
 import socket
+import sqlite3
 import stat
 import struct
 import sys
 import tempfile
+import time
 import unittest
 
 import aiohttp
@@ -19,7 +22,8 @@ from aiohttp.test_utils import TestClient, TestServer
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from pleatview_console import auth, keys, mdns  # noqa: E402
+from pleatview_console import auth, keys, mdns, totp  # noqa: E402
+from pleatview_console import store as store_module  # noqa: E402
 from pleatview_console.screens import Invalid, Screens, check_address, command_params  # noqa: E402
 from pleatview_console.server import create_app  # noqa: E402
 from pleatview_console.store import Store  # noqa: E402
@@ -272,7 +276,7 @@ class Validation(unittest.TestCase):
             check_address("192.168.1.20", 70000)
 
 
-class Api(Base):
+class ApiBase(Base):
     async def asyncSetUp(self) -> None:
         await super().asyncSetUp()
         self.client = TestClient(TestServer(create_app(self.store, self.screens, https=False)))
@@ -288,6 +292,8 @@ class Api(Base):
         self.assertEqual(response.status, 200, await response.text())
         return await response.json()
 
+
+class Api(ApiBase):
     async def test_first_start_then_sign_in(self) -> None:
         status = await (await self.client.get("/api/status")).json()
         self.assertTrue(status["setup"])
@@ -386,6 +392,132 @@ class Api(Base):
             await self.client.post("/api/login", headers=HEADERS, json={"username": "ann", "password": "wrong"})
         response = await self.client.post("/api/login", headers=HEADERS, json={"username": "ann", "password": PASSWORD})
         self.assertEqual(response.status, 429)
+
+
+class TwoFactorAndMembers(ApiBase):
+    async def login(self, username: str, password: str, code: str | None = None):
+        data = {"username": username, "password": password}
+        if code is not None:
+            data["code"] = code
+        await self.client.post("/api/logout", headers=HEADERS)
+        return await self.client.post("/api/login", headers=HEADERS, json=data)
+
+    async def enable_two_factor(self) -> tuple[str, list[str]]:
+        response = await self.client.post("/api/2fa/setup", headers=HEADERS, json={"password": PASSWORD})
+        self.assertEqual(response.status, 200)
+        secret = (await response.json())["secret"]
+        step = int(time.time() // 30)
+        response = await self.client.post("/api/2fa/enable", headers=HEADERS, json={"code": totp.code_at(secret, step)})
+        self.assertEqual(response.status, 200, await response.text())
+        return secret, (await response.json())["recovery_codes"]
+
+    async def test_two_factor_sign_in(self) -> None:
+        await self.setup_console()
+        secret, codes = await self.enable_two_factor()
+        self.assertEqual(len(codes), 10)
+        response = await self.login("ann", PASSWORD)
+        self.assertEqual(response.status, 401)
+        self.assertTrue((await response.json())["two_factor"])
+        self.assertEqual((await self.login("ann", PASSWORD, "000000")).status, 401)
+        step = int(time.time() // 30) + 1  # the next step, so it's newer than the one used to enable
+        self.assertEqual((await self.login("ann", PASSWORD, totp.code_at(secret, step))).status, 200)
+        self.assertEqual((await self.login("ann", PASSWORD, totp.code_at(secret, step))).status, 401)  # used once
+        self.assertEqual((await self.login("ann", PASSWORD, codes[0].upper())).status, 200)
+        self.assertEqual((await self.login("ann", PASSWORD, codes[0])).status, 401)  # recovery codes too
+        self.assertEqual((await self.login("ann", "wrong", codes[1])).status, 401)
+
+    async def test_console_can_require_two_factor(self) -> None:
+        me = await self.setup_console()
+        tenant = me["tenants"][0]["id"]
+        response = await self.client.post("/api/settings", headers=HEADERS, json={"require_2fa": True})
+        self.assertEqual(response.status, 409)  # not before the administrator has it
+        await self.enable_two_factor()
+        response = await self.client.post("/api/settings", headers=HEADERS, json={"require_2fa": True})
+        self.assertEqual(response.status, 200)
+        added = await (await self.client.post(f"/api/t/{tenant}/members", headers=HEADERS, json={
+            "username": "bob", "name": "Bob", "role": "operator"})).json()
+        await self.login("bob", added["password"])
+        await self.client.post("/api/password", headers=HEADERS, json={"current": added["password"], "password": PASSWORD})
+        response = await self.client.get(f"/api/t/{tenant}/screens")
+        self.assertEqual(response.status, 403)
+        self.assertEqual((await response.json())["action"], "two_factor")
+        self.assertEqual((await self.client.post("/api/2fa/disable", headers=HEADERS, json={"password": PASSWORD})).status, 409)
+
+    async def test_members(self) -> None:
+        me = await self.setup_console()
+        tenant = me["tenants"][0]["id"]
+        response = await self.client.post(f"/api/t/{tenant}/members", headers=HEADERS, json={
+            "username": "bob", "name": "Bob", "role": "viewer"})
+        self.assertEqual(response.status, 200)
+        bob = await response.json()
+        self.assertGreaterEqual(len(bob["password"]), 12)
+        taken = await self.client.post(f"/api/t/{tenant}/members", headers=HEADERS, json={
+            "username": "bob", "name": "Bob", "role": "viewer"})
+        self.assertEqual(taken.status, 409)  # an administrator adds existing accounts; this one is a member
+        members = (await (await self.client.get(f"/api/t/{tenant}/members")).json())["members"]
+        self.assertEqual({m["username"]: m["managed"] for m in members}, {"ann": False, "bob": True})
+        ann_id = next(m["id"] for m in members if m["username"] == "ann")
+        last_owner = await self.client.patch(f"/api/t/{tenant}/members/{ann_id}", headers=HEADERS, json={"role": "viewer"})
+        self.assertEqual(last_owner.status, 409)
+
+        # Bob's first sign-in: his own password before anything else.
+        await self.login("bob", bob["password"])
+        blocked = await self.client.get(f"/api/t/{tenant}/screens")
+        self.assertEqual((await blocked.json())["action"], "change_password")
+        same = await self.client.post("/api/password", headers=HEADERS, json={"current": bob["password"], "password": bob["password"]})
+        self.assertEqual(same.status, 400)
+        changed = await self.client.post("/api/password", headers=HEADERS, json={"current": bob["password"], "password": PASSWORD})
+        self.assertEqual(changed.status, 200)
+        self.assertEqual((await self.client.get(f"/api/t/{tenant}/screens")).status, 200)
+        self.assertEqual((await self.client.get(f"/api/t/{tenant}/members")).status, 403)  # viewers don't manage
+
+        # Ann resets Bob's password, then removes him; his account goes with it.
+        await self.login("ann", PASSWORD)
+        reset = await self.client.post(f"/api/t/{tenant}/members/{bob['id']}/reset", headers=HEADERS, json={"reset": "password"})
+        new_password = (await reset.json())["password"]
+        self.assertEqual((await self.login("bob", PASSWORD)).status, 401)
+        self.assertEqual((await self.login("bob", new_password)).status, 200)
+        await self.login("ann", PASSWORD)
+        removed = await self.client.delete(f"/api/t/{tenant}/members/{bob['id']}", headers=HEADERS)
+        self.assertEqual(removed.status, 200)
+        self.assertIsNone(self.store.user_by_name("bob"))
+
+    async def test_owners_cant_reset_shared_accounts(self) -> None:
+        me = await self.setup_console()
+        first = me["tenants"][0]["id"]
+        second = (await (await self.client.post("/api/tenants", headers=HEADERS, json={"name": "Second"})).json())["id"]
+        carol = await (await self.client.post(f"/api/t/{first}/members", headers=HEADERS, json={
+            "username": "carol", "name": "Carol", "role": "owner"})).json()
+        dave = await (await self.client.post(f"/api/t/{first}/members", headers=HEADERS, json={
+            "username": "dave", "name": "Dave", "role": "viewer"})).json()
+        both = await self.client.post(f"/api/t/{second}/members", headers=HEADERS, json={"username": "dave", "role": "viewer"})
+        self.assertEqual(both.status, 200)  # an administrator adds an existing account
+        await self.login("carol", carol["password"])
+        await self.client.post("/api/password", headers=HEADERS, json={"current": carol["password"], "password": PASSWORD})
+        response = await self.client.post(f"/api/t/{first}/members/{dave['id']}/reset", headers=HEADERS, json={"reset": "password"})
+        self.assertEqual(response.status, 403)
+        self.assertEqual((await self.client.get(f"/api/t/{second}")).status, 404)  # Carol can't see the other tenant
+
+
+class Totp(unittest.TestCase):
+    def test_rfc_6238_vector(self) -> None:
+        secret = base64.b32encode(b"12345678901234567890").decode()
+        self.assertEqual(totp.code_at(secret, 59 // 30), "287082")  # RFC 6238 appendix B, 6 digits
+        self.assertEqual(totp.code_at(secret, 1111111109 // 30), "081804")
+        self.assertEqual(totp.verify(secret, "081 804", 0, now=1111111109), 1111111109 // 30)
+        self.assertIsNone(totp.verify(secret, "081804", 1111111109 // 30, now=1111111109))
+
+    def test_migration_from_the_first_schema(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            db = sqlite3.connect(Path(tmp) / "console.db")
+            db.executescript(f"{store_module.CONSOLE_V1} PRAGMA user_version = 1;")
+            db.execute("INSERT INTO users (username, name, password, created) VALUES ('old', 'Old', 'x', 0)")
+            db.commit()
+            db.close()
+            store = Store(Path(tmp), os.urandom(32))
+            self.assertEqual(store.db.execute("PRAGMA user_version").fetchone()[0], len(store_module.CONSOLE_SCHEMA))
+            self.assertEqual(store.user_by_name("old")["must_change"], 0)
+            store.close()
 
 
 class Pairing(Base):

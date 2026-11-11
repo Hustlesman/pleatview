@@ -58,6 +58,15 @@ def _open(key: bytes, sealed: str, aad: str) -> bytes:
     return AESGCM(key).decrypt(raw[:NONCE_BYTES], raw[NONCE_BYTES:], aad.encode())
 
 
+def seal(key: bytes, text: str, context: str) -> str:
+    """Seals a console-level secret (such as a two-factor secret) with the master key."""
+    return _seal(key, text.encode(), context)
+
+
+def open_sealed(key: bytes, sealed: str, context: str) -> str:
+    return _open(key, sealed, context).decode()
+
+
 def new_tenant_key(master: bytes, tenant_id: str) -> str:
     """A new tenant key, wrapped by the master key and bound to the tenant's id."""
     return _seal(master, secrets.token_bytes(KEY_BYTES), f"tenant:{tenant_id}")
