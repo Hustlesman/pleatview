@@ -1,0 +1,11 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Report a security problem
+    url: https://github.com/Hustlesman/pleatview/security/policy
+    about: Privately, please, not in a public issue.
+  - name: Join the Google TV beta
+    url: https://github.com/Hustlesman/pleatview/issues/9
+    about: Test new versions from Google Play before everyone else.
+  - name: Install guides and answers
+    url: https://pleatview.hustlesman.com/support.html
+    about: Setting up, rendering on Home Assistant, the Linux app, PleatView Light.
