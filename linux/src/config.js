@@ -6,6 +6,8 @@ export const KIOSK_MODES = ["off", "sidebar", "full"];
 export const DEFAULTS = Object.freeze({
   deviceName: "",
   haUrl: "",
+  // A live stream of this screen's dashboards, rendered by Home Assistant; empty: render them here.
+  renderStream: "",
   haToken: "",
   dashboards: [],
   homeDashboard: "",
@@ -123,6 +125,7 @@ export class Config {
       rotate_seconds: this.rotateSeconds,
       return_home_minutes: this.returnHomeMinutes,
       reopen_minutes: this.reopenMinutes,
+      render_stream: this.renderStream,
       rev: this.rev,
     };
   }
@@ -153,6 +156,12 @@ export class Config {
         case "rotate_seconds": c.rotateSeconds = intIn(key, value, 0, 24 * 60 * 60); break;
         case "return_home_minutes": c.returnHomeMinutes = intIn(key, value, 0, 24 * 60); break;
         case "reopen_minutes": c.reopenMinutes = intIn(key, value, 0, 24 * 60); break;
+        case "render_stream": {
+          const stream = string(key, value).trim();
+          if (stream && !isHttpUrl(stream)) throw new RangeError("render_stream must start with http:// or https://");
+          c.renderStream = stream;
+          break;
+        }
         case "rev": c.rev = string(key, value).slice(0, 64); break;
         case "ha_token_set": break; // read-only, echoed back by clients that round-trip GET /api/config
         default:

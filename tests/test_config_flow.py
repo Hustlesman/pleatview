@@ -196,7 +196,9 @@ async def test_reconfigure_sign_in(
 async def test_options_flow(hass: HomeAssistant, fake_tv: FakeTV) -> None:
     entry = make_entry(fake_tv)
     entry.add_to_hass(hass)
-    with patch(SETUP, return_value=True):
+    with patch(SETUP, return_value=True), patch(
+        "custom_components.pleatview.config_flow.async_find_renderers", return_value=[]
+    ):
         result = await hass.config_entries.options.async_init(entry.entry_id)
         assert result["step_id"] == "init"
         defaults = {

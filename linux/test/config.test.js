@@ -46,6 +46,15 @@ test("a home page of its own sets the app up without Home Assistant", () => {
   assert.equal(own.resolve(own.homePath), "https://console.example/screen");
 });
 
+test("a rendered dashboard stream is kept, must be a web address, and can be turned off", () => {
+  const stream = "http://10.0.0.2:8123/api/pleatview/render/01ABC/s3cr3t/index.m3u8";
+  const rendered = new Config().merge({ render_stream: ` ${stream} ` });
+  assert.equal(rendered.renderStream, stream);
+  assert.equal(rendered.toJson().render_stream, stream);
+  assert.equal(rendered.merge({ render_stream: "" }).renderStream, "");
+  assert.throws(() => new Config().merge({ render_stream: "file:///etc/passwd" }), RangeError);
+});
+
 test("URL helpers", () => {
   assert.equal(originOf("HTTP://Ha.Local:80/x"), "http://ha.local");
   assert.equal(originOf("ftp://x"), null);

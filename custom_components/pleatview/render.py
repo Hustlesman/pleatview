@@ -31,6 +31,35 @@ _LOGGER = logging.getLogger(__name__)
 
 STREAM_FILE = re.compile(r"^(index\.m3u8|s\d{1,9}\.ts)$")
 TIMEOUT = aiohttp.ClientTimeout(total=20)
+FIND_TIMEOUT = aiohttp.ClientTimeout(total=3)
+# Where a renderer usually is: the Home Assistant OS app added from this repository (or a local
+# copy of it), or the documented `docker run` on this machine.
+CANDIDATES = (
+    "http://ce7dee09-pleatview-renderer:8780",
+    "http://local-pleatview-renderer:8780",
+    "http://127.0.0.1:8780",
+)
+
+
+async def async_find_renderers(hass: HomeAssistant, extra: tuple[str, ...] = ()) -> list[dict[str, str]]:
+    """The renderers that answer, as choices for a TV's options: the usual places, and any
+    address already in use."""
+    session = async_get_clientsession(hass)
+
+    async def probe(url: str) -> dict[str, str] | None:
+        try:
+            async with session.get(f"{url}/api/info", timeout=FIND_TIMEOUT, allow_redirects=False) as resp:
+                if resp.status != 200:
+                    return None
+                info = await resp.json(content_type=None)
+        except Exception:  # noqa: BLE001 - a place that doesn't answer is simply left out
+            return None
+        if not isinstance(info, dict) or "encoder" not in info:
+            return None
+        return {"value": url, "label": f"{url} · PleatView Renderer {info.get('version', '')} ({info['encoder']})"}
+
+    urls = list(dict.fromkeys([*CANDIDATES, *(u.strip().rstrip("/") for u in extra if u and u.strip())]))
+    return [found for found in await asyncio.gather(*(probe(u) for u in urls)) if found]
 
 
 @dataclass(frozen=True)
