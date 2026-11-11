@@ -38,5 +38,6 @@ sed -i -E "s/^version: \"[^\"]+\"/version: \"$version\"/" "$root/renderer/config
 sed -i -E "s/^VERSION = \"[^\"]+\"/VERSION = \"$version\"/" "$root/renderer/pleatview_renderer/server.py"
 sed -i -E "s/pleatview\.git#v[0-9.]+:renderer/pleatview.git#v$version:renderer/" "$root/docs/render-on-home-assistant.md"
 sed -i -E "s/^VERSION = \"[^\"]+\"/VERSION = \"$version\"/" "$root/console/pleatview_console/__init__.py"
+sed -i -E "s/^VERSION = \"[^\"]+\"/VERSION = \"$version\"/" "$root/light/pleatview_light/__init__.py"
 
 echo "Version $version (versionCode $((code + 1))). After merging, tag the commit: git tag v$version"

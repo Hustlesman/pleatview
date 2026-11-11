@@ -120,6 +120,23 @@ jobs:
           name: console-packages
           path: console-packages.txt
 
+  light:
+    name: Light client
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Tests
+        working-directory: light
+        run: python3 -m unittest discover -v tests
+      - name: Package
+        run: light/build-deb.sh "$PWD/light-dist" && dpkg-deb --info light-dist/*.deb
+      - uses: actions/upload-artifact@v4
+        with:
+          name: light-package
+          path: light-dist/*.deb
+
   hassfest:
     name: hassfest
     runs-on: ubuntu-latest

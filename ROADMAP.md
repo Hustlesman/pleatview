@@ -186,10 +186,12 @@ screens (setup, cards, media, menu) are web pages, a start for the M4 web player
 - [x] **Rendered dashboards** ([Render on Home Assistant](docs/render-on-home-assistant.md)),
       as on Android (11 Nov; on a Raspberry Pi Zero 2 W it plays, but its 512 MB leave little
       to spare, hence the light client)
-- [ ] **A light client for the smallest boards** (added 11 Nov, on request), such as a
+- [x] **A light client for the smallest boards** (added 11 Nov, on request), such as a
       Raspberry Pi Zero 2 W with 512 MB: no browser, only the stream Home Assistant renders,
       decoded by the board's H.264 hardware. Discovered, paired and controlled like any
-      screen. Checked on a Raspberry Pi Zero 2 W
+      screen. Done 11 Nov ([light/](light/README.md), Python's standard library and mpv): on a
+      Raspberry Pi Zero 2 W it plays a 1080p rendered dashboard with no dropped frames at
+      about 10 % CPU and 45 MB, where the Electron app swapped and dropped two frames in three
 - [ ] Checked by hand on an Ubuntu mini PC, a Raspberry Pi 5 and a Raspberry Pi 4
       (video decoding, screen power, HDMI-CEC, touch screens). Raspberry Pi 5 with
       Raspberry Pi OS 13, a monitor and a TV (sound over HDMI): done on 6 Nov, except

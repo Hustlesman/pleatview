@@ -20,7 +20,9 @@ The Home Assistant machine, an Intel Core i5-7500 with Quick Sync, used about 2.
 ## What you need
 
 - **PleatView on the TV**: Android TV, Google TV, Fire TV, or a phone or tablet with 1.0.14
-  or later; the Linux app (mini PCs and Raspberry Pis) with 1.0.17 or later.
+  or later; the Linux app (mini PCs and Raspberry Pis) with 1.0.17 or later. For the
+  smallest boards, such as a Raspberry Pi Zero 2 W, [PleatView Light](../light/README.md)
+  plays only the rendered stream, with the board's video decoder.
 - **A Home Assistant machine with power to spare.** A mini PC or a NAS with an Intel or
   AMD processor is ideal, and its graphics encode the video. A Raspberry Pi 4 or 5 manages
   ordinary dashboards, not walls of video.
