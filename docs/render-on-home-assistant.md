@@ -67,7 +67,7 @@ Home Assistant the same one: `http://ce7dee09-pleatview-renderer:8780`.
 Build the renderer from source and run it on the same machine:
 
 ```sh
-docker build -t pleatview-renderer https://github.com/Hustlesman/pleatview.git#v1.0.16:renderer
+docker build -t pleatview-renderer https://github.com/Hustlesman/pleatview.git#v1.0.17:renderer
 docker run -d --name pleatview-renderer --restart unless-stopped --network host \
   -e HOST=127.0.0.1 --device /dev/dri pleatview-renderer
 ```
