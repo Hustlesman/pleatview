@@ -19,6 +19,11 @@ class Settings:
     tls_key: Path | None
     master_key: Path
     discovery: bool
+    # What screens load (playlists, media): plain HTTP on the local network, like protocol v1.
+    screen_host: str
+    screen_port: int
+    screen_url: str
+    media_max_mb: int
 
     @property
     def https(self) -> bool:
@@ -41,4 +46,8 @@ def from_env(env: dict[str, str] | None = None) -> Settings:
         tls_key=Path(env["TLS_KEY"]) if env.get("TLS_KEY") else None,
         master_key=Path(env.get("MASTER_KEY_FILE") or data / "master.key"),
         discovery=env.get("DISCOVERY", "1") != "0",
+        screen_host=env.get("SCREEN_HOST", "0.0.0.0"),
+        screen_port=int(env.get("SCREEN_PORT", "8791")),
+        screen_url=env.get("SCREEN_URL", ""),
+        media_max_mb=int(env.get("MEDIA_MAX_MB", "4096")),
     )

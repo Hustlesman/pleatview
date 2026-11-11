@@ -20,6 +20,7 @@ from . import VERSION
 from . import totp
 from .auth import DUMMY_HASH, Throttle, check_new_password, check_password, hash_password
 from .screens import Invalid, Screens, check_address, command_params, web_url
+from .media import Library, folder
 from .store import ROLES, TENANT_ID, Store
 from .tvapi import CannotConnect, InvalidPin, PleatViewError, RequestRejected, TooManyAttempts
 
@@ -52,14 +53,20 @@ Handler = Callable[[web.Request], Awaitable[web.StreamResponse]]
 
 STORE = web.AppKey("store", Store)
 SCREENS = web.AppKey("screens", Screens)
+LIBRARY = web.AppKey("library", Library)
+MEDIA_MAX = web.AppKey("media_max", int)
 THROTTLE = web.AppKey("throttle", Throttle)
 HTTPS = web.AppKey("https", bool)
 
 
 def fail(status: int, message: str, **extra: Any) -> web.HTTPException:
     cls = {400: web.HTTPBadRequest, 401: web.HTTPUnauthorized, 403: web.HTTPForbidden,
-           404: web.HTTPNotFound, 409: web.HTTPConflict, 429: web.HTTPTooManyRequests,
+           404: web.HTTPNotFound, 409: web.HTTPConflict, 413: web.HTTPRequestEntityTooLarge,
+           429: web.HTTPTooManyRequests,
            502: web.HTTPBadGateway}[status]
+    if status == 413:
+        return web.HTTPRequestEntityTooLarge(0, 0, text=json.dumps({"error": message, **extra}),
+                                             content_type="application/json")
     return cls(text=json.dumps({"error": message, **extra}), content_type="application/json")
 
 
@@ -622,7 +629,15 @@ async def change_screen(request: web.Request) -> web.Response:
             raise fail(400, "No such site")
         changes["site_id"] = data["site_id"]
     config = dict(screen["config"])
-    if "home" in data:
+    home_page: int | None | bool = False
+    if "home_page" in data:
+        home_page = data["home_page"]
+        if home_page is not None and (not isinstance(home_page, int) or isinstance(home_page, bool)
+                                      or not tenant.page(home_page)):
+            raise fail(400, "No such page")
+        if home_page is not None:
+            config.pop("home_dashboard", None)
+    if "home" in data and home_page in (False, None):
         home = data["home"]
         if home in (None, ""):
             config["home_dashboard"] = ""  # the screen goes back to its setup screen
@@ -639,12 +654,12 @@ async def change_screen(request: web.Request) -> web.Response:
             config["zoom"] = zoom
         else:
             raise fail(400, "Zoom is a percentage from 25 to 400")
-    if config != screen["config"]:
+    if config != screen["config"] or (home_page is not False and home_page != screen["home_page"]):
         try:
-            await request.app[SCREENS].configure(tenant_id, screen["id"], config)
+            await request.app[SCREENS].configure(tenant_id, screen["id"], config, home_page)
         except Invalid as err:
             raise fail(409, str(err)) from None
-        changes["config"] = config
+        changes["config"] = {**config, **({"home_page": home_page} if home_page is not False else {})}
     if not changes:
         raise fail(400, "Nothing to change")
     if set(changes) - {"config"}:
@@ -728,6 +743,258 @@ async def packages(request: web.Request) -> web.Response:
     return web.Response(text=text, content_type="text/plain")
 
 
+# ---- Groups ---------------------------------------------------------------------------
+
+
+def _number_id(request: web.Request, key: str) -> int:
+    raw = request.match_info[key]
+    if not raw.isdigit():
+        raise fail(404, "Not found")
+    return int(raw)
+
+
+async def list_groups(request: web.Request) -> web.Response:
+    _, tenant_id, _ = member(request, "view")
+    return web.json_response({"groups": request.app[STORE].tenant(tenant_id).groups()})
+
+
+async def save_group(request: web.Request) -> web.Response:
+    user, tenant_id, _ = member(request, "operate")
+    tenant = request.app[STORE].tenant(tenant_id)
+    group_id = _number_id(request, "group") if "group" in request.match_info else None
+    if group_id is not None and not tenant.group(group_id):
+        raise fail(404, "No such group")
+    data = await body(request)
+    name = name_field(data, "name", "A name")
+    screen_ids = data.get("screens", [])
+    known = {s["id"] for s in tenant.screens()}
+    if not isinstance(screen_ids, list) or not all(isinstance(i, int) and i in known for i in screen_ids):
+        raise fail(400, "Choose screens of this organisation")
+    group_id = tenant.save_group(group_id, name, screen_ids)
+    tenant.log("group_saved", user=user["username"], target=f"group:{group_id}",
+               detail={"name": name, "screens": len(screen_ids)}, address=client_address(request))
+    return web.json_response({"id": group_id, "groups": tenant.groups()})
+
+
+async def delete_group(request: web.Request) -> web.Response:
+    user, tenant_id, _ = member(request, "operate")
+    tenant = request.app[STORE].tenant(tenant_id)
+    group_id = _number_id(request, "group")
+    group = tenant.group(group_id)
+    if not group:
+        raise fail(404, "No such group")
+    tenant.delete_group(group_id)
+    tenant.log("group_removed", user=user["username"], target=f"group:{group_id}", detail={"name": group["name"]},
+               address=client_address(request))
+    return web.json_response({"groups": tenant.groups()})
+
+
+async def group_action(request: web.Request) -> web.Response:
+    """A command, or a home page, for every screen in the group at once."""
+    user, tenant_id, _ = member(request, "operate")
+    tenant = request.app[STORE].tenant(tenant_id)
+    screens = request.app[SCREENS]
+    group = tenant.group(_number_id(request, "group"))
+    if not group:
+        raise fail(404, "No such group")
+    data = await body(request)
+    failed: list[str] = []
+    names = {s["id"]: s["name"] for s in tenant.screens()}
+    if "home_page" in data:
+        page_id = data["home_page"]
+        if page_id is not None and (not isinstance(page_id, int) or not tenant.page(page_id)):
+            raise fail(400, "No such page")
+        for screen_id in group["screens"]:
+            screen = tenant.screen(screen_id)
+            config = {k: v for k, v in screen["config"].items() if page_id is None or k != "home_dashboard"}
+            try:
+                await screens.configure(tenant_id, screen_id, config, page_id)
+            except (Invalid, PleatViewError):
+                failed.append(names[screen_id])
+        detail: dict[str, Any] = {"home_page": page_id}
+    else:
+        command = data.get("command")
+        try:
+            params = command_params(command if isinstance(command, str) else "", data)
+        except Invalid as err:
+            raise fail(400, str(err)) from None
+
+        async def send(screen_id: int) -> None:
+            try:
+                await screens.command(tenant_id, screen_id, command, params)
+            except (Invalid, PleatViewError):
+                failed.append(names[screen_id])
+        await asyncio.gather(*(send(i) for i in group["screens"]))
+        detail = {"command": command, **{k: v for k, v in params.items() if v is not None}}
+    tenant.log("group_action", user=user["username"], target=f"group:{group['id']}",
+               detail={**detail, "failed": len(failed)}, address=client_address(request))
+    return web.json_response({"done": len(group["screens"]) - len(failed), "failed": failed})
+
+
+# ---- Pages ----------------------------------------------------------------------------
+
+
+def _page_view(request: web.Request, tenant_id: str, page: dict[str, Any], used: dict[int, int]) -> dict[str, Any]:
+    return {
+        "id": page["id"], "name": page["name"], "kind": page["kind"], "url": page["url"],
+        "items": page["items"], "address": request.app[SCREENS].page_url(tenant_id, page),
+        "screens": used.get(page["id"], 0),
+    }
+
+
+async def list_pages(request: web.Request) -> web.Response:
+    _, tenant_id, _ = member(request, "view")
+    tenant = request.app[STORE].tenant(tenant_id)
+    used: dict[int, int] = {}
+    for screen in tenant.screens():
+        if screen["home_page"]:
+            used[screen["home_page"]] = used.get(screen["home_page"], 0) + 1
+    return web.json_response({"pages": [_page_view(request, tenant_id, p, used) for p in tenant.pages()]})
+
+
+async def save_page(request: web.Request) -> web.Response:
+    user, tenant_id, _ = member(request, "operate")
+    tenant = request.app[STORE].tenant(tenant_id)
+    page_id = _number_id(request, "page") if "page" in request.match_info else None
+    if page_id is not None and not tenant.page(page_id):
+        raise fail(404, "No such page")
+    data = await body(request)
+    name = name_field(data, "name", "A name")
+    kind = data.get("kind")
+    url, items = None, []
+    if kind == "web":
+        try:
+            url = web_url(data.get("url"), "The address")
+        except Invalid as err:
+            raise fail(400, str(err)) from None
+    elif kind == "playlist":
+        raw = data.get("items")
+        if not isinstance(raw, list) or len(raw) > 500:
+            raise fail(400, "A playlist is a list of up to 500 media")
+        for entry in raw:
+            media_id = entry.get("media_id") if isinstance(entry, dict) else None
+            seconds = entry.get("seconds") if isinstance(entry, dict) else None
+            if not isinstance(media_id, int) or not tenant.media_item(media_id):
+                raise fail(400, "Choose media from the library")
+            if seconds is not None and (not isinstance(seconds, int) or not 1 <= seconds <= 86400):
+                raise fail(400, "Seconds on screen go from 1 to 86400")
+            items.append({"media_id": media_id, **({"seconds": seconds} if seconds else {})})
+    else:
+        raise fail(400, "A page is a web page or a playlist")
+    page_id = tenant.save_page(page_id, name=name, kind=kind, url=url, items=items)
+    tenant.log("page_saved", user=user["username"], target=f"page:{page_id}", detail={"name": name, "kind": kind},
+               address=client_address(request))
+    await request.app[SCREENS].refresh(tenant_id, tenant.screens_with_page(page_id))
+    return web.json_response({"id": page_id})
+
+
+async def delete_page(request: web.Request) -> web.Response:
+    user, tenant_id, _ = member(request, "operate")
+    tenant = request.app[STORE].tenant(tenant_id)
+    page_id = _number_id(request, "page")
+    page = tenant.page(page_id)
+    if not page:
+        raise fail(404, "No such page")
+    affected = tenant.screens_with_page(page_id)
+    for screen_id in affected:  # they keep showing it, now as their own home page
+        screen = tenant.screen(screen_id)
+        tenant.update_screen(screen_id, config={**screen["config"],
+                                                "home_dashboard": request.app[SCREENS].page_url(tenant_id, page)
+                                                if page["kind"] == "web" else ""})
+    tenant.delete_page(page_id)
+    tenant.log("page_removed", user=user["username"], target=f"page:{page_id}", detail={"name": page["name"]},
+               address=client_address(request))
+    await request.app[SCREENS].refresh(tenant_id, affected)
+    return web.json_response({})
+
+
+# ---- Media library -------------------------------------------------------------------
+
+
+def _media_view(request: web.Request, tenant_id: str, item: dict[str, Any]) -> dict[str, Any]:
+    return {
+        **{k: item[k] for k in ("id", "name", "size", "status", "progress", "kind", "duration", "summary", "error")},
+        "address": request.app[SCREENS].media_url(tenant_id, item),
+        "thumbnail": item["status"] == "ready" and item["kind"] in ("video", "image"),
+    }
+
+
+async def list_media(request: web.Request) -> web.Response:
+    _, tenant_id, _ = member(request, "view")
+    tenant = request.app[STORE].tenant(tenant_id)
+    return web.json_response({"media": [_media_view(request, tenant_id, m) for m in tenant.media()]})
+
+
+async def upload_media(request: web.Request) -> web.Response:
+    """The file itself is the request's body, streamed to disk, never held in memory."""
+    user, tenant_id, _ = member(request, "operate")
+    store, library = request.app[STORE], request.app[LIBRARY]
+    tenant = store.tenant(tenant_id)
+    name = request.query.get("name", "").strip()[:200] or "Untitled"
+    limit = request.app[MEDIA_MAX]
+    if request.content_length is not None and request.content_length > limit:
+        raise fail(413, f"Files up to {limit // (1024 * 1024)} MB")
+    media_id, _ = tenant.add_media(name, request.content_length or 0)
+    where = folder(store.data, tenant_id, media_id)
+    where.mkdir(parents=True, exist_ok=True)
+    size = 0
+    try:
+        with (where / "original").open("wb") as out:
+            async for chunk in request.content.iter_chunked(1024 * 1024):
+                size += len(chunk)
+                if size > limit:
+                    raise fail(413, f"Files up to {limit // (1024 * 1024)} MB")
+                await asyncio.to_thread(out.write, chunk)
+    except BaseException:
+        library.remove(tenant_id, media_id)
+        raise
+    if size == 0:
+        library.remove(tenant_id, media_id)
+        raise fail(400, "The file is empty")
+    tenant.update_media(media_id, size=size)
+    tenant.log("media_added", user=user["username"], target=f"media:{media_id}", detail={"name": name, "size": size},
+               address=client_address(request))
+    library.add(tenant_id, media_id)
+    return web.json_response({"id": media_id})
+
+
+def _media(request: web.Request, tenant_id: str) -> dict[str, Any]:
+    item = request.app[STORE].tenant(tenant_id).media_item(_number_id(request, "media"))
+    if not item:
+        raise fail(404, "No such media")
+    return item
+
+
+async def change_media(request: web.Request) -> web.Response:
+    user, tenant_id, _ = member(request, "operate")
+    tenant = request.app[STORE].tenant(tenant_id)
+    item = _media(request, tenant_id)
+    if request.method == "DELETE":
+        affected = []
+        for page in tenant.pages():
+            kept = [e for e in page["items"] if e.get("media_id") != item["id"]]
+            if len(kept) != len(page["items"]):
+                tenant.save_page(page["id"], name=page["name"], kind=page["kind"], url=page["url"], items=kept)
+                affected += tenant.screens_with_page(page["id"])
+        request.app[LIBRARY].remove(tenant_id, item["id"])
+        tenant.log("media_removed", user=user["username"], target=f"media:{item['id']}", detail={"name": item["name"]},
+                   address=client_address(request))
+        await request.app[SCREENS].refresh(tenant_id, affected)
+        return web.json_response({})
+    name = name_field(await body(request), "name", "A name")
+    tenant.update_media(item["id"], name=name)
+    return web.json_response({})
+
+
+async def media_thumbnail(request: web.Request) -> web.StreamResponse:
+    _, tenant_id, _ = member(request, "view")
+    item = _media(request, tenant_id)
+    path = folder(request.app[STORE].data, tenant_id, item["id"]) / "thumb.jpg"
+    if not path.is_file():
+        raise fail(404, "No picture")
+    return web.FileResponse(path, headers={"Content-Type": "image/jpeg", "Cache-Control": "private, max-age=600"})
+
+
 # ---- The web app -----------------------------------------------------------------------
 
 SAFE_FILE = re.compile(r"^[a-z0-9-]+\.(html|js|css|webmanifest|png|svg)$")
@@ -745,10 +1012,13 @@ async def static(request: web.Request) -> web.Response:
                         charset="utf-8" if "charset" in STATIC_TYPES[path.suffix] else None, headers=headers)
 
 
-def create_app(store: Store, screens: Screens, *, https: bool) -> web.Application:
+def create_app(store: Store, screens: Screens, *, https: bool, library: Library | None = None,
+               media_max: int = 4096 * 1024 * 1024) -> web.Application:
     app = web.Application(middlewares=[security], client_max_size=64 * 1024)
     app[STORE] = store
     app[SCREENS] = screens
+    app[LIBRARY] = library or Library(store)
+    app[MEDIA_MAX] = media_max
     app[THROTTLE] = Throttle()
     app[HTTPS] = https
     app.router.add_get("/api/status", status)
@@ -782,6 +1052,20 @@ def create_app(store: Store, screens: Screens, *, https: bool) -> web.Applicatio
     app.router.add_delete(t + "/screens/{screen}", remove_screen)
     app.router.add_post(t + "/screens/{screen}/command", screen_command)
     app.router.add_get(t + "/events", events)
+    app.router.add_get(t + "/groups", list_groups)
+    app.router.add_post(t + "/groups", save_group)
+    app.router.add_patch(t + "/groups/{group}", save_group)
+    app.router.add_delete(t + "/groups/{group}", delete_group)
+    app.router.add_post(t + "/groups/{group}/action", group_action)
+    app.router.add_get(t + "/pages", list_pages)
+    app.router.add_post(t + "/pages", save_page)
+    app.router.add_patch(t + "/pages/{page}", save_page)
+    app.router.add_delete(t + "/pages/{page}", delete_page)
+    app.router.add_get(t + "/media", list_media)
+    app.router.add_post(t + "/media", upload_media)
+    app.router.add_patch(t + "/media/{media}", change_media)
+    app.router.add_delete(t + "/media/{media}", change_media)
+    app.router.add_get(t + "/media/{media}/thumb.jpg", media_thumbnail)
     app.router.add_get("/", static)
     app.router.add_get("/{name}", static)
     return app

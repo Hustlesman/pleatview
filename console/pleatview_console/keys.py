@@ -96,7 +96,7 @@ def ensure_certificate(cert: Path, key: Path) -> None:
     names: list[x509.GeneralName] = [x509.DNSName(host), x509.DNSName("localhost")]
     if "." not in host:
         names.append(x509.DNSName(f"{host}.local"))
-    for address in _addresses():
+    for address in local_addresses():
         names.append(x509.IPAddress(ipaddress.ip_address(address)))
     subject = x509.Name([x509.NameAttribute(NameOID.COMMON_NAME, f"PleatView Console on {host}"[:64])])
     now = datetime.datetime.now(datetime.timezone.utc)
@@ -130,7 +130,7 @@ def fingerprint(cert: Path) -> str:
     return certificate.fingerprint(hashes.SHA256()).hex(":").upper()
 
 
-def _addresses() -> list[str]:
+def local_addresses() -> list[str]:
     """This machine's IPv4 addresses, as far as the standard library can tell."""
     found = {"127.0.0.1"}
     try:
