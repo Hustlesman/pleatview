@@ -100,6 +100,26 @@ jobs:
           name: renderer-packages
           path: renderer-packages.txt
 
+  console:
+    name: Console
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Build the image
+        run: docker build -t pleatview-console console
+      - name: Tests, inside the image
+        run: >-
+          docker run --rm --entrypoint python3 -v "$PWD:/repo:ro" -w /repo/console pleatview-console
+          -m unittest discover -v tests
+      - name: Installed packages, for audits
+        run: docker run --rm --entrypoint cat pleatview-console /app-packages.txt | tee console-packages.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: console-packages
+          path: console-packages.txt
+
   hassfest:
     name: hassfest
     runs-on: ubuntu-latest
