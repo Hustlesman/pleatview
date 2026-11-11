@@ -29,7 +29,7 @@ and there's one place to fix and to audit.
 
 ## Status
 
-Last updated 11 November 2026. **Current milestone: M1** (M0 finished early).
+Last updated 12 November 2026. **Current milestone: M1** (M0 finished early).
 
 | Milestone | Target | Needs first | Status |
 | --- | --- | --- | --- |
@@ -53,16 +53,19 @@ each later milestone gets its issues when it starts.
 **Want to help?** Tell us about a device that works or doesn't, report a bug, or join the
 Google TV beta ([#9](https://github.com/Hustlesman/pleatview/issues/9)).
 
-Done so far: v1.0.16 is published as a signed release with build attestations (versions are
+Done so far: v1.0.17 is published as a signed release with build attestations (versions are
 1.x from 29 Oct; each milestone ends with the next minor release). One command
 (`tools/e2e/run.py`) tests the Android app and the Home Assistant integration together in
 21 checks, on an Android TV 16 emulator or a real TV: the demo, pairing, automatic sign-in, kiosk mode,
 casting, cameras, notifications, sign-ins, standby, updates, and recovery from a Home Assistant
 restart and from a frozen page. Phone and tablet emulators add touch, turning the screen and the lock screen, for 24. A Fire TV Stick and a Chromecast HD pass the automated checks,
 and both ran a 42-hour soak test without a crash. A security review on 2 Nov fixed what it
-found, and no dependency has a known vulnerability. 66 app tests, 49 integration tests and 10
-renderer tests pass. Since 1.0.14, Home Assistant can render a TV's dashboards and stream them to
-it, which a Home Assistant OS app does too.
+found, and no dependency has a known vulnerability. 68 app tests, 52 integration tests, 13
+renderer tests, 53 console tests and 7 PleatView Light tests pass. Since 1.0.14, Home Assistant
+can render a TV's dashboards and stream them to it, which a Home Assistant OS app does too; since
+1.0.17, on renderers paired by name, also on other machines, and for PleatView Light on the
+smallest boards. PleatView Console (in development) manages screens across sites and
+organisations.
 The Android app, the phone page and the integration are translated into 10 languages besides
 English, chosen from where Home Assistant is used most.
 
