@@ -183,8 +183,9 @@ screens (setup, cards, media, menu) are web pages, a start for the M4 web player
       checked on a Raspberry Pi 5 on 6 Nov; the kiosk session still to check)
 - [ ] End-to-end checks against a real Home Assistant, as `tools/e2e/run.py` does for
       Android, in Docker on a virtual screen
-- [ ] **Rendered dashboards** ([Render on Home Assistant](docs/render-on-home-assistant.md)),
-      as on Android
+- [x] **Rendered dashboards** ([Render on Home Assistant](docs/render-on-home-assistant.md)),
+      as on Android (11 Nov; on a Raspberry Pi Zero 2 W it plays, but its 512 MB leave little
+      to spare, hence the light client)
 - [ ] **A light client for the smallest boards** (added 11 Nov, on request), such as a
       Raspberry Pi Zero 2 W with 512 MB: no browser, only the stream Home Assistant renders,
       decoded by the board's H.264 hardware. Discovered, paired and controlled like any

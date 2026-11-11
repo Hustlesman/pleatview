@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 from collections.abc import AsyncGenerator
 from typing import Any
+from unittest.mock import patch
 
 from aiohttp import web
 import pytest
@@ -32,7 +33,11 @@ class FakeRenderer:
         app.router.add_put("/api/sessions/{key}", self._put)
         app.router.add_delete("/api/sessions/{key}", self._delete)
         app.router.add_get("/hls/{key}/{name}", self._hls)
+        app.router.add_get("/api/info", self._info)
         return app
+
+    async def _info(self, request: web.Request) -> web.Response:
+        return web.json_response(getattr(self, "info", {"version": "test", "encoder": "x264", "sessions": {}}))
 
     async def _put(self, request: web.Request) -> web.Response:
         self.screens[request.match_info["key"]] = await request.json()
@@ -134,3 +139,13 @@ def test_screen_sizes() -> None:
     # A phone held upright stays upright, at most 1920 pixels tall.
     assert screen_size({"screen": {"width": 1080, "height": 2340, "density": 3.0}}) == (886, 1920, 3.0 * 1920 / 2340)
     assert screen_size({"screen": {"width": "big"}}) == (1920, 1080, 2.0)
+
+
+async def test_renderers_found_for_the_options(hass: HomeAssistant, fake_tv: FakeTV, renderer: FakeRenderer) -> None:
+    """The TV's options list the renderers that answer, and keep one typed in."""
+    from custom_components.pleatview import render
+
+    renderer.info = {"version": "1.0.16", "encoder": "vaapi", "sessions": {}}
+    with patch.object(render, "CANDIDATES", (renderer.url, "http://127.0.0.1:9")):
+        found = await render.async_find_renderers(hass, ("http://127.0.0.1:9/",))
+    assert found == [{"value": renderer.url, "label": f"{renderer.url} · PleatView Renderer 1.0.16 (vaapi)"}]

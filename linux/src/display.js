@@ -4,7 +4,7 @@
 import { BaseWindow, WebContentsView, powerSaveBlocker, screen } from "electron";
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import { needsDisplay } from "./command.js";
 import { isFrontendPath, pathOf } from "./config.js";
 import { displayPower } from "./power.js";
@@ -72,6 +72,8 @@ export class Display {
 
   layout() {
     const { width, height } = this.size;
+    // So Home Assistant renders dashboards at this screen's size (docs/protocol.md, "State").
+    this.hub.update({ screen: { width, height, density: screen.getPrimaryDisplay().scaleFactor || 1 } });
     this.dashboard.setBounds({ x: 0, y: 0, width, height });
     if (this.web) this.web.setBounds(this.webBounds(this.webLayout));
     this.placeUi();
@@ -228,6 +230,7 @@ export class Display {
   }
 
   onLocation(url) {
+    if (url.startsWith("file:")) return; // the rendered stream's player: report what it shows instead
     const config = this.config();
     this.hub.update({ url, dashboard: config.isHaUrl(url) ? pathOf(url) : null });
   }
@@ -307,7 +310,8 @@ export class Display {
     this.hub.update({ config_rev: config.rev, view: config.isConfigured ? "dashboard" : "setup" });
     if (!this.window) return;
     this.dashboard.webContents.setZoomFactor(config.zoom / 100);
-    const moved = !previous || previous.haUrl !== config.haUrl || previous.haToken !== config.haToken || previous.kiosk !== config.kiosk;
+    const moved = !previous || previous.haUrl !== config.haUrl || previous.haToken !== config.haToken ||
+      previous.kiosk !== config.kiosk || previous.renderStream !== config.renderStream;
     if (moved || previous.homePath !== config.homePath) this.showSetupOrDashboard();
     this.restartTimers();
     this.keepAwake();
@@ -437,6 +441,14 @@ export class Display {
   navigate(url) {
     const config = this.config();
     const wc = this.dashboard.webContents;
+    if (config.renderStream) {
+      // Home Assistant renders the page and streams it here: play the stream, and report the
+      // page, which is what Home Assistant renders.
+      const player = `${pathToFileURL(join(here, "ui", "render.html")).href}#${encodeURIComponent(config.renderStream)}`;
+      if (wc.getURL() !== player) wc.loadURL(player).catch(() => {});
+      this.hub.update({ url, dashboard: config.isHaUrl(url) ? pathOf(url) : null });
+      return;
+    }
     if (config.isHaUrl(url) && config.isHaUrl(wc.getURL()) && !wc.isLoading() && isFrontendPath(pathOf(url))) {
       const js = `window.__pleatview?(window.__pleatview.navigate(${JSON.stringify(pathOf(url))}),true):false`;
       wc.executeJavaScript(js).then((done) => done || wc.loadURL(url), () => wc.loadURL(url));

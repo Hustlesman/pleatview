@@ -19,8 +19,8 @@ The Home Assistant machine, an Intel Core i5-7500 with Quick Sync, used about 2.
 
 ## What you need
 
-- **PleatView 1.0.14 or later on the TV**: Android TV, Google TV, Fire TV, or a phone or
-  tablet. The Linux app doesn't play rendered dashboards yet.
+- **PleatView on the TV**: Android TV, Google TV, Fire TV, or a phone or tablet with 1.0.14
+  or later; the Linux app (mini PCs and Raspberry Pis) with 1.0.17 or later.
 - **A Home Assistant machine with power to spare.** A mini PC or a NAS with an Intel or
   AMD processor is ideal, and its graphics encode the video. A Raspberry Pi 4 or 5 manages
   ordinary dashboards, not walls of video.
@@ -81,7 +81,8 @@ instead, using about one core per TV.
 ## 2. Turn it on for a TV
 
 *Settings → Devices & services → PleatView*, and the gear next to the TV. At the bottom,
-put the renderer's address in **Render on Home Assistant**, and *Submit*.
+choose the renderer in **Render on Home Assistant**, and *Submit*. The list shows the
+renderers Home Assistant found; you can also type a renderer's address there.
 
 ![PleatView's Display settings with the renderer's address in Render on Home Assistant](img/render-6-option.webp)
 

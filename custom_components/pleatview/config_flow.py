@@ -27,6 +27,7 @@ except ImportError:  # Home Assistant 2025.1
     from homeassistant.components.zeroconf import ZeroconfServiceInfo
 
 from .api import InvalidPin, PleatViewClient, PleatViewError, TooManyAttempts
+from .render import async_find_renderers
 from .const import (
     AUTH_MANAGED,
     AUTH_NONE,
@@ -274,6 +275,10 @@ class PleatViewOptionsFlow(OptionsFlow):
                 return self.async_create_entry(data=user_input)
 
         options = {**DEFAULT_OPTIONS, **self.config_entry.options, **(user_input or {})}
+        current = (options.get(CONF_RENDER_URL) or "").strip().rstrip("/")
+        renderers = await async_find_renderers(self.hass, (current,))
+        if current and current not in {r["value"] for r in renderers}:
+            renderers.append({"value": current, "label": current})
 
         def number(maximum: int, unit: str, step: int = 1) -> selector.NumberSelector:
             return selector.NumberSelector(
@@ -310,9 +315,12 @@ class PleatViewOptionsFlow(OptionsFlow):
                 vol.Required(CONF_RELOAD_MINUTES, default=options[CONF_RELOAD_MINUTES]): number(10080, "min"),
                 vol.Required(CONF_KEEP_SCREEN_ON, default=options[CONF_KEEP_SCREEN_ON]): selector.BooleanSelector(),
                 vol.Required(CONF_LAUNCH_ON_BOOT, default=options[CONF_LAUNCH_ON_BOOT]): selector.BooleanSelector(),
-                vol.Optional(
-                    CONF_RENDER_URL, description={"suggested_value": options.get(CONF_RENDER_URL)}
-                ): selector.TextSelector(selector.TextSelectorConfig(type=selector.TextSelectorType.URL)),
+                # The renderers Home Assistant found, or another address typed in.
+                vol.Optional(CONF_RENDER_URL, description={"suggested_value": current or None}): selector.SelectSelector(
+                    selector.SelectSelectorConfig(
+                        options=renderers, custom_value=True, mode=selector.SelectSelectorMode.DROPDOWN
+                    )
+                ),
             }
         )
         return self.async_show_form(step_id="init", data_schema=schema, errors=errors)

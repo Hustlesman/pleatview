@@ -96,7 +96,7 @@ Events stream that sends the full snapshot on connect and after every change
   Assistant can render dashboards to match (null until the app has been on screen).
 - `features`: what the app can do beyond this version of the protocol. Home Assistant only
   sends configuration a feature needs to apps that list it. `render_stream`: the app plays
-  `render_stream` (1.0.14 and later; not the Linux app yet). `home_without_ha`: a full web
+  `render_stream` (1.0.14 and later; the Linux app from 1.0.17). `home_without_ha`: a full web
   address in `home_dashboard` sets the app up without `ha_url`, for controllers other than
   Home Assistant, such as PleatView Console (1.0.17 and later).
 
