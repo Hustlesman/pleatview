@@ -33,6 +33,7 @@
     <string name="menu_allow_overlay">Povolit zobrazení přes ostatní aplikace</string>
     <string name="overlay_settings_missing">Toto zařízení takové nastavení nemá. Řešení na jeden řádek najdete na pleatview.hustlesman.com/support.</string>
     <string name="status_unreachable">Home Assistant není dostupný (%1$s). Nový pokus za %2$d s…</string>
+    <string name="status_unreachable_page">Stránka %1$s není dostupná. Nový pokus za %2$d s…</string>
     <string name="status_auth_failed">Home Assistant odmítl přístupový token. Nastavte ho znovu z Home Assistant nebo ze stránky nastavení.</string>
     <string name="status_no_webview">Android System WebView není k dispozici. Nainstalujte nebo aktualizujte ho v Obchodě Play.</string>
     <string name="playback_failed">Přehrávání selhalo: %1$s</string>

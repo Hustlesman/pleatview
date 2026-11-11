@@ -33,6 +33,7 @@
     <string name="menu_allow_overlay">Permitir mostrar sobre otras apps</string>
     <string name="overlay_settings_missing">Este dispositivo no tiene ese ajuste. Consulta pleatview.hustlesman.com/support para la solución de una línea.</string>
     <string name="status_unreachable">No se puede conectar con Home Assistant (%1$s). Reintentando en %2$d s…</string>
+    <string name="status_unreachable_page">No se puede conectar con %1$s. Reintentando en %2$d s…</string>
     <string name="status_auth_failed">Home Assistant ha rechazado el token de acceso. Vuelve a configurarlo desde Home Assistant o la página de configuración.</string>
     <string name="status_no_webview">Android System WebView no está disponible. Instálalo o actualízalo desde Play Store.</string>
     <string name="playback_failed">Error de reproducción: %1$s</string>

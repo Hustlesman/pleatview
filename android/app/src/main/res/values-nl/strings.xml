@@ -33,6 +33,7 @@
     <string name="menu_allow_overlay">Weergeven vóór andere apps toestaan</string>
     <string name="overlay_settings_missing">Dit apparaat heeft daar geen instelling voor. Zie pleatview.hustlesman.com/support voor de oplossing van één regel.</string>
     <string name="status_unreachable">Home Assistant is niet bereikbaar (%1$s). Nieuwe poging over %2$d s…</string>
+    <string name="status_unreachable_page">%1$s is niet bereikbaar. Nieuwe poging over %2$d s…</string>
     <string name="status_auth_failed">Home Assistant heeft het toegangstoken geweigerd. Stel het opnieuw in vanuit Home Assistant of de instelpagina.</string>
     <string name="status_no_webview">Android System WebView is niet beschikbaar. Installeer of update het via de Play Store.</string>
     <string name="playback_failed">Afspelen mislukt: %1$s</string>

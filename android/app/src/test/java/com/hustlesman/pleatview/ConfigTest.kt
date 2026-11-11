@@ -17,6 +17,16 @@ class ConfigTest {
     }
 
     @Test
+    fun `a home page of its own sets the app up without Home Assistant`() {
+        assertFalse(Config().isConfigured)
+        assertFalse(Config().merge(JSONObject().put("home_dashboard", "/lovelace/0")).isConfigured)
+        val own = Config().merge(JSONObject().put("home_dashboard", "https://console.example/screen"))
+        assertTrue(own.isConfigured)
+        assertEquals("https://console.example/screen", own.resolve(own.homePath))
+        assertFalse(own.isHaUrl(own.resolve(own.homePath)))
+    }
+
+    @Test
     fun `reopen minutes default to ten and can be turned off`() {
         assertEquals(10, Config().reopenMinutes)
         assertEquals(0, Config().merge(JSONObject().put("reopen_minutes", 0)).reopenMinutes)

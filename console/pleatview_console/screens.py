@@ -7,7 +7,9 @@ Talks protocol v1 (docs/protocol.md) with the same client as the Home Assistant 
 from __future__ import annotations
 
 import asyncio
+import hashlib
 import ipaddress
+import json
 import logging
 import math
 import time
@@ -43,7 +45,7 @@ def _text(value: Any, name: str, *, required: bool = False) -> str | None:
     return value
 
 
-def _url(value: Any, name: str, schemes: tuple[str, ...] = ("http", "https")) -> str:
+def web_url(value: Any, name: str, schemes: tuple[str, ...] = ("http", "https")) -> str:
     text = _text(value, name, required=True)
     parts = urlsplit(text)
     if parts.scheme not in schemes or not parts.netloc:
@@ -67,7 +69,7 @@ def command_params(command: str, body: dict[str, Any]) -> dict[str, Any]:
     if command in ("home", "reload", "turn_on", "turn_off", "stop"):
         return {}
     if command == "show_url":
-        return {"url": _url(body.get("url"), "url"), "duration": duration()}
+        return {"url": web_url(body.get("url"), "url"), "duration": duration()}
     if command == "show_dashboard":
         return {"path": _text(body.get("path"), "path", required=True), "duration": duration()}
     if command == "play_media":
@@ -75,7 +77,7 @@ def command_params(command: str, body: dict[str, Any]) -> dict[str, Any]:
         if loop is not None and not isinstance(loop, bool):
             raise Invalid("loop must be true or false")
         return {
-            "url": _url(body.get("url"), "url", ("http", "https", "rtsp", "rtsps")),
+            "url": web_url(body.get("url"), "url", ("http", "https", "rtsp", "rtsps")),
             "title": _text(body.get("title"), "title"),
             "loop": loop,
             "volume": _number(body.get("volume"), "volume", 0, 1),
@@ -105,8 +107,14 @@ def check_address(host: str, port: Any) -> tuple[str, int]:
     return str(address), port
 
 
+def config_rev(config: dict[str, Any]) -> str:
+    """The revision the console stamps on the settings it gives a screen (its `rev`)."""
+    return hashlib.sha256(json.dumps(config, sort_keys=True).encode()).hexdigest()[:16]
+
+
 class Link:
-    """Follows one paired screen's state over its event stream, reconnecting as needed."""
+    """Follows one paired screen's state over its event stream, reconnecting as needed, and
+    keeps the console's settings on it (unless Home Assistant manages the screen)."""
 
     def __init__(self, screens: Screens, tenant_id: str, screen: dict[str, Any], token: str) -> None:
         self.screens = screens
@@ -120,6 +128,8 @@ class Link:
         self.managed_by: str | None = None
         self.seen: float | None = None
         self.next_move_check = 0.0
+        self.config: dict[str, Any] = screen.get("config") or {}
+        self.applied_rev: str | None = None
         self._task: asyncio.Task | None = None
 
     def start(self) -> None:
@@ -171,13 +181,28 @@ class Link:
         self.screens.publish(self.tenant_id, self.screen_id)
 
     async def _read_config(self) -> None:
-        """Whether Home Assistant manages this screen; the console then only sends commands."""
+        """Whether Home Assistant manages this screen; the console then only sends commands.
+        Otherwise the console's settings go back on the screen if anything changed them."""
         try:
             config = await self.client.get_config()
         except PleatViewError:
             return
         self.managed_by = "home_assistant" if config.get("ha_url") else None
+        self.applied_rev = config.get("rev")
+        await self.push_config()
         self.screens.publish(self.tenant_id, self.screen_id)
+
+    async def push_config(self) -> None:
+        if self.managed_by or not self.config or not self.online:
+            return
+        rev = config_rev(self.config)
+        if self.applied_rev == rev:
+            return
+        try:
+            await self.client.set_config({**self.config, "rev": rev})
+            self.applied_rev = rev
+        except PleatViewError as err:
+            _LOGGER.warning("Screen %s refused the console's settings: %s", self.device_id, err)
 
     def _set_offline(self) -> None:
         if self.online:
@@ -226,6 +251,8 @@ class Screens:
             "port": screen["port"],
             "model": " ".join(filter(None, (info.get("manufacturer"), info.get("model")))),
             "app_version": (link.state or {}).get("app_version") if link else None,
+            "config": screen["config"],
+            "home_without_ha": "home_without_ha" in ((link.state or {}).get("features") or []) if link else False,
             **(link.view() if link else {"online": False, "rejected": False, "managed_by": None,
                                          "seen": None, "state": None}),
         }
@@ -284,6 +311,18 @@ class Screens:
                 _LOGGER.info("Screen %s not reached to unpair: %s", link.device_id, err)
         self.store.tenant(tenant_id).delete_screen(screen_id)
         self._send(tenant_id, {"type": "removed", "id": screen_id})
+
+    async def configure(self, tenant_id: str, screen_id: int, config: dict[str, Any]) -> None:
+        """Keeps these settings on the screen, now and whenever it comes back."""
+        tenant = self.store.tenant(tenant_id)
+        tenant.update_screen(screen_id, config=config)
+        link = self.links.get((tenant_id, screen_id))
+        if link:
+            if link.managed_by:
+                raise Invalid("Home Assistant manages this screen's settings")
+            link.config = config
+            await link.push_config()
+        self.publish(tenant_id, screen_id)
 
     async def command(self, tenant_id: str, screen_id: int, command: str, params: dict[str, Any]) -> None:
         link = self.links.get((tenant_id, screen_id))

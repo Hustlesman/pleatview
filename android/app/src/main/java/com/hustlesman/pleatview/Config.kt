@@ -28,7 +28,9 @@ data class Config(
     val renderStream: String = "",
     val rev: String = "",
 ) {
-    val isConfigured: Boolean get() = haUrl.isNotEmpty()
+    /** Set up: Home Assistant's address, or a home page of its own from another controller
+     *  (PleatView Console), which leaves the setup screen without Home Assistant. */
+    val isConfigured: Boolean get() = haUrl.isNotEmpty() || isHttpUrl(homeDashboard)
 
     /** `scheme://host[:port]` of Home Assistant, used to scope the auth bridge. */
     val haOrigin: String? get() = originOf(haUrl)

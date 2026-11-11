@@ -33,6 +33,7 @@
     <string name="menu_allow_overlay">Tillad visning oven på andre apps</string>
     <string name="overlay_settings_missing">Denne enhed har ingen indstilling til det. Se pleatview.hustlesman.com/support for løsningen på én linje.</string>
     <string name="status_unreachable">Kan ikke nå Home Assistant (%1$s). Prøver igen om %2$d s…</string>
+    <string name="status_unreachable_page">Kan ikke nå %1$s. Prøver igen om %2$d s…</string>
     <string name="status_auth_failed">Home Assistant afviste adgangstokenet. Send det igen fra Home Assistant eller opsætningssiden.</string>
     <string name="status_no_webview">Android System WebView er ikke tilgængelig. Installer eller opdater den fra Play Butik.</string>
     <string name="playback_failed">Afspilningen mislykkedes: %1$s</string>

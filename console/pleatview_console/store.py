@@ -99,7 +99,12 @@ CREATE TABLE settings (
 """
 
 CONSOLE_SCHEMA = [CONSOLE_V1, CONSOLE_V2]
-TENANT_SCHEMA = [TENANT_V1]
+# The settings the console keeps on each screen it manages (home page, zoom).
+TENANT_V2 = """
+ALTER TABLE screens ADD COLUMN config TEXT NOT NULL DEFAULT '{}';
+"""
+
+TENANT_SCHEMA = [TENANT_V1, TENANT_V2]
 
 
 def _connect(path: Path, migrations: list[str]) -> sqlite3.Connection:
@@ -173,11 +178,12 @@ class TenantDb:
         return int(cur.lastrowid)
 
     def update_screen(self, screen_id: int, **fields: Any) -> None:
-        allowed = {"site_id", "name", "host", "port", "token", "info"}
+        allowed = {"site_id", "name", "host", "port", "token", "info", "config"}
         if not fields or set(fields) - allowed:
             raise ValueError(f"cannot update {sorted(set(fields) - allowed)}")
-        if "info" in fields:
-            fields["info"] = json.dumps(fields["info"])
+        for key in ("info", "config"):
+            if key in fields:
+                fields[key] = json.dumps(fields[key], sort_keys=True)
         columns = ", ".join(f"{name} = ?" for name in fields)
         self.db.execute(f"UPDATE screens SET {columns} WHERE id = ?", (*fields.values(), screen_id))
 
@@ -188,6 +194,7 @@ class TenantDb:
     def _screen(row: sqlite3.Row) -> dict[str, Any]:
         screen = dict(row)
         screen["info"] = json.loads(screen["info"] or "{}")
+        screen["config"] = json.loads(screen.get("config") or "{}")
         return screen
 
     # Audit log

@@ -79,7 +79,8 @@ Events stream that sends the full snapshot on connect and after every change
 ```
 
 - `foreground`: PleatView is the visible app. `power`: `on` or `standby` (blanked).
-- `view`: `setup` (no Home Assistant URL yet) or `dashboard`.
+- `view`: `setup` (neither Home Assistant's address nor a home page that is a full web
+  address yet) or `dashboard`.
 - `dashboard`: path on Home Assistant currently shown, or null for other sites.
 - `ha_connected`: the Home Assistant frontend's websocket state, from its heartbeat.
 - `media.state`: `playing`, `paused` or `buffering`; `duration` is null for live streams.
@@ -95,7 +96,9 @@ Events stream that sends the full snapshot on connect and after every change
   Assistant can render dashboards to match (null until the app has been on screen).
 - `features`: what the app can do beyond this version of the protocol. Home Assistant only
   sends configuration a feature needs to apps that list it. `render_stream`: the app plays
-  `render_stream` (1.0.14 and later; not the Linux app yet).
+  `render_stream` (1.0.14 and later; not the Linux app yet). `home_without_ha`: a full web
+  address in `home_dashboard` sets the app up without `ha_url`, for controllers other than
+  Home Assistant, such as PleatView Console (1.0.17 and later).
 
 ## Commands
 
@@ -165,7 +168,7 @@ never sent to Home Assistant.
 | `ha_url` | — | Home Assistant base URL; empty shows the setup screen |
 | `ha_token` | — | Long-lived access token, write-only (`ha_token_set` is returned instead) |
 | `dashboards` | `[]` | `[{"title": "Cameras", "path": "/dashboard-cams"}]` |
-| `home_dashboard` | first dashboard, else `/` | Path or URL |
+| `home_dashboard` | first dashboard, else `/` | Path or URL. A full web address also works without `ha_url` (`home_without_ha`) |
 | `kiosk` | `full` | `full` hides the sidebar and header, `sidebar`, or `off` |
 | `zoom` | 100 | Page zoom in percent (25–400); lower fits more on screen |
 | `rotate_seconds` | 0 | Cycle `dashboards` when nobody is using the remote |

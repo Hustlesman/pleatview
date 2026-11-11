@@ -102,10 +102,11 @@ home), and a site holds screens and renderers.
 - **A screen can have several controllers.** One paired with Home Assistant keeps Home
   Assistant's settings and sign-in. The console then only sends it commands, and lists it as
   managed by Home Assistant.
-- **Without Home Assistant**, the console sets the screen's home page and dashboards to its
-  own pages, media or any website. Today's apps show their setup screen until Home Assistant's
-  address is set, so this needs a small change in the apps (a home page without Home
-  Assistant). Until then, the console shows pages on them with commands.
+- **Without Home Assistant**, the console keeps a home page and zoom on the screen: its own
+  pages, media or any website. The console stamps its settings with a revision and puts them
+  back whenever the screen comes back with others, as Home Assistant does. The apps leave
+  their setup screen with a home page that is a full web address from 1.0.17
+  (`home_without_ha` in their features); older ones only take commands.
 - **Moved screens:** when a paired screen announces a new address, the console moves there
   only once the screen proves it issued the console's token, as Home Assistant does.
 - **Commands:** show a page, play media, notify, home, reload, standby and wake.
@@ -191,7 +192,7 @@ device keys), `ffmpeg` and `tini`. Anything more needs approval first.
    discovering and pairing screens, their live state, commands, the audit log, the
    installable web app, the Docker image and tests.
 2. Two-factor sign-in, members and roles in the web app (done 11 Nov).
-3. The apps' home page without Home Assistant (Android and Linux).
+3. The apps' home page without Home Assistant (Android and Linux; done 11 Nov).
 4. Groups, pages and the media library with conversion.
 5. Schedules and playlists.
 6. Many sites, then many tenants, with S1's connections.

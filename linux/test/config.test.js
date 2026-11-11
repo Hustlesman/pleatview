@@ -38,6 +38,14 @@ test("invalid values are rejected; stored unknown keys are ignored", () => {
   assert.equal(Config.fromJson({ colour: "red", zoom: 75 }).zoom, 75);
 });
 
+test("a home page of its own sets the app up without Home Assistant", () => {
+  assert.equal(new Config().isConfigured, false);
+  assert.equal(new Config().merge({ home_dashboard: "/lovelace/0" }).isConfigured, false);
+  const own = new Config().merge({ home_dashboard: "https://console.example/screen" });
+  assert.equal(own.isConfigured, true);
+  assert.equal(own.resolve(own.homePath), "https://console.example/screen");
+});
+
 test("URL helpers", () => {
   assert.equal(originOf("HTTP://Ha.Local:80/x"), "http://ha.local");
   assert.equal(originOf("ftp://x"), null);
