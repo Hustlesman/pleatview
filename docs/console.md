@@ -206,6 +206,10 @@ device keys), `ffmpeg` and `tini`. Anything more needs approval first.
 5. Schedules (done 11 Nov): a page as the home page by day and time, on a screen, a group or
    a site, by the site's clock (the most specific wins). Playlists came with step 4.
 6. Many sites and organisations (11 Nov: time zones per site; organisations renamed, exported
-   as JSON without secrets, and deleted with their key by an administrator). Still to come:
-   sites that keep playing while the console is offline, and S1's connections for sites
-   elsewhere.
+   as JSON without secrets, and deleted with their key by an administrator). While the console
+   can't be reached, screens keep their home page; a web page goes on showing, and a playlist
+   plays on from the last list and the screen's cache, which keeps media a week (videos as
+   far as the screen's browser keeps them). Still to come: a full offline copy of playlists
+   (it needs HTTPS that screens trust, for a service worker), PleatView Light on screens
+   without Home Assistant (it needs a renderer the console drives, R1), and S1's connections
+   for sites elsewhere.

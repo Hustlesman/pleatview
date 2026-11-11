@@ -101,9 +101,11 @@ async def media_file(request: web.Request) -> web.StreamResponse:
     path = folder(request.app[STORE].data, tenant_id, item["id"]) / name
     if not path.is_file():
         raise web.HTTPNotFound()
+    # A media file's address never changes content (a new upload gets a new token), so the
+    # screen may keep it a week: a playlist then plays on while the console can't be reached.
     return web.FileResponse(path, headers={
         "Content-Type": PLAYABLE_TYPES[name.rsplit(".", 1)[1]],
-        "Cache-Control": "private, max-age=3600",
+        "Cache-Control": "private, max-age=604800, immutable",
     })
 
 
