@@ -11,11 +11,13 @@ import json
 import logging
 from pathlib import Path
 import re
+import secrets
 from typing import Any, Awaitable, Callable
 
 from aiohttp import web
 
 from . import VERSION
+from . import totp
 from .auth import DUMMY_HASH, Throttle, check_new_password, check_password, hash_password
 from .screens import Invalid, Screens, check_address, command_params
 from .store import ROLES, TENANT_ID, Store
@@ -120,10 +122,17 @@ def current_user(request: web.Request) -> dict[str, Any] | None:
     return request.app[STORE].session_user(token) if token else None
 
 
-def signed_in(request: web.Request) -> dict[str, Any]:
+def signed_in(request: web.Request, *, restricted_ok: bool = False) -> dict[str, Any]:
+    """The signed-in user. Until a one-time password is changed, or two-factor sign-in is set
+    up where the console requires it, only the account's own pages answer."""
     user = current_user(request)
     if not user:
         raise fail(401, "Sign in first")
+    if not restricted_ok:
+        if user["must_change"]:
+            raise fail(403, "Choose your own password first", action="change_password")
+        if request.app[STORE].setting("require_2fa", False) and not user["totp"]:
+            raise fail(403, "Set up two-factor sign-in first", action="two_factor")
     return user
 
 
@@ -152,9 +161,26 @@ def set_session(request: web.Request, response: web.Response, user_id: int) -> N
 
 def me(store: Store, user: dict[str, Any]) -> dict[str, Any]:
     return {
-        "user": {"id": user["id"], "username": user["username"], "name": user["name"], "admin": bool(user["admin"])},
+        "user": {
+            "id": user["id"], "username": user["username"], "name": user["name"],
+            "admin": bool(user["admin"]), "two_factor": bool(user["totp"]),
+            "must_change": bool(user["must_change"]),
+        },
+        "require_2fa": bool(store.setting("require_2fa", False)),
         "tenants": store.memberships(user["id"]),
     }
+
+
+async def confirm_password(request: web.Request, user: dict[str, Any], password: Any) -> None:
+    """Asks for the password again before a change to the account's security, as slowly as
+    the sign-in page lets anyone guess."""
+    throttle, key = request.app[THROTTLE], f"user:{user['username'].lower()}"
+    if wait := throttle.wait(key):
+        raise fail(429, f"Too many tries. Wait {wait} seconds.", retry_after=wait)
+    if not isinstance(password, str) or not await asyncio.to_thread(check_password, password, user["password"]):
+        throttle.failed(key)
+        raise fail(403, "The password is wrong")
+    throttle.succeeded(key)
 
 
 # ---- Sign-in -------------------------------------------------------------------------
@@ -213,6 +239,18 @@ async def login(request: web.Request) -> web.Response:
         throttle.failed(*keys)
         _LOGGER.warning("Failed sign-in for %r from %s", username[:100], client_address(request))
         raise fail(401, "Wrong user name or password")
+    if user["totp"]:
+        code = data.get("code")
+        if not isinstance(code, str) or not code.strip():
+            # The password was right: ask for the second factor, without counting a failure.
+            raise fail(401, "Enter the 6-digit code from your authenticator app, or a recovery code.",
+                       two_factor=True)
+        step = totp.verify(store.totp_secret(user), code, user["totp_step"])
+        if step is not None:
+            store.set_totp_step(user["id"], step)
+        elif not store.use_recovery(user["id"], totp.recovery_hash(code)):
+            throttle.failed(*keys)
+            raise fail(401, "Wrong code. Codes change every 30 seconds; each works once.", two_factor=True)
     throttle.succeeded(*keys)
     store.prune_sessions()
     response = web.json_response(me(store, user))
@@ -230,24 +268,105 @@ async def logout(request: web.Request) -> web.Response:
 
 async def change_password(request: web.Request) -> web.Response:
     store = request.app[STORE]
-    user = signed_in(request)
+    user = signed_in(request, restricted_ok=True)
     data = await body(request)
     current, new = data.get("current"), data.get("password")
     if not isinstance(current, str) or not isinstance(new, str):
         raise fail(400, "The current and the new password are required")
-    throttle, key = request.app[THROTTLE], f"user:{user['username'].lower()}"
-    if wait := throttle.wait(key):
-        raise fail(429, f"Too many tries. Wait {wait} seconds.", retry_after=wait)
-    if not await asyncio.to_thread(check_password, current, user["password"]):
-        throttle.failed(key)
-        raise fail(403, "The current password is wrong")
-    throttle.succeeded(key)
+    await confirm_password(request, user, current)
     if problem := check_new_password(new):
         raise fail(400, problem)
+    if new == current:
+        raise fail(400, "Choose a password other than the current one.")
     store.set_password(user["id"], await asyncio.to_thread(hash_password, new))
-    response = web.json_response({})
+    response = web.json_response(me(store, store.user(user["id"])))
     set_session(request, response, user["id"])  # every other session has ended
     return response
+
+
+# ---- Two-factor sign-in ----------------------------------------------------------------
+
+
+async def account(request: web.Request) -> web.Response:
+    store = request.app[STORE]
+    user = signed_in(request, restricted_ok=True)
+    return web.json_response({**me(store, user), "recovery_left": store.recovery_left(user["id"])})
+
+
+async def two_factor_setup(request: web.Request) -> web.Response:
+    """A new secret to put in an authenticator app; it counts once a code from it is entered."""
+    store = request.app[STORE]
+    user = signed_in(request, restricted_ok=True)
+    await confirm_password(request, user, (await body(request)).get("password"))
+    secret = totp.new_secret()
+    store.set_totp_pending(user["id"], secret)
+    return web.json_response({"secret": secret, "uri": totp.uri(secret, user["username"])})
+
+
+async def two_factor_enable(request: web.Request) -> web.Response:
+    store = request.app[STORE]
+    user = signed_in(request, restricted_ok=True)
+    pending = store.totp_secret(user, pending=True)
+    if not pending:
+        raise fail(409, "Start setting up two-factor sign-in first")
+    code = (await body(request)).get("code")
+    step = totp.verify(pending, code, 0) if isinstance(code, str) else None
+    if step is None:
+        raise fail(400, "That code doesn't match. Check the phone's clock, and enter the newest code.")
+    codes = totp.new_recovery_codes()
+    store.enable_totp(user["id"], step, [totp.recovery_hash(c) for c in codes])
+    _audit_everywhere(store, user, "two_factor_enabled", request)
+    return web.json_response({"recovery_codes": codes})
+
+
+async def two_factor_disable(request: web.Request) -> web.Response:
+    store = request.app[STORE]
+    user = signed_in(request, restricted_ok=True)
+    if store.setting("require_2fa", False):
+        raise fail(409, "This console requires two-factor sign-in")
+    await confirm_password(request, user, (await body(request)).get("password"))
+    store.disable_totp(user["id"])
+    _audit_everywhere(store, user, "two_factor_disabled", request)
+    return web.json_response({})
+
+
+async def recovery_codes(request: web.Request) -> web.Response:
+    store = request.app[STORE]
+    user = signed_in(request, restricted_ok=True)
+    if not user["totp"]:
+        raise fail(409, "Two-factor sign-in is off")
+    await confirm_password(request, user, (await body(request)).get("password"))
+    codes = totp.new_recovery_codes()
+    store.replace_recovery(user["id"], [totp.recovery_hash(c) for c in codes])
+    return web.json_response({"recovery_codes": codes})
+
+
+def _audit_everywhere(store: Store, user: dict[str, Any], action: str, request: web.Request,
+                      target: str | None = None) -> None:
+    """A change to an account's security, in the log of every tenant the account belongs to."""
+    for membership in store.memberships(user["id"]):
+        store.tenant(membership["id"]).log(action, user=user["username"], target=target,
+                                           address=client_address(request))
+
+
+# ---- Console settings (administrators) -----------------------------------------------
+
+
+async def settings(request: web.Request) -> web.Response:
+    store = request.app[STORE]
+    user = signed_in(request)
+    if not user["admin"]:
+        raise fail(403, "Only console administrators")
+    if request.method == "POST":
+        data = await body(request)
+        require = data.get("require_2fa")
+        if not isinstance(require, bool):
+            raise fail(400, "require_2fa must be true or false")
+        if require and not user["totp"]:
+            raise fail(409, "Set up two-factor sign-in for yourself first")
+        store.set_setting("require_2fa", require)
+        _LOGGER.info("%s set require_2fa to %s", user["username"], require)
+    return web.json_response({"require_2fa": bool(store.setting("require_2fa", False))})
 
 
 # ---- Tenants and sites -----------------------------------------------------------------
@@ -305,6 +424,126 @@ async def change_site(request: web.Request) -> web.Response:
         tenant.log("site_renamed", user=user["username"], target=f"site:{site_id}", detail={"name": name},
                    address=client_address(request))
     return web.json_response({"sites": tenant.sites()})
+
+
+# ---- Members --------------------------------------------------------------------------
+
+
+def _member_view(row: dict[str, Any], tenant_id: str) -> dict[str, Any]:
+    return {
+        "id": row["id"], "username": row["username"], "name": row["name"], "role": row["role"],
+        "two_factor": bool(row["two_factor"]), "admin": bool(row["admin"]),
+        # Only this tenant's own accounts: an owner can't take over an account that also
+        # opens another tenant, or a console administrator's.
+        "managed": not row["admin"] and row["tenants"] == 1,
+    }
+
+
+async def list_members(request: web.Request) -> web.Response:
+    _, tenant_id, _ = member(request, "own")
+    rows = request.app[STORE].members(tenant_id)
+    return web.json_response({"members": [_member_view(r, tenant_id) for r in rows]})
+
+
+def _role(data: dict[str, Any]) -> str:
+    role = data.get("role")
+    if role not in ROLES:
+        raise fail(400, "Choose a role: owner, operator or viewer")
+    return role
+
+
+def _one_time_password() -> str:
+    return secrets.token_urlsafe(12)
+
+
+async def add_member(request: web.Request) -> web.Response:
+    """A new account for this tenant, with a one-time password to pass on. Console
+    administrators can also add an existing account by its user name."""
+    user, tenant_id, _ = member(request, "own")
+    store = request.app[STORE]
+    data = await body(request)
+    username = name_field(data, "username", "A user name")
+    role = _role(data)
+    existing = store.user_by_name(username)
+    password = None
+    if existing:
+        if not user["admin"]:
+            raise fail(409, "That user name is taken. Choose another.")
+        if store.role(existing["id"], tenant_id):
+            raise fail(409, "Already a member")
+        user_id = existing["id"]
+    else:
+        name = name_field(data, "name", "A name")
+        password = _one_time_password()
+        user_id = store.add_user(username, name, await asyncio.to_thread(hash_password, password), must_change=True)
+    store.set_member(user_id, tenant_id, role)
+    store.tenant(tenant_id).log("member_added", user=user["username"], target=f"user:{username}",
+                                detail={"role": role}, address=client_address(request))
+    return web.json_response({"id": user_id, "password": password})
+
+
+def _target_member(request: web.Request, tenant_id: str) -> dict[str, Any]:
+    raw = request.match_info["user"]
+    rows = {r["id"]: r for r in request.app[STORE].members(tenant_id)}
+    target = rows.get(int(raw)) if raw.isdigit() else None
+    if not target:
+        raise fail(404, "No such member")
+    return target
+
+
+def _keep_an_owner(store: Store, tenant_id: str, target: dict[str, Any]) -> None:
+    owners = [m for m in store.members(tenant_id) if m["role"] == "owner"]
+    if target["role"] == "owner" and len(owners) == 1:
+        raise fail(409, "An organisation needs at least one owner")
+
+
+async def change_member(request: web.Request) -> web.Response:
+    user, tenant_id, _ = member(request, "own")
+    store = request.app[STORE]
+    target = _target_member(request, tenant_id)
+    role = _role(await body(request))
+    if role != "owner":
+        _keep_an_owner(store, tenant_id, target)
+    store.set_member(target["id"], tenant_id, role)
+    store.tenant(tenant_id).log("member_changed", user=user["username"], target=f"user:{target['username']}",
+                                detail={"role": role}, address=client_address(request))
+    return web.json_response({})
+
+
+async def remove_member(request: web.Request) -> web.Response:
+    user, tenant_id, _ = member(request, "own")
+    store = request.app[STORE]
+    target = _target_member(request, tenant_id)
+    _keep_an_owner(store, tenant_id, target)
+    store.remove_member(target["id"], tenant_id)
+    if not target["admin"] and not store.memberships(target["id"]):
+        store.delete_user(target["id"])  # an account with nothing left to open goes
+    store.tenant(tenant_id).log("member_removed", user=user["username"], target=f"user:{target['username']}",
+                                address=client_address(request))
+    return web.json_response({})
+
+
+async def reset_member(request: web.Request) -> web.Response:
+    """A new one-time password, or two-factor sign-in turned off, for a member who lost theirs."""
+    user, tenant_id, _ = member(request, "own")
+    store = request.app[STORE]
+    target = _target_member(request, tenant_id)
+    if not (user["admin"] or _member_view(target, tenant_id)["managed"]):
+        raise fail(403, "This account also opens other organisations; a console administrator can reset it")
+    what = (await body(request)).get("reset")
+    tenant = store.tenant(tenant_id)
+    if what == "password":
+        password = _one_time_password()
+        store.set_password(target["id"], await asyncio.to_thread(hash_password, password), must_change=True)
+        tenant.log("member_password_reset", user=user["username"], target=f"user:{target['username']}",
+                   address=client_address(request))
+        return web.json_response({"password": password})
+    if what == "two_factor":
+        store.disable_totp(target["id"])
+        tenant.log("member_two_factor_reset", user=user["username"], target=f"user:{target['username']}",
+                   address=client_address(request))
+        return web.json_response({})
+    raise fail(400, "reset must be password or two_factor")
 
 
 async def audit(request: web.Request) -> web.Response:
@@ -494,12 +733,24 @@ def create_app(store: Store, screens: Screens, *, https: bool) -> web.Applicatio
     app.router.add_post("/api/password", change_password)
     app.router.add_post("/api/tenants", add_tenant)
     app.router.add_get("/api/packages", packages)
+    app.router.add_get("/api/account", account)
+    app.router.add_post("/api/2fa/setup", two_factor_setup)
+    app.router.add_post("/api/2fa/enable", two_factor_enable)
+    app.router.add_post("/api/2fa/disable", two_factor_disable)
+    app.router.add_post("/api/2fa/recovery", recovery_codes)
+    app.router.add_get("/api/settings", settings)
+    app.router.add_post("/api/settings", settings)
     t = "/api/t/{tenant}"
     app.router.add_get(t, tenant_overview)
     app.router.add_post(t + "/sites", add_site)
     app.router.add_patch(t + "/sites/{site:\\d+}", change_site)
     app.router.add_delete(t + "/sites/{site:\\d+}", change_site)
     app.router.add_get(t + "/audit", audit)
+    app.router.add_get(t + "/members", list_members)
+    app.router.add_post(t + "/members", add_member)
+    app.router.add_patch(t + "/members/{user}", change_member)
+    app.router.add_delete(t + "/members/{user}", remove_member)
+    app.router.add_post(t + "/members/{user}/reset", reset_member)
     app.router.add_get(t + "/screens", list_screens)
     app.router.add_post(t + "/screens", pair_screen)
     app.router.add_patch(t + "/screens/{screen}", change_screen)

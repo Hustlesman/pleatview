@@ -77,8 +77,13 @@ home), and a site holds screens and renderers.
 - **Passwords** are hashed with scrypt (N 2^15, r 8, p 3, from OWASP's recommendations), in
   Python's standard library. Nothing is ever stored in plain text.
 - **Two-factor sign-in** with an authenticator app (TOTP, RFC 6238), written with the
-  standard library. It's required for owners and console administrators once enabled
-  for the console.
+  standard library, with ten one-time recovery codes for a lost phone. Each code works
+  once. A console administrator can require it for everyone; until then, each person
+  chooses.
+- **Members** are added by an owner, who gets a one-time password to pass on; the member
+  chooses their own at the first sign-in. Owners reset passwords and two-factor sign-in only
+  for accounts that open no other organisation. Accounts that open several are reset by a
+  console administrator. An organisation always keeps at least one owner.
 - **Sessions** are random 256-bit tokens in a cookie that scripts can't read
   (`HttpOnly`, `Secure`, `SameSite=Strict`), stored only as hashes. They expire after
   12 hours idle and 7 days at most, and signing out or a password change ends them.
@@ -182,10 +187,10 @@ device keys), `ffmpeg` and `tini`. Anything more needs approval first.
 
 ## The work, in order
 
-1. **Foundation** (this first part): the server, first start, sign-in, tenants and sites,
+1. **Foundation** (done 11 Nov): the server, first start, sign-in, tenants and sites,
    discovering and pairing screens, their live state, commands, the audit log, the
    installable web app, the Docker image and tests.
-2. Two-factor sign-in, members and roles in the web app.
+2. Two-factor sign-in, members and roles in the web app (done 11 Nov).
 3. The apps' home page without Home Assistant (Android and Linux).
 4. Groups, pages and the media library with conversion.
 5. Schedules and playlists.

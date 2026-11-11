@@ -194,3 +194,16 @@ dialog::backdrop { background: rgb(0 0 0 / .6); }
   .brand span { display: none; }
   main { padding: 1rem .8rem 3rem; }
 }
+
+code.secret, pre.codes {
+  display: block;
+  font: 600 1.05rem/1.6 ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  background: var(--ink);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: .6em .8em;
+  letter-spacing: .05em;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+.row select { width: auto; }

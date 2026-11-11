@@ -20,9 +20,10 @@ function h(tag, attrs = {}, ...children) {
 }
 
 class ApiError extends Error {
-  constructor(status, message) {
+  constructor(status, message, body = {}) {
     super(message);
     this.status = status;
+    this.body = body;
   }
 }
 
@@ -48,7 +49,11 @@ async function api(method, path, data) {
   if (response.status === 401 && app.me && !path.startsWith("/api/login")) {
     signedOut();
   }
-  if (!response.ok) throw new ApiError(response.status, body.error || `Error ${response.status}`);
+  if (response.status === 403 && body.action && app.me) {
+    // The account must change its one-time password or set up two-factor sign-in first.
+    setTimeout(() => (body.action === "change_password" ? showChangePassword() : showTwoFactorSetup()));
+  }
+  if (!response.ok) throw new ApiError(response.status, body.error || `Error ${response.status}`, body);
   return body;
 }
 
@@ -88,6 +93,8 @@ async function start() {
   $("#logout").addEventListener("click", logout);
   $("#change-password").addEventListener("click", changePassword);
   $("#add-tenant").addEventListener("click", addTenant);
+  $("#two-factor").addEventListener("click", () => twoFactor().catch((e) => toast(e.message)));
+  $("#console-settings").addEventListener("click", () => consoleSettings().catch((e) => toast(e.message)));
   $("#tenant").addEventListener("change", (event) => selectTenant(event.target.value));
   $("#dialog-cancel").addEventListener("click", () => $("#dialog").close());
   window.addEventListener("hashchange", render);
@@ -165,6 +172,7 @@ function dialog({ title, fields = [], text, ok = "OK", danger = false, submit })
   $("#dialog-error").textContent = "";
   $("#dialog-body").replaceChildren(...[text ? h("p", { text }) : null, ...fields.flatMap(field)].filter(Boolean));
   okButton.textContent = ok;
+  $("#dialog-cancel").hidden = false;
   okButton.className = danger ? "danger" : "";
   form.onsubmit = async (event) => {
     event.preventDefault();
@@ -196,19 +204,38 @@ function showSetup() {
   ], "Set up", async (data) => signedIn(await api("POST", "/api/setup", data)));
 }
 
-function showLogin() {
+function showLogin(withCode = false, values = {}) {
   $("#bar").hidden = true;
-  formPage("Sign in", [
-    { name: "username", label: "User name", autocomplete: "username" },
-    { name: "password", label: "Password", type: "password", autocomplete: "current-password" },
-  ], "Sign in", async (data) => signedIn(await api("POST", "/api/login", data)));
+  const fields = [
+    { name: "username", label: "User name", autocomplete: "username", value: values.username || "" },
+    { name: "password", label: "Password", type: "password", autocomplete: "current-password", value: values.password || "" },
+  ];
+  if (withCode) {
+    fields.push({ name: "code", label: "Code", autocomplete: "one-time-code",
+      hint: "The 6 digits in your authenticator app, or one of your recovery codes." });
+  }
+  formPage("Sign in", fields, "Sign in", async (data) => {
+    try {
+      signedIn(await api("POST", "/api/login", data));
+    } catch (error) {
+      if (error.body?.two_factor && !withCode) {
+        showLogin(true, data);
+        $("#f-code").focus();
+        return;
+      }
+      throw error;
+    }
+  });
 }
 
 function signedIn(me) {
   app.me = me;
+  if (me.user.must_change) return showChangePassword();
+  if (me.require_2fa && !me.user.two_factor) return showTwoFactorSetup();
   $("#bar").hidden = false;
   $("#username").textContent = me.user.name;
   $("#add-tenant").hidden = !me.user.admin;
+  $("#console-settings").hidden = !me.user.admin;
   const select = $("#tenant");
   select.replaceChildren(...me.tenants.map((t) => h("option", { value: t.id, text: t.name })));
   select.hidden = me.tenants.length < 2;
@@ -237,6 +264,123 @@ async function logout() {
   } finally {
     signedOut();
   }
+}
+
+// First sign-in with a one-time password: the account's own password before anything else.
+function showChangePassword() {
+  $("#bar").hidden = true;
+  formPage("Choose your password", [
+    { name: "current", label: "One-time password", type: "password", autocomplete: "current-password",
+      hint: "The password you were given." },
+    { name: "password", label: "Your new password", type: "password", autocomplete: "new-password", hint: "At least 12 characters." },
+  ], "Save", async (data) => signedIn(await api("POST", "/api/password", data)));
+}
+
+// Two-factor sign-in, set up on a page (when the console requires it) or in a dialog.
+function showTwoFactorSetup() {
+  $("#bar").hidden = true;
+  formPage("Set up two-factor sign-in", [
+    { name: "password", label: "Your password", type: "password", autocomplete: "current-password",
+      hint: "This console asks for a code from an authenticator app at every sign-in." },
+  ], "Next", async (data) => {
+    const secret = await api("POST", "/api/2fa/setup", data);
+    twoFactorSecretPage(secret);
+  });
+}
+
+function secretBlock(secret) {
+  return h("div", {},
+    h("p", { text: "Add PleatView Console to an authenticator app: open the link on the phone that has the app, or enter this key in it." }),
+    h("p", {}, h("code", { class: "secret", text: secret.secret.match(/.{1,4}/g).join(" ") })),
+    h("p", {}, h("a", { href: secret.uri, text: "Open in an authenticator app" })));
+}
+
+function twoFactorSecretPage(secret) {
+  formPage("Set up two-factor sign-in", [
+    { name: "code", label: "Code from the app", autocomplete: "one-time-code" },
+  ], "Turn on", async (data) => {
+    const result = await api("POST", "/api/2fa/enable", data);
+    recoveryPage(result.recovery_codes, async () => signedIn(await api("GET", "/api/status")));
+  });
+  $("#main form").prepend(secretBlock(secret));
+}
+
+function recoveryList(codes) {
+  return h("div", {},
+    h("p", { text: "Recovery codes: each works once instead of a code from the app, if the phone is lost. Keep them somewhere safe, such as a password manager. They aren't shown again." }),
+    h("pre", { class: "codes", text: codes.join("\n") }));
+}
+
+function recoveryPage(codes, done) {
+  page(h("div", { class: "panel narrow" }, h("h1", { text: "Two-factor sign-in is on" }), recoveryList(codes),
+    h("div", { class: "actions" }, h("button", { type: "button", onclick: done, text: "I've saved them" }))));
+}
+
+async function twoFactor() {
+  $("#usermenu").open = false;
+  const accountInfo = await api("GET", "/api/account");
+  if (!accountInfo.user.two_factor) {
+    dialog({
+      title: "Two-factor sign-in",
+      text: "Sign-in will also ask for a code from an authenticator app on your phone.",
+      fields: [{ name: "password", label: "Your password", type: "password", autocomplete: "current-password" }],
+      ok: "Next",
+      submit: async (data) => {
+        const secret = await api("POST", "/api/2fa/setup", data);
+        setTimeout(() => dialog({
+          title: "Two-factor sign-in",
+          fields: [{ name: "code", label: "Code from the app", autocomplete: "one-time-code" }],
+          ok: "Turn on",
+          submit: async (codeData) => {
+            const result = await api("POST", "/api/2fa/enable", codeData);
+            app.me.user.two_factor = true;
+            setTimeout(() => dialog({ title: "Two-factor sign-in is on", ok: "I've saved them", submit: async () => {} }));
+            setTimeout(() => $("#dialog-body").append(recoveryList(result.recovery_codes)));
+            $("#dialog-cancel").hidden = true;
+          },
+        }));
+        setTimeout(() => $("#dialog-body").prepend(secretBlock(secret)));
+      },
+    });
+    return;
+  }
+  dialog({
+    title: "Two-factor sign-in is on",
+    text: `${accountInfo.recovery_left} recovery code${accountInfo.recovery_left === 1 ? "" : "s"} left. Enter your password for new recovery codes${accountInfo.require_2fa ? "." : ", or to turn two-factor sign-in off."}`,
+    fields: [
+      { name: "password", label: "Your password", type: "password", autocomplete: "current-password" },
+      { name: "what", label: "Do", options: [["recovery", "Make new recovery codes"], ...(accountInfo.require_2fa ? [] : [["off", "Turn two-factor sign-in off"]])] },
+    ],
+    ok: "Go",
+    submit: async (data) => {
+      if (data.what === "off") {
+        await api("POST", "/api/2fa/disable", { password: data.password });
+        app.me.user.two_factor = false;
+        toast("Two-factor sign-in is off");
+        return;
+      }
+      const result = await api("POST", "/api/2fa/recovery", { password: data.password });
+      setTimeout(() => {
+        dialog({ title: "New recovery codes", ok: "I've saved them", submit: async () => {} });
+        $("#dialog-body").append(recoveryList(result.recovery_codes));
+      });
+    },
+  });
+}
+
+async function consoleSettings() {
+  $("#usermenu").open = false;
+  const current = await api("GET", "/api/settings");
+  dialog({
+    title: "Console settings",
+    fields: [{ name: "require_2fa", label: "Two-factor sign-in", value: String(current.require_2fa),
+      options: [["false", "Each person chooses"], ["true", "Required for everyone"]] }],
+    ok: "Save",
+    submit: async (data) => {
+      await api("POST", "/api/settings", { require_2fa: data.require_2fa === "true" });
+      toast("Saved");
+    },
+  });
 }
 
 function changePassword() {
@@ -326,7 +470,9 @@ function render() {
     if (link.dataset.tab === current) link.setAttribute("aria-current", "page");
     else link.removeAttribute("aria-current");
   }
+  $("#members-tab").hidden = !may("own");
   if (current === "sites") renderSites();
+  else if (current === "members") renderMembers();
   else if (current === "activity") renderActivity();
   else renderScreens();
 }
@@ -573,6 +719,103 @@ function removeSite(site) {
   });
 }
 
+// ---- Members ----------------------------------------------------------------------------
+
+const ROLES = [["owner", "Owner: everything, members too"], ["operator", "Operator: pairs and controls screens"], ["viewer", "Viewer: sees screens and activity"]];
+
+async function renderMembers() {
+  let members;
+  try {
+    ({ members } = await api("GET", `/api/t/${app.tenant}/members`));
+  } catch (error) {
+    page(h("p", { class: "error", text: error.message }));
+    return;
+  }
+  if (tab() !== "members") return;
+  const roleSelect = (m) => {
+    const select = h("select", { "aria-label": `Role of ${m.name}` },
+      ROLES.map(([value, text]) => h("option", { value, selected: value === m.role, text: text.split(":")[0] })));
+    select.addEventListener("change", async () => {
+      try {
+        await api("PATCH", `/api/t/${app.tenant}/members/${m.id}`, { role: select.value });
+        toast(`${m.name} is now ${select.value}`);
+      } catch (error) {
+        toast(error.message);
+        select.value = m.role;
+      }
+    });
+    return select;
+  };
+  const canReset = (m) => m.managed || app.me.user.admin;
+  page(
+    h("div", { class: "section-head" },
+      h("h1", { text: "Members" }),
+      h("button", { type: "button", class: "quiet", onclick: addMember, text: "Add a member" })),
+    h("p", { class: "hint", text: "People who can open this organisation, and what they may do." }),
+    h("section", { class: "panel" }, members.map((m) => h("div", { class: "row" },
+      h("span", {}, h("strong", { text: m.name }), " ", h("span", { class: "meta", text: [m.username, m.two_factor ? "two-factor on" : null, m.admin ? "console administrator" : null].filter(Boolean).join(" · ") })),
+      roleSelect(m),
+      canReset(m) ? h("button", { type: "button", class: "quiet", onclick: () => resetMember(m), text: "Reset" }) : null,
+      h("button", { type: "button", class: "danger", onclick: () => removeMember(m), text: "Remove" })))),
+  );
+}
+
+function showOneTimePassword(title, username, password) {
+  setTimeout(() => {
+    dialog({ title, ok: "Done", submit: async () => {} });
+    $("#dialog-cancel").hidden = true;
+    $("#dialog-body").append(
+      h("p", { text: `Give ${username} this one-time password. They choose their own at the first sign-in. It isn't shown again.` }),
+      h("pre", { class: "codes", text: password }));
+  });
+}
+
+function addMember() {
+  dialog({
+    title: "Add a member",
+    fields: [
+      { name: "name", label: "Name" },
+      { name: "username", label: "User name", autocomplete: "off" },
+      { name: "role", label: "Role", options: ROLES, value: "operator" },
+    ],
+    ok: "Add",
+    submit: async (data) => {
+      const result = await api("POST", `/api/t/${app.tenant}/members`, data);
+      if (result.password) showOneTimePassword("Member added", data.username, result.password);
+      else toast(`${data.username} added`);
+      renderMembers();
+    },
+  });
+}
+
+function resetMember(m) {
+  dialog({
+    title: `Reset ${m.name}`,
+    fields: [{ name: "reset", label: "Reset", options: [["password", "Password: a new one-time password"], ...(m.two_factor ? [["two_factor", "Two-factor sign-in: turn it off, for a lost phone"]] : [])] }],
+    ok: "Reset",
+    danger: true,
+    submit: async (data) => {
+      const result = await api("POST", `/api/t/${app.tenant}/members/${m.id}/reset`, data);
+      if (result.password) showOneTimePassword("Password reset", m.username, result.password);
+      else toast("Two-factor sign-in turned off");
+      renderMembers();
+    },
+  });
+}
+
+function removeMember(m) {
+  dialog({
+    title: `Remove ${m.name}?`,
+    text: "They can no longer open this organisation. An account that opens nothing else is deleted.",
+    ok: "Remove",
+    danger: true,
+    submit: async () => {
+      await api("DELETE", `/api/t/${app.tenant}/members/${m.id}`);
+      renderMembers();
+    },
+  });
+}
+
 // ---- Activity ---------------------------------------------------------------------------
 
 const ACTIONS = {
@@ -585,6 +828,13 @@ const ACTIONS = {
   screen_removed: "Removed a screen",
   screen_moved: "A screen moved to a new address",
   command: "Sent a command",
+  member_added: "Added a member",
+  member_changed: "Changed a member's role",
+  member_removed: "Removed a member",
+  member_password_reset: "Reset a member's password",
+  member_two_factor_reset: "Turned off a member's two-factor sign-in",
+  two_factor_enabled: "Turned on two-factor sign-in",
+  two_factor_disabled: "Turned off two-factor sign-in",
 };
 
 const when = (at) => new Date(at * 1000).toLocaleString();
@@ -608,6 +858,7 @@ function targetName(target) {
   const [kind, id] = target.split(":");
   if (kind === "screen") return app.screens.find((s) => String(s.id) === id)?.name || `Screen ${id}`;
   if (kind === "site") return app.overview.sites.find((s) => String(s.id) === id)?.name || `Site ${id}`;
+  if (kind === "user") return id;
   return target;
 }
 

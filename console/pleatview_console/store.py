@@ -16,14 +16,14 @@ import sqlite3
 import time
 from typing import Any
 
-from .keys import Sealer, new_tenant_key
+from .keys import Sealer, new_tenant_key, open_sealed, seal
 
 TENANT_ID = re.compile(r"^[0-9a-f]{16}$")
 ROLES = ("owner", "operator", "viewer")
 SESSION_IDLE = 12 * 3600
 SESSION_MAX = 7 * 24 * 3600
 
-CONSOLE_SCHEMA = """
+CONSOLE_V1 = """
 CREATE TABLE users (
     id INTEGER PRIMARY KEY,
     username TEXT NOT NULL UNIQUE COLLATE NOCASE,
@@ -52,7 +52,7 @@ CREATE TABLE sessions (
 );
 """
 
-TENANT_SCHEMA = """
+TENANT_V1 = """
 CREATE TABLE sites (
     id INTEGER PRIMARY KEY,
     name TEXT NOT NULL,
@@ -81,13 +81,36 @@ CREATE TABLE audit (
 """
 
 
-def _connect(path: Path, schema: str) -> sqlite3.Connection:
+# Two-factor sign-in, recovery codes, passwords to change at first sign-in, console settings.
+CONSOLE_V2 = """
+ALTER TABLE users ADD COLUMN totp TEXT;
+ALTER TABLE users ADD COLUMN totp_pending TEXT;
+ALTER TABLE users ADD COLUMN totp_step INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE users ADD COLUMN must_change INTEGER NOT NULL DEFAULT 0;
+CREATE TABLE recovery_codes (
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    hash TEXT NOT NULL,
+    PRIMARY KEY (user_id, hash)
+);
+CREATE TABLE settings (
+    key TEXT PRIMARY KEY,
+    value TEXT NOT NULL
+);
+"""
+
+CONSOLE_SCHEMA = [CONSOLE_V1, CONSOLE_V2]
+TENANT_SCHEMA = [TENANT_V1]
+
+
+def _connect(path: Path, migrations: list[str]) -> sqlite3.Connection:
+    """Opens a database and brings it up to date, one migration per version."""
     db = sqlite3.connect(path, isolation_level=None)
     db.row_factory = sqlite3.Row
     db.execute("PRAGMA foreign_keys = ON")
     db.execute("PRAGMA journal_mode = WAL")
-    if db.execute("PRAGMA user_version").fetchone()[0] == 0:
-        db.executescript(f"BEGIN; {schema} PRAGMA user_version = 1; COMMIT;")
+    version = db.execute("PRAGMA user_version").fetchone()[0]
+    for number, script in enumerate(migrations[version:], start=version + 1):
+        db.executescript(f"BEGIN; {script} PRAGMA user_version = {number}; COMMIT;")
     return db
 
 
@@ -210,12 +233,16 @@ class Store:
     def user_count(self) -> int:
         return int(self.db.execute("SELECT COUNT(*) FROM users").fetchone()[0])
 
-    def add_user(self, username: str, name: str, password_hash: str, *, admin: bool = False) -> int:
+    def add_user(self, username: str, name: str, password_hash: str, *, admin: bool = False,
+                 must_change: bool = False) -> int:
         cur = self.db.execute(
-            "INSERT INTO users (username, name, password, admin, created) VALUES (?, ?, ?, ?, ?)",
-            (username, name, password_hash, int(admin), time.time()),
+            "INSERT INTO users (username, name, password, admin, created, must_change) VALUES (?, ?, ?, ?, ?, ?)",
+            (username, name, password_hash, int(admin), time.time(), int(must_change)),
         )
         return int(cur.lastrowid)
+
+    def delete_user(self, user_id: int) -> None:
+        self.db.execute("DELETE FROM users WHERE id = ?", (user_id,))
 
     def user(self, user_id: int) -> dict[str, Any] | None:
         row = self.db.execute("SELECT * FROM users WHERE id = ?", (user_id,)).fetchone()
@@ -225,11 +252,68 @@ class Store:
         row = self.db.execute("SELECT * FROM users WHERE username = ?", (username,)).fetchone()
         return dict(row) if row else None
 
-    def set_password(self, user_id: int, password_hash: str) -> None:
+    def set_password(self, user_id: int, password_hash: str, *, must_change: bool = False) -> None:
+        """A new password ends every session of the user."""
         with self.db:
             self.db.execute("BEGIN")
-            self.db.execute("UPDATE users SET password = ? WHERE id = ?", (password_hash, user_id))
+            self.db.execute("UPDATE users SET password = ?, must_change = ? WHERE id = ?",
+                            (password_hash, int(must_change), user_id))
             self.db.execute("DELETE FROM sessions WHERE user_id = ?", (user_id,))
+
+    # Two-factor sign-in. Secrets are sealed with the master key, bound to the user.
+
+    def _seal_totp(self, user_id: int, secret: str) -> str:
+        return seal(self.master, secret, f"totp:{user_id}")
+
+    def totp_secret(self, user: dict[str, Any], *, pending: bool = False) -> str | None:
+        sealed = user["totp_pending" if pending else "totp"]
+        return open_sealed(self.master, sealed, f"totp:{user['id']}") if sealed else None
+
+    def set_totp_pending(self, user_id: int, secret: str) -> None:
+        self.db.execute("UPDATE users SET totp_pending = ? WHERE id = ?", (self._seal_totp(user_id, secret), user_id))
+
+    def enable_totp(self, user_id: int, step: int, recovery_hashes: list[str]) -> None:
+        with self.db:
+            self.db.execute("BEGIN")
+            self.db.execute("UPDATE users SET totp = totp_pending, totp_pending = NULL, totp_step = ? WHERE id = ?",
+                            (step, user_id))
+            self._replace_recovery(user_id, recovery_hashes)
+
+    def disable_totp(self, user_id: int) -> None:
+        with self.db:
+            self.db.execute("BEGIN")
+            self.db.execute("UPDATE users SET totp = NULL, totp_pending = NULL, totp_step = 0 WHERE id = ?", (user_id,))
+            self.db.execute("DELETE FROM recovery_codes WHERE user_id = ?", (user_id,))
+
+    def set_totp_step(self, user_id: int, step: int) -> None:
+        self.db.execute("UPDATE users SET totp_step = ? WHERE id = ?", (step, user_id))
+
+    def replace_recovery(self, user_id: int, hashes: list[str]) -> None:
+        with self.db:
+            self.db.execute("BEGIN")
+            self._replace_recovery(user_id, hashes)
+
+    def _replace_recovery(self, user_id: int, hashes: list[str]) -> None:
+        self.db.execute("DELETE FROM recovery_codes WHERE user_id = ?", (user_id,))
+        self.db.executemany("INSERT INTO recovery_codes (user_id, hash) VALUES (?, ?)",
+                            [(user_id, h) for h in hashes])
+
+    def use_recovery(self, user_id: int, code_hash: str) -> bool:
+        cur = self.db.execute("DELETE FROM recovery_codes WHERE user_id = ? AND hash = ?", (user_id, code_hash))
+        return cur.rowcount == 1
+
+    def recovery_left(self, user_id: int) -> int:
+        return int(self.db.execute("SELECT COUNT(*) FROM recovery_codes WHERE user_id = ?", (user_id,)).fetchone()[0])
+
+    # Console settings
+
+    def setting(self, key: str, default: Any = None) -> Any:
+        row = self.db.execute("SELECT value FROM settings WHERE key = ?", (key,)).fetchone()
+        return json.loads(row[0]) if row else default
+
+    def set_setting(self, key: str, value: Any) -> None:
+        self.db.execute("INSERT INTO settings (key, value) VALUES (?, ?)"
+                        " ON CONFLICT (key) DO UPDATE SET value = excluded.value", (key, json.dumps(value)))
 
     # Tenants and members
 
@@ -273,6 +357,20 @@ class Store:
             "SELECT role FROM members WHERE user_id = ? AND tenant_id = ?", (user_id, tenant_id)
         ).fetchone()
         return row[0] if row else None
+
+    def remove_member(self, user_id: int, tenant_id: str) -> None:
+        self.db.execute("DELETE FROM members WHERE user_id = ? AND tenant_id = ?", (user_id, tenant_id))
+
+    def members(self, tenant_id: str) -> list[dict[str, Any]]:
+        return [
+            dict(r)
+            for r in self.db.execute(
+                "SELECT u.id, u.username, u.name, u.admin, u.totp IS NOT NULL AS two_factor, m.role,"
+                " (SELECT COUNT(*) FROM members o WHERE o.user_id = u.id) AS tenants"
+                " FROM members m JOIN users u ON u.id = m.user_id WHERE m.tenant_id = ? ORDER BY u.name",
+                (tenant_id,),
+            )
+        ]
 
     def memberships(self, user_id: int) -> list[dict[str, Any]]:
         return [
