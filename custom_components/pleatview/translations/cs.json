@@ -29,6 +29,14 @@
           "allow_control": "Pro vyhrazeného uživatele. Vypněte pro obrazovku jen ke čtení: panely se dál aktualizují, ale tlačítka na televizi nic nezmění.",
           "ha_token": "Pro váš vlastní token. Vytvořte ho ve svém profilu v části Zabezpečení."
         }
+      },
+      "renderer": {
+        "title": "Spárovat s rendererem {name}",
+        "description": "Zadejte šestimístný PIN z protokolu rendereru (karta Protokol aplikace nebo `docker logs pleatview-renderer`) na adrese {address}. Pod tímto názvem ho uvidí televizory.",
+        "data": {
+          "name": "Název",
+          "pin": "PIN"
+        }
       }
     },
     "error": {
@@ -73,7 +81,7 @@
           "reopen_minutes": "Když někdo opustí PleatView kvůli jiné aplikaci, vrátí se, jakmile po tuto dobu nic nehrálo zvuk. 0 se nikdy nevrátí.",
           "reload_minutes": "Pravidelné úplné načtení uvolní paměť na dlouho zapnutých obrazovkách. 0 nikdy nenačítá znovu.",
           "launch_on_boot": "Vyžaduje na televizi oprávnění \"Zobrazení přes ostatní aplikace\".",
-          "render_url": "Adresa PleatView Rendereru, např. http://ce7dee09-pleatview-renderer:8780. Počítač s Home Assistantem pak spouští ovládací panely této televize a posílá jí jejich video, pro televize příliš pomalé na náročné panely nebo stěny videí. Prázdné: panely spouští televize sama."
+          "render_url": "PleatView Renderer, který se má použít: spárovaný podle názvu, Automaticky (nejméně vytížený), nalezený Home Assistantem, nebo zadejte jeho adresu, např. http://ce7dee09-pleatview-renderer:8780. Počítač s Home Assistantem pak spouští nástěnky této televize a posílá jí jejich video. Prázdné: nástěnky běží přímo v televizi."
         }
       }
     },
@@ -109,6 +117,11 @@
         "managed": "Vyhrazený uživatel pro tuto televizi (doporučeno)",
         "token": "Můj vlastní token s dlouhou životností",
         "none": "Přihlásit se na televizi dálkovým ovladačem"
+      }
+    },
+    "render": {
+      "options": {
+        "auto": "Automaticky: nejméně vytížený renderer"
       }
     }
   },
@@ -236,6 +249,19 @@
     "old_home_assistant": {
       "title": "Aktualizujte Home Assistant kvůli panelům na televizi",
       "description": "Home Assistant {version} má známé bezpečnostní chyby v kartách panelů, opravené ve verzi {safe_version}. Televize ukazuje svůj panel celý den a přihlášená, takže škodlivá karta by mohla jednat jako uživatel televize. Aktualizujte Home Assistant na {safe_version} nebo novější."
+    }
+  },
+  "entity": {
+    "sensor": {
+      "renderer_screens": {
+        "name": "Obrazovky"
+      },
+      "renderer_cpu": {
+        "name": "Zatížení procesoru"
+      },
+      "renderer_memory": {
+        "name": "Využitá paměť"
+      }
     }
   }
 }

@@ -24,6 +24,8 @@ from homeassistant.components.http import HomeAssistantView
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
+from .renderers import Target, resolve
+
 if TYPE_CHECKING:
     from .coordinator import PleatViewConfigEntry
 
@@ -92,17 +94,31 @@ def screen_size(state: dict[str, Any]) -> tuple[int, int, float]:
 
 
 class Renderer:
-    """One TV's screen on the PleatView Renderer."""
+    """One TV's screen on a PleatView Renderer: a paired one by name, the least busy one
+    (Automatic), or one at an address (renderers.resolve)."""
 
-    def __init__(self, hass: HomeAssistant, base_url: str, key: str) -> None:
+    def __init__(self, hass: HomeAssistant, choice: str, key: str) -> None:
         self.hass = hass
-        self.base_url = base_url.rstrip("/")
+        self.choice = choice
         self.key = key
+        self._picked: str | None = None
         # Part of the stream's address, so only the TV it was given to can play it.
         self.secret = secrets.token_urlsafe(18)
         self._shown: Screen | None = None
         self._last: Screen | None = None
         self._lock = asyncio.Lock()
+
+    @property
+    def target(self) -> Target | None:
+        target = resolve(self.hass, self.choice, self._picked)
+        if target and target.entry_id != self._picked:
+            self._picked = target.entry_id
+            self._shown = None  # another renderer: it has to be told
+        return target
+
+    @property
+    def base_url(self) -> str:
+        return target.base_url if (target := self.target) else ""
 
     @property
     def stream_path(self) -> str:
@@ -114,9 +130,11 @@ class Renderer:
             self._last = screen
             if screen == self._shown:
                 return
+            if not (target := self.target):
+                return
             try:
                 async with async_get_clientsession(self.hass).put(
-                    f"{self.base_url}/api/sessions/{self.key}", json=asdict(screen), timeout=TIMEOUT
+                    f"{target.base_url}/api/sessions/{self.key}", json=asdict(screen), timeout=TIMEOUT, **target.kwargs()
                 ) as response:
                     if response.status != 200:
                         _LOGGER.warning("The PleatView Renderer at %s refused %s: %s",
@@ -129,9 +147,11 @@ class Renderer:
 
     async def async_stop(self) -> None:
         self._shown = None
+        if not (target := self.target):
+            return
         try:
             async with async_get_clientsession(self.hass).delete(
-                f"{self.base_url}/api/sessions/{self.key}", timeout=TIMEOUT
+                f"{target.base_url}/api/sessions/{self.key}", timeout=TIMEOUT, **target.kwargs()
             ):
                 pass
         except (aiohttp.ClientError, TimeoutError) as err:
@@ -139,9 +159,11 @@ class Renderer:
 
     async def async_fetch(self, name: str) -> web.Response:
         """A file of the stream, from the renderer."""
+        if not (target := self.target):
+            return web.Response(status=503)
         try:
             async with async_get_clientsession(self.hass).get(
-                f"{self.base_url}/hls/{self.key}/{name}", timeout=TIMEOUT
+                f"{target.base_url}/hls/{self.key}/{name}", timeout=TIMEOUT, **target.kwargs()
             ) as response:
                 if response.status == 404 and self._last:
                     # The renderer restarted and forgot this screen: show it again.

@@ -7,6 +7,7 @@ from contextlib import suppress
 import logging
 from typing import Any
 
+import aiohttp
 import voluptuous as vol
 
 from homeassistant.config_entries import (
@@ -26,6 +27,7 @@ try:
 except ImportError:  # Home Assistant 2025.1
     from homeassistant.components.zeroconf import ZeroconfServiceInfo
 
+from . import renderers
 from .api import InvalidPin, PleatViewClient, PleatViewError, TooManyAttempts
 from .render import async_find_renderers
 from .const import (
@@ -35,10 +37,12 @@ from .const import (
     CONF_ALLOW_CONTROL,
     CONF_AUTH_MODE,
     CONF_DASHBOARDS,
+    CONF_FINGERPRINT,
     CONF_HA_TOKEN,
     CONF_HA_URL,
     CONF_HOME_DASHBOARD,
     CONF_KEEP_SCREEN_ON,
+    CONF_KIND,
     CONF_KIOSK,
     CONF_LAUNCH_ON_BOOT,
     CONF_RELOAD_MINUTES,
@@ -46,13 +50,18 @@ from .const import (
     CONF_REOPEN_MINUTES,
     CONF_RETURN_HOME_MINUTES,
     CONF_ROTATE_SECONDS,
+    CONF_SCHEME,
     CONF_TOKEN,
     CONF_USER_ID,
     CONF_ZOOM,
     DEFAULT_OPTIONS,
     DEFAULT_PORT,
     DOMAIN,
+    KIND_RENDERER,
     KIOSK_MODES,
+    RENDERER_PREFIX,
+    RENDERER_SERVICE,
+    RENDER_AUTO,
 )
 
 USER_SCHEMA = vol.Schema(
@@ -77,12 +86,19 @@ class PleatViewConfigFlow(ConfigFlow, domain=DOMAIN):
         self._port = DEFAULT_PORT
         self._info: dict[str, Any] = {}
         self._token: str | None = None
+        self._scheme = "http"
 
     @staticmethod
     @callback
     def async_get_options_flow(config_entry: ConfigEntry) -> OptionsFlow:
         """Return the options flow."""
         return PleatViewOptionsFlow()
+
+    @classmethod
+    @callback
+    def async_supports_options_flow(cls, config_entry: ConfigEntry) -> bool:
+        """TVs have options; a renderer has only its name, which is the entry's own."""
+        return not renderers.is_renderer(config_entry)
 
     def _client(self) -> PleatViewClient:
         return PleatViewClient(async_get_clientsession(self.hass), self._host, self._port, self._token)
@@ -102,6 +118,8 @@ class PleatViewConfigFlow(ConfigFlow, domain=DOMAIN):
             except PleatViewError:
                 errors["base"] = "cannot_connect"
             else:
+                if "encoder" in self._info:  # a PleatView Renderer, not a TV
+                    return await self._async_start_renderer(self._info.get("scheme") or "http")
                 # An address typed in wins over an open discovery of the same TV, which may be
                 # stuck on an address Home Assistant can't reach. Creating the entry closes it.
                 await self.async_set_unique_id(self._info["id"], raise_on_progress=False)
@@ -114,12 +132,15 @@ class PleatViewConfigFlow(ConfigFlow, domain=DOMAIN):
         )
 
     async def async_step_zeroconf(self, discovery_info: ZeroconfServiceInfo) -> ConfigFlowResult:
-        """Handle a TV advertising _pleatview._tcp."""
+        """Handle a TV advertising _pleatview._tcp, or a renderer advertising _pleatview-renderer._tcp."""
         device_id = discovery_info.properties.get("id")
         if not device_id:
             return self.async_abort(reason="invalid_discovery_info")
         self._host = discovery_info.host
         self._port = discovery_info.port or DEFAULT_PORT
+        if discovery_info.type == RENDERER_SERVICE:
+            self._info = dict(discovery_info.properties)
+            return await self._async_start_renderer(discovery_info.properties.get("scheme") or "http")
         await self.async_set_unique_id(device_id)
         for entry in self._async_current_entries(include_ignore=False):
             if entry.unique_id == device_id:
@@ -197,6 +218,46 @@ class PleatViewConfigFlow(ConfigFlow, domain=DOMAIN):
             errors=errors,
         )
 
+    # ---- PleatView Renderers ---------------------------------------------------------------
+
+    async def _async_start_renderer(self, scheme: str) -> ConfigFlowResult:
+        renderer_id = self._info.get("id")
+        if not renderer_id:
+            return self.async_abort(reason="invalid_discovery_info")
+        self._scheme = "https" if scheme == "https" else "http"
+        await self.async_set_unique_id(renderer_id, raise_on_progress=False)
+        # A renderer at a new address only moves with its token: the PIN is asked again.
+        self._abort_if_unique_id_configured()
+        self.context["title_placeholders"] = {"name": self._info.get("name") or "PleatView Renderer"}
+        return await self.async_step_renderer()
+
+    async def async_step_renderer(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
+        """Name the renderer and enter the PIN from its log."""
+        errors: dict[str, str] = {}
+        url = f"{self._scheme}://{self._host}:{self._port}"
+        if user_input is not None:
+            fingerprint = None
+            try:
+                if self._scheme == "https":
+                    fingerprint = await renderers.async_fetch_certificate(self.hass, url)
+                token = await renderers.async_pair(self.hass, url, user_input["pin"].strip(), fingerprint)
+            except ValueError as err:
+                errors["base"] = str(err)
+            except (aiohttp.ClientError, TimeoutError):
+                errors["base"] = "cannot_connect"
+            else:
+                data = {CONF_KIND: KIND_RENDERER, CONF_HOST: self._host, CONF_PORT: self._port,
+                        CONF_SCHEME: self._scheme, CONF_TOKEN: token, CONF_FINGERPRINT: fingerprint}
+                if self.source == SOURCE_REAUTH:
+                    return self.async_update_reload_and_abort(self._get_reauth_entry(), data_updates=data)
+                return self.async_create_entry(title=user_input["name"].strip() or "PleatView Renderer", data=data)
+        schema = vol.Schema({
+            vol.Required("name", default=self._info.get("name") or "PleatView Renderer"): str,
+            vol.Required("pin"): str,
+        })
+        return self.async_show_form(step_id="renderer", data_schema=schema, errors=errors,
+                                    description_placeholders={"address": url})
+
     async def async_step_reconfigure(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
         """Change how the TV signs in to Home Assistant."""
         entry = self._get_reconfigure_entry()
@@ -250,9 +311,13 @@ class PleatViewConfigFlow(ConfigFlow, domain=DOMAIN):
         return self.async_update_reload_and_abort(entry, data=data)
 
     async def async_step_reauth(self, entry_data: Mapping[str, Any]) -> ConfigFlowResult:
-        """The TV forgot us (app data cleared or pairing reset): pair again."""
+        """The TV (or renderer) forgot us (data cleared or pairing reset): pair again."""
         self._host = entry_data[CONF_HOST]
         self._port = entry_data[CONF_PORT]
+        if entry_data.get(CONF_KIND) == KIND_RENDERER:
+            self._scheme = entry_data.get(CONF_SCHEME) or "http"
+            self._info = {"name": self._get_reauth_entry().title}
+            return await self.async_step_renderer()
         try:
             self._info = await self._client().get_info()
         except PleatViewError:
@@ -269,6 +334,8 @@ class PleatViewOptionsFlow(OptionsFlow):
         if user_input is not None:
             for key in (CONF_HA_URL, CONF_RENDER_URL):
                 url = (user_input.get(key) or "").strip()
+                if key == CONF_RENDER_URL and (url == RENDER_AUTO or url.startswith(RENDERER_PREFIX)):
+                    continue
                 if url and not url.startswith(("http://", "https://")):
                     errors[key] = "invalid_url"
             if not errors:
@@ -276,9 +343,15 @@ class PleatViewOptionsFlow(OptionsFlow):
 
         options = {**DEFAULT_OPTIONS, **self.config_entry.options, **(user_input or {})}
         current = (options.get(CONF_RENDER_URL) or "").strip().rstrip("/")
-        renderers = await async_find_renderers(self.hass, (current,))
-        if current and current not in {r["value"] for r in renderers}:
-            renderers.append({"value": current, "label": current})
+        # Paired renderers by name, Automatic when there are any, then renderers that answer
+        # without pairing (the Home Assistant OS app, docker run) and any address in use.
+        paired = renderers.choices(self.hass)
+        paired_urls = {renderers.base_url(e.data) for e in renderers.renderer_entries(self.hass)}
+        legacy = [r for r in await async_find_renderers(self.hass, () if current.startswith(("renderer:", "auto")) else (current,))
+                  if r["value"] not in paired_urls]
+        render_choices = ([{"value": RENDER_AUTO, "label": RENDER_AUTO}] if paired else []) + paired + legacy
+        if current and current not in {r["value"] for r in render_choices}:
+            render_choices.append({"value": current, "label": current})
 
         def number(maximum: int, unit: str, step: int = 1) -> selector.NumberSelector:
             return selector.NumberSelector(
@@ -318,7 +391,8 @@ class PleatViewOptionsFlow(OptionsFlow):
                 # The renderers Home Assistant found, or another address typed in.
                 vol.Optional(CONF_RENDER_URL, description={"suggested_value": current or None}): selector.SelectSelector(
                     selector.SelectSelectorConfig(
-                        options=renderers, custom_value=True, mode=selector.SelectSelectorMode.DROPDOWN
+                        options=render_choices, custom_value=True, mode=selector.SelectSelectorMode.DROPDOWN,
+                        translation_key="render",
                     )
                 ),
             }

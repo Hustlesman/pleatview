@@ -34,7 +34,13 @@ class FakeRenderer:
         app.router.add_delete("/api/sessions/{key}", self._delete)
         app.router.add_get("/hls/{key}/{name}", self._hls)
         app.router.add_get("/api/info", self._info)
+        app.router.add_post("/api/pair", self._pair)
         return app
+
+    async def _pair(self, request: web.Request) -> web.Response:
+        if (await request.json()).get("pin") != "123456":
+            return web.json_response({"error": "invalid_pin"}, status=403)
+        return web.json_response({"token": "paired-token"})
 
     async def _info(self, request: web.Request) -> web.Response:
         return web.json_response(getattr(self, "info", {"version": "test", "encoder": "x264", "sessions": {}}))
@@ -149,3 +155,51 @@ async def test_renderers_found_for_the_options(hass: HomeAssistant, fake_tv: Fak
     with patch.object(render, "CANDIDATES", (renderer.url, "http://127.0.0.1:9")):
         found = await render.async_find_renderers(hass, ("http://127.0.0.1:9/",))
     assert found == [{"value": renderer.url, "label": f"{renderer.url} · PleatView Renderer 1.0.16 (vaapi)"}]
+
+
+async def test_paired_renderers_by_name_and_automatic(hass: HomeAssistant, renderer: FakeRenderer) -> None:
+    """A paired renderer is found by its entry; Automatic picks the least busy one and keeps it."""
+    from custom_components.pleatview import renderers
+    from pytest_homeassistant_custom_component.common import MockConfigEntry
+
+    host, port = renderer.url.removeprefix("http://").split(":")
+    busy = MockConfigEntry(domain="pleatview", title="Rack A", unique_id="r-a", data={
+        "kind": "renderer", "host": host, "port": int(port), "scheme": "http", "token": "tok-a"})
+    busy.add_to_hass(hass)
+    renderer.info = {"version": "1.0.17", "encoder": "vaapi", "max_screens": 4, "sessions": {"x": {}}, "load": {"cpu": 0.2}}
+    assert await hass.config_entries.async_setup(busy.entry_id)
+    await hass.async_block_till_done()
+    target = renderers.resolve(hass, f"renderer:{busy.entry_id}")
+    assert (target.base_url, target.token) == (renderer.url, "tok-a")
+    assert target.kwargs() == {"headers": {"Authorization": "Bearer tok-a"}}
+    assert renderers.resolve(hass, "auto").entry_id == busy.entry_id
+    assert renderers.resolve(hass, "renderer:missing") is None
+    assert renderers.resolve(hass, "http://10.0.0.9:8780/").base_url == "http://10.0.0.9:8780"
+    labels = [c["label"] for c in renderers.choices(hass)]
+    assert labels == ["Rack A (1/4 screens)"]
+    state = hass.states.get("sensor.rack_a_screens")
+    assert state is not None and state.state == "1"
+
+
+async def test_a_renderer_pairs_from_its_announcement(hass: HomeAssistant, renderer: FakeRenderer) -> None:
+    """Discovered over mDNS, named, paired with the PIN from its log: an entry of its own."""
+    from ipaddress import ip_address
+
+    from homeassistant.config_entries import SOURCE_ZEROCONF
+    from homeassistant.data_entry_flow import FlowResultType
+    from homeassistant.helpers.service_info.zeroconf import ZeroconfServiceInfo
+
+    host, port = renderer.url.removeprefix("http://").split(":")
+    info = ZeroconfServiceInfo(
+        ip_address=ip_address(host), ip_addresses=[ip_address(host)], port=int(port), hostname="rack.local.",
+        type="_pleatview-renderer._tcp.local.", name="Rack A._pleatview-renderer._tcp.local.",
+        properties={"id": "r-1", "name": "Rack A", "version": "1.0.17", "scheme": "http"})
+    result = await hass.config_entries.flow.async_init("pleatview", context={"source": SOURCE_ZEROCONF}, data=info)
+    assert result["step_id"] == "renderer"
+    result = await hass.config_entries.flow.async_configure(result["flow_id"], {"name": "Rack A", "pin": "000000"})
+    assert result["errors"] == {"base": "invalid_pin"}
+    result = await hass.config_entries.flow.async_configure(result["flow_id"], {"name": "Rack A", "pin": "123456"})
+    assert result["type"] is FlowResultType.CREATE_ENTRY
+    assert result["title"] == "Rack A"
+    assert result["data"]["kind"] == "renderer" and result["data"]["token"] == "paired-token"
+

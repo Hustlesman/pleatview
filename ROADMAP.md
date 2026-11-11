@@ -210,17 +210,19 @@ driven by the cheapest 1 GB Google TV sticks. A renderer shows up to 8 screens, 
 Assistant OS runs only one copy of the app, and a renderer on another machine would be open
 to the network.
 
-- [ ] **Renderers as entries, with an alias** ("Rack A"). The app on Home Assistant OS is
+- [x] **Renderers as entries, with an alias** ("Rack A"). The app on Home Assistant OS is
       found by itself. A renderer on another Linux machine (Docker, or a package like the
       Linux app's) announces itself on the network and pairs with a PIN, like a screen, then
-      reports to PleatView in Home Assistant
+      reports to PleatView in Home Assistant (12 Nov: Docker; the entry's name is the alias)
 - [ ] **Renderer sign-in, encrypted:** the renderer's API takes only the token from pairing,
       over TLS with the renderer's own certificate, which Home Assistant pins when pairing.
-      A renderer on another machine is then safe on the network
-- [ ] **A renderer per TV from a list:** *The TV renders itself*, each renderer by its alias, or
-      *Automatic* (the least busy renderer)
-- [ ] **Load in Home Assistant:** each renderer as a device, with screens in use out of its
-      maximum, processor and memory, so you can see when to add one
+      A renderer on another machine is then safe on the network (12 Nov: tokens, and TLS
+      with a certificate you give it, pinned; making its own certificate needs
+      python3-cryptography in the renderer image, waiting for approval)
+- [x] **A renderer per TV from a list:** *The TV renders itself*, each renderer by its alias, or
+      *Automatic* (the least busy renderer) (12 Nov)
+- [x] **Load in Home Assistant:** each renderer as a device, with screens in use out of its
+      maximum, processor and memory, so you can see when to add one (12 Nov)
 - [ ] **One stream for several TVs** showing the same dashboard at the same size, rendered once
 - [ ] **Notifications, cameras and sound in the stream**, so a screen that only plays the
       stream (the light client) gets them too

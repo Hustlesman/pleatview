@@ -29,6 +29,14 @@
           "allow_control": "Per l'utente dedicato. Disattivalo per uno schermo di sola lettura: le plance si aggiornano comunque, ma i pulsanti sulla TV non possono cambiare nulla.",
           "ha_token": "Per il tuo token. Creane uno nel tuo profilo, in Sicurezza."
         }
+      },
+      "renderer": {
+        "title": "Abbina il renderer {name}",
+        "description": "Inserisci il PIN di 6 cifre dal registro del renderer (scheda Registro dell'app o `docker logs pleatview-renderer`), su {address}. I televisori lo mostreranno con questo nome.",
+        "data": {
+          "name": "Nome",
+          "pin": "PIN"
+        }
       }
     },
     "error": {
@@ -73,7 +81,7 @@
           "reopen_minutes": "Quando qualcuno lascia PleatView per un'altra app, torna appena nulla ha riprodotto audio per questo tempo. 0 non torna mai.",
           "reload_minutes": "Una ricarica completa periodica libera memoria sugli schermi sempre accesi. 0 non ricarica mai.",
           "launch_on_boot": "Richiede sulla TV l'autorizzazione \"Mostra sopra altre app\".",
-          "render_url": "Indirizzo del PleatView Renderer, ad esempio http://ce7dee09-pleatview-renderer:8780. La macchina di Home Assistant esegue allora le plance di questo televisore e gli invia un video, per i televisori troppo lenti per plance pesanti o pareti di video. Vuoto: le esegue il televisore."
+          "render_url": "Il PleatView Renderer da usare: uno abbinato per nome, Automatico (il meno occupato), uno trovato da Home Assistant, oppure digita il suo indirizzo, ad es. http://ce7dee09-pleatview-renderer:8780. Il computer di Home Assistant esegue allora le dashboard di questo televisore e gli invia un video. Vuoto: le esegue il televisore."
         }
       }
     },
@@ -109,6 +117,11 @@
         "managed": "Utente dedicato per questa TV (consigliato)",
         "token": "Il mio token di accesso a lungo termine",
         "none": "Accedi sulla TV con il telecomando"
+      }
+    },
+    "render": {
+      "options": {
+        "auto": "Automatico: il renderer meno occupato"
       }
     }
   },
@@ -236,6 +249,19 @@
     "old_home_assistant": {
       "title": "Aggiorna Home Assistant per le plance sulla TV",
       "description": "Home Assistant {version} ha falle di sicurezza note nelle schede delle plance, corrette in {safe_version}. Una TV mostra la sua plancia tutto il giorno, con l'accesso fatto, quindi una scheda malevola potrebbe agire come l'utente della TV. Aggiorna Home Assistant a {safe_version} o successivo."
+    }
+  },
+  "entity": {
+    "sensor": {
+      "renderer_screens": {
+        "name": "Schermi"
+      },
+      "renderer_cpu": {
+        "name": "Carico del processore"
+      },
+      "renderer_memory": {
+        "name": "Memoria in uso"
+      }
     }
   }
 }

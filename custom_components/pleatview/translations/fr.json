@@ -29,6 +29,14 @@
           "allow_control": "Pour l'utilisateur dédié. Désactivez pour un affichage en lecture seule : les tableaux de bord se mettent toujours à jour, mais les boutons sur le téléviseur ne peuvent rien changer.",
           "ha_token": "Pour votre propre jeton. Créez-en un dans votre profil, sous Sécurité."
         }
+      },
+      "renderer": {
+        "title": "Associer le moteur de rendu {name}",
+        "description": "Saisissez le code PIN à 6 chiffres du journal du moteur de rendu (onglet Journal de l'app ou `docker logs pleatview-renderer`), à {address}. Les téléviseurs l'afficheront sous ce nom.",
+        "data": {
+          "name": "Nom",
+          "pin": "PIN"
+        }
       }
     },
     "error": {
@@ -73,7 +81,7 @@
           "reopen_minutes": "Quand quelqu'un quitte PleatView pour une autre appli, il revient dès que rien n'a joué de son pendant cette durée. 0 ne revient jamais.",
           "reload_minutes": "Un rechargement complet régulier libère la mémoire sur les écrans allumés longtemps. 0 ne recharge jamais.",
           "launch_on_boot": "Nécessite l'autorisation « Afficher par-dessus d'autres applis » sur le téléviseur.",
-          "render_url": "Adresse du PleatView Renderer, par exemple http://ce7dee09-pleatview-renderer:8780. La machine de Home Assistant exécute alors les tableaux de bord de ce téléviseur et lui en envoie une vidéo, pour les téléviseurs trop lents pour des tableaux de bord lourds ou des murs de vidéos. Vide : le téléviseur les exécute lui-même."
+          "render_url": "Le PleatView Renderer à utiliser : un moteur associé, par son nom, Automatique (le moins occupé), un trouvé par Home Assistant, ou saisissez son adresse, par ex. http://ce7dee09-pleatview-renderer:8780. La machine de Home Assistant exécute alors les tableaux de bord de ce téléviseur et lui envoie leur vidéo. Vide : le téléviseur les exécute lui-même."
         }
       }
     },
@@ -109,6 +117,11 @@
         "managed": "Utilisateur dédié pour ce téléviseur (recommandé)",
         "token": "Mon propre jeton d'accès longue durée",
         "none": "Se connecter sur le téléviseur avec la télécommande"
+      }
+    },
+    "render": {
+      "options": {
+        "auto": "Automatique : le moteur de rendu le moins occupé"
       }
     }
   },
@@ -236,6 +249,19 @@
     "old_home_assistant": {
       "title": "Mettez à jour Home Assistant pour vos tableaux de bord sur téléviseur",
       "description": "Home Assistant {version} a des failles de sécurité connues dans les cartes de tableau de bord, corrigées dans {safe_version}. Un téléviseur affiche son tableau de bord toute la journée, connecté, donc une carte malveillante pourrait agir en tant qu'utilisateur du téléviseur. Mettez à jour Home Assistant vers {safe_version} ou une version ultérieure."
+    }
+  },
+  "entity": {
+    "sensor": {
+      "renderer_screens": {
+        "name": "Écrans"
+      },
+      "renderer_cpu": {
+        "name": "Charge du processeur"
+      },
+      "renderer_memory": {
+        "name": "Mémoire utilisée"
+      }
     }
   }
 }

@@ -29,6 +29,14 @@
           "allow_control": "Für den eigenen Benutzer. Für eine reine Anzeige ausschalten: Dashboards aktualisieren sich weiter, aber Schaltflächen auf dem Fernseher können nichts ändern.",
           "ha_token": "Für dein eigenes Token. Erstelle eines in deinem Profil unter Sicherheit."
         }
+      },
+      "renderer": {
+        "title": "Mit dem Renderer {name} koppeln",
+        "description": "Gib die 6-stellige PIN aus dem Protokoll des Renderers ein (Reiter Protokoll der App oder `docker logs pleatview-renderer`), unter {address}. Unter diesem Namen führen ihn die Fernseher.",
+        "data": {
+          "name": "Name",
+          "pin": "PIN"
+        }
       }
     },
     "error": {
@@ -73,7 +81,7 @@
           "reopen_minutes": "Wenn jemand PleatView für eine andere App verlässt, kommt es zurück, sobald so lange nichts Ton abgespielt hat. 0 kommt nie zurück.",
           "reload_minutes": "Ein regelmäßiges vollständiges Neuladen gibt bei lange laufenden Anzeigen Speicher frei. 0 lädt nie neu.",
           "launch_on_boot": "Braucht auf dem Fernseher die Berechtigung „Über anderen Apps einblenden“.",
-          "render_url": "Adresse des PleatView Renderers, z. B. http://ce7dee09-pleatview-renderer:8780. Der Rechner von Home Assistant führt dann die Dashboards dieses Fernsehers aus und schickt ihm ein Video davon, für Fernseher, die für aufwendige Dashboards oder Videowände zu langsam sind. Leer: Der Fernseher führt sie selbst aus."
+          "render_url": "Der zu verwendende PleatView Renderer: ein gekoppelter nach Name, Automatisch (der am wenigsten ausgelastete), einer, den Home Assistant gefunden hat, oder gib seine Adresse ein, z. B. http://ce7dee09-pleatview-renderer:8780. Der Rechner von Home Assistant führt dann die Dashboards dieses Fernsehers aus und sendet ihm ein Video davon. Leer: Der Fernseher führt sie selbst aus."
         }
       }
     },
@@ -109,6 +117,11 @@
         "managed": "Eigener Benutzer für diesen Fernseher (empfohlen)",
         "token": "Mein eigenes langlebiges Zugriffstoken",
         "none": "Am Fernseher mit der Fernbedienung anmelden"
+      }
+    },
+    "render": {
+      "options": {
+        "auto": "Automatisch: der am wenigsten ausgelastete Renderer"
       }
     }
   },
@@ -236,6 +249,19 @@
     "old_home_assistant": {
       "title": "Aktualisiere Home Assistant für deine Fernseher-Dashboards",
       "description": "Home Assistant {version} hat bekannte Sicherheitslücken in Dashboard-Karten, behoben in {safe_version}. Ein Fernseher zeigt sein Dashboard den ganzen Tag angemeldet an, also könnte eine bösartige Karte als Benutzer des Fernsehers handeln. Aktualisiere Home Assistant auf {safe_version} oder neuer."
+    }
+  },
+  "entity": {
+    "sensor": {
+      "renderer_screens": {
+        "name": "Bildschirme"
+      },
+      "renderer_cpu": {
+        "name": "Prozessorlast"
+      },
+      "renderer_memory": {
+        "name": "Belegter Speicher"
+      }
     }
   }
 }

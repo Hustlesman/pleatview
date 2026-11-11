@@ -29,6 +29,14 @@
           "allow_control": "Voor de eigen gebruiker. Zet uit voor een scherm dat alleen toont: dashboards worden nog bijgewerkt, maar knoppen op de tv kunnen niets veranderen.",
           "ha_token": "Voor je eigen token. Maak er een aan in je profiel, onder Beveiliging."
         }
+      },
+      "renderer": {
+        "title": "Koppelen met renderer {name}",
+        "description": "Voer de 6-cijferige pincode uit het logboek van de renderer in (tabblad Logboek van de app of `docker logs pleatview-renderer`), op {address}. Tv's tonen hem onder deze naam.",
+        "data": {
+          "name": "Naam",
+          "pin": "Pincode"
+        }
       }
     },
     "error": {
@@ -73,7 +81,7 @@
           "reopen_minutes": "Als iemand PleatView verlaat voor een andere app, komt het terug zodra er zo lang geen geluid heeft gespeeld. 0 komt nooit terug.",
           "reload_minutes": "Regelmatig volledig herladen maakt geheugen vrij op schermen die lang aanstaan. 0 herlaadt nooit.",
           "launch_on_boot": "Heeft op de tv de toestemming \"Weergeven vóór andere apps\" nodig.",
-          "render_url": "Adres van de PleatView Renderer, zoals http://ce7dee09-pleatview-renderer:8780. De computer van Home Assistant draait dan de dashboards van deze tv en stuurt de tv er een video van, voor tv's die te traag zijn voor zware dashboards of videomuren. Leeg: de tv draait ze zelf."
+          "render_url": "De PleatView Renderer die je gebruikt: een gekoppelde op naam, Automatisch (de minst drukke), een die Home Assistant vond, of typ zijn adres, bijvoorbeeld http://ce7dee09-pleatview-renderer:8780. De computer van Home Assistant draait dan de dashboards van deze tv en stuurt de tv er een video van. Leeg: de tv draait ze zelf."
         }
       }
     },
@@ -109,6 +117,11 @@
         "managed": "Eigen gebruiker voor deze tv (aanbevolen)",
         "token": "Mijn eigen toegangstoken met lange levensduur",
         "none": "Inloggen op de tv met de afstandsbediening"
+      }
+    },
+    "render": {
+      "options": {
+        "auto": "Automatisch: de minst drukke renderer"
       }
     }
   },
@@ -236,6 +249,19 @@
     "old_home_assistant": {
       "title": "Update Home Assistant voor je tv-dashboards",
       "description": "Home Assistant {version} heeft bekende beveiligingsfouten in dashboardkaarten, opgelost in {safe_version}. Een tv toont zijn dashboard de hele dag, ingelogd, dus een kwaadaardige kaart zou kunnen handelen als de gebruiker van de tv. Update Home Assistant naar {safe_version} of later."
+    }
+  },
+  "entity": {
+    "sensor": {
+      "renderer_screens": {
+        "name": "Schermen"
+      },
+      "renderer_cpu": {
+        "name": "Processorbelasting"
+      },
+      "renderer_memory": {
+        "name": "Gebruikt geheugen"
+      }
     }
   }
 }

@@ -80,11 +80,34 @@ instead, using about one core per TV.
 
 </details>
 
+<details>
+<summary><b>Another machine:</b> a renderer for many TVs, or near them</summary>
+
+A renderer can run on any Linux machine with Docker, such as a mini PC in a rack. On the
+network it lets in only the Home Assistants (and PleatView Consoles) paired with it:
+
+```sh
+docker build -t pleatview-renderer https://github.com/Hustlesman/pleatview.git#main:renderer
+docker run -d --name pleatview-renderer --restart unless-stopped --network host \
+  -e HOST=0.0.0.0 -e NAME="Rack A" -v pleatview-renderer:/data --device /dev/dri pleatview-renderer
+```
+
+It announces itself, so Home Assistant shows it under *Settings → Devices & services* as a
+discovered PleatView device. Give it a name and enter the PIN from its log
+(`docker logs pleatview-renderer`). It then appears as a device of its own, with sensors for
+its screens in use, its processor load and its memory, so you can see when to add another.
+The volume keeps its pairings across restarts. Give it a certificate with
+`-e TLS_CERT=/data/cert.pem -e TLS_KEY=/data/key.pem` and Home Assistant talks to it over
+HTTPS, pinning that certificate when pairing.
+
+</details>
+
 ## 2. Turn it on for a TV
 
 *Settings → Devices & services → PleatView*, and the gear next to the TV. At the bottom,
-choose the renderer in **Render on Home Assistant**, and *Submit*. The list shows the
-renderers Home Assistant found; you can also type a renderer's address there.
+choose the renderer in **Render on Home Assistant**, and *Submit*. The list shows paired
+renderers by name, *Automatic* (the least busy of them, kept until it goes away), and the
+renderers Home Assistant found by itself; you can also type a renderer's address there.
 
 ![PleatView's Display settings with the renderer's address in Render on Home Assistant](img/render-6-option.webp)
 

@@ -81,8 +81,8 @@ class PleatViewDevice:
         self.available = True
         self.webpages: dict[str, str] = {}
         self.dashboards = resolve_dashboards(hass, entry.options.get(CONF_DASHBOARDS, ""))
-        render_url = (entry.options.get(CONF_RENDER_URL) or "").strip()
-        self.renderer = Renderer(hass, render_url, entry.entry_id) if render_url else None
+        render_choice = (entry.options.get(CONF_RENDER_URL) or "").strip()
+        self.renderer = Renderer(hass, render_choice, entry.entry_id) if render_choice else None
         self._listeners: list[Callable[[], None]] = []
         self._received = False
 

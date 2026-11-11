@@ -3,23 +3,34 @@
 The PleatView integration says what each TV shows (``PUT /api/sessions/<key>``) and Home
 Assistant passes the TV the stream (``GET /hls/<key>/index.m3u8``). A screen nobody has
 fetched for a while stops, and starts again when its TV asks for it.
+
+A renderer reachable only by its Home Assistant (the Home Assistant OS app, or `docker run`
+on 127.0.0.1) answers anyone who reaches it, as before. Once a client pairs with the PIN in
+the log, or when it listens on the network, every request needs that client's token
+(protocol v1's pairing: docs/protocol.md).
 """
 
 from __future__ import annotations
 
 import asyncio
 import contextlib
+import ipaddress
 import json
 import logging
 import os
 from pathlib import Path
 import re
+import secrets
+import socket
+import ssl
 import time
 from typing import Any
 from urllib.parse import urlsplit
 
 from aiohttp import web
 
+from .mdns import Responder, local_address
+from .pairing import Pairing
 from .session import Screen, Session
 
 _LOGGER = logging.getLogger(__name__)
@@ -32,6 +43,20 @@ KIOSK_MODES = ("full", "sidebar", "off")
 IDLE_SECONDS = 90
 # How long a TV's first request waits for a starting screen's first segments.
 START_WAIT_SECONDS = 8
+SERVICE = "_pleatview-renderer._tcp.local."
+OPEN_PATHS = {"/api/info", "/api/pair", "/api/verify"}
+
+
+def load() -> dict[str, float]:
+    """How busy this machine is: the load per core, and the share of memory in use."""
+    try:
+        cpu = os.getloadavg()[0] / (os.cpu_count() or 1)
+        meminfo = dict(line.split(":", 1) for line in Path("/proc/meminfo").read_text().splitlines() if ":" in line)
+        total = int(meminfo["MemTotal"].split()[0])
+        available = int(meminfo["MemAvailable"].split()[0])
+        return {"cpu": round(cpu, 2), "memory": round(1 - available / total, 2)}
+    except (OSError, KeyError, ValueError, ZeroDivisionError):
+        return {}
 
 def parse_screen(body: Any) -> Screen:
     """A screen from a request body; ValueError says what's wrong."""
@@ -57,19 +82,72 @@ def parse_screen(body: Any) -> Screen:
                   kiosk=kiosk, ha_url=ha_url, token=token)
 
 
-def create_app(root: Path, encoder: str, max_sessions: int = 4) -> web.Application:
-    app = web.Application()
+def create_app(root: Path, encoder: str, max_sessions: int = 4, *, pairing: Pairing | None = None,
+               require_token: bool = False, identity: dict[str, str] | None = None) -> web.Application:
     sessions: dict[str, Session] = {}
+    identity = identity or {}
+
+    def authorized(request: web.Request) -> bool:
+        token = re.sub(r"^Bearer\s+", "", request.headers.get("Authorization", ""), flags=re.I) or None
+        return pairing is not None and pairing.valid(token)
+
+    def open_to_all() -> bool:
+        return not require_token and not (pairing and pairing.paired)
+
+    @web.middleware
+    async def guard(request: web.Request, handler):
+        if request.path not in OPEN_PATHS and not open_to_all() and not authorized(request):
+            raise web.HTTPUnauthorized(text=json.dumps({"error": "unauthorized"}), content_type="application/json")
+        return await handler(request)
+
+    app = web.Application(middlewares=[guard])
 
     async def info(request: web.Request) -> web.Response:
-        return web.json_response({
+        public = {
             "version": VERSION,
             "encoder": encoder,
-            "sessions": {
+            **identity,
+            "paired": bool(pairing and pairing.paired),
+            "max_screens": max_sessions,
+        }
+        if open_to_all() or authorized(request):
+            public["load"] = load()
+            public["sessions"] = {
                 key: {"url": s.screen.url, "width": s.screen.width, "height": s.screen.height, "running": s.running}
                 for key, s in sessions.items()
-            },
-        })
+            }
+        return web.json_response(public)
+
+    async def pair(request: web.Request) -> web.Response:
+        if pairing is None:
+            raise web.HTTPNotFound()
+        try:
+            body = await request.json()
+        except ValueError:
+            body = None
+        if not isinstance(body, dict):
+            raise web.HTTPBadRequest(text="expected a JSON object")
+        result = pairing.pair(body.get("pin"), body.get("client"))
+        if result["result"] == "paired":
+            return web.json_response({"token": result["token"]})
+        if result["result"] == "locked_out":
+            return web.json_response({"error": "too_many_attempts", "retry_after": result["retry_after"]}, status=429)
+        return web.json_response({"error": "invalid_pin"}, status=403)
+
+    async def verify(request: web.Request) -> web.Response:
+        try:
+            nonce = (await request.json()).get("nonce")
+        except (ValueError, AttributeError):
+            nonce = None
+        if pairing is None or not isinstance(nonce, str) or not re.fullmatch(r"[0-9a-fA-F]{32,128}", nonce):
+            raise web.HTTPBadRequest(text="nonce must be 32 to 128 hex digits")
+        return web.json_response({"proofs": pairing.prove(nonce)})
+
+    async def unpair(request: web.Request) -> web.Response:
+        token = re.sub(r"^Bearer\s+", "", request.headers.get("Authorization", ""), flags=re.I)
+        if pairing and token:
+            pairing.revoke(token)
+        return web.json_response({})
 
     async def put_session(request: web.Request) -> web.Response:
         key = request.match_info["key"]
@@ -143,6 +221,9 @@ def create_app(root: Path, encoder: str, max_sessions: int = 4) -> web.Applicati
         return web.Response(text=path.read_text() if path.exists() else "", content_type="text/plain")
 
     app.router.add_get("/api/info", info)
+    app.router.add_post("/api/pair", pair)
+    app.router.add_post("/api/verify", verify)
+    app.router.add_post("/api/unpair", unpair)
     app.router.add_get("/api/packages", packages)
     app.router.add_put("/api/sessions/{key}", put_session)
     app.router.add_delete("/api/sessions/{key}", delete_session)
@@ -182,6 +263,27 @@ def settings() -> dict[str, str]:
     return values
 
 
+def is_loopback(host: str) -> bool:
+    try:
+        return ipaddress.ip_address(host).is_loopback
+    except ValueError:
+        return host == "localhost"
+
+
+def state_folder(env: dict[str, str]) -> Path:
+    """Where the renderer keeps its identity and pairings: /data in the app and in a volume."""
+    folder = Path(env.get("STATE", "/data" if Path("/data").is_dir() else "/tmp/pleatview-renderer-state"))
+    folder.mkdir(parents=True, exist_ok=True)
+    return folder
+
+
+def write_private(path: Path, text: str) -> None:
+    fd = os.open(path.with_suffix(".tmp"), os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+    with os.fdopen(fd, "w") as out:
+        out.write(text)
+    os.replace(path.with_suffix(".tmp"), path)
+
+
 def main() -> None:
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
     env = settings()
@@ -189,7 +291,50 @@ def main() -> None:
     root.mkdir(parents=True, exist_ok=True)
     encoder = asyncio.run(detect_encoder(env.get("ENCODER", "auto")))
     port = int(env.get("PORT", "8780"))
+    host = env.get("HOST", "0.0.0.0")
+    addon = Path("/data/options.json").exists()
+    state = state_folder(env)
+    ident_file = state / "renderer.json"
+    identity = json.loads(ident_file.read_text()) if ident_file.exists() else {}
+    if not identity.get("id"):
+        identity = {"id": secrets.token_hex(16)}
+        write_private(ident_file, json.dumps(identity))
+    identity = {"id": identity["id"], "name": env.get("NAME") or socket.gethostname()}
+
+    def pin_changed() -> None:
+        _LOGGER.info("To pair this renderer with Home Assistant or PleatView Console, use the PIN %s %s",
+                     pairing.pin[:3], pairing.pin[3:])
+
+    tokens = state / "tokens.json"
+    pairing = Pairing(lambda: tokens.read_text() if tokens.exists() else None,
+                      lambda text: write_private(tokens, text), on_changed=pin_changed)
+    # On the network (not the Home Assistant OS app, not 127.0.0.1), only paired clients get in.
+    require = env.get("REQUIRE_TOKEN", "auto")
+    require_token = require == "1" or (require == "auto" and not addon and not is_loopback(host))
+    context = None
+    if env.get("TLS_CERT") and env.get("TLS_KEY"):
+        context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
+        context.minimum_version = ssl.TLSVersion.TLSv1_2
+        context.load_cert_chain(env["TLS_CERT"], env["TLS_KEY"])
     _LOGGER.info("PleatView Renderer %s, encoding with %s", VERSION, encoder)
-    _LOGGER.info("In PleatView's options, use the renderer address %s", advertised_address(env, port))
-    app = create_app(root, encoder, max_sessions=int(env.get("MAX_SCREENS", "4")))
-    web.run_app(app, host=env.get("HOST", "0.0.0.0"), port=port, print=None)
+    scheme = "https" if context else "http"
+    _LOGGER.info("In PleatView's options, use the renderer address %s",
+                 advertised_address(env, port).replace("http://", f"{scheme}://", 1))
+    pin_changed()
+    app = create_app(root, encoder, max_sessions=int(env.get("MAX_SCREENS", "4")), pairing=pairing,
+                     require_token=require_token, identity=identity)
+    if not addon and not is_loopback(host) and env.get("ANNOUNCE", "1") != "0":
+        responder = Responder(lambda: {**identity, "version": VERSION, "scheme": scheme}, port,
+                              service=SERVICE, keys=("id", "name", "version", "scheme"))
+
+        async def announce(app: web.Application):
+            try:
+                await responder.start()
+            except OSError as err:
+                _LOGGER.warning("Can't announce over mDNS: %s", err)
+            yield
+            responder.stop()
+
+        app.cleanup_ctx.append(announce)
+        _LOGGER.info("Announcing itself on the network at %s:%d", local_address(), port)
+    web.run_app(app, host=host, port=port, ssl_context=context, print=None)
