@@ -218,9 +218,9 @@ device keys), `ffmpeg` and `tini`. Anything more needs approval first.
    a site, by the site's clock (the most specific wins). Playlists came with step 4.
 6. Many sites and organisations (11 Nov: time zones per site; organisations renamed, exported
    as JSON without secrets, and deleted with their key by an administrator). While the console
-   can't be reached, screens keep their home page; a web page goes on showing, and a playlist
-   plays on from the last list and the screen's cache, which keeps media a week (videos as
-   far as the screen's browser keeps them). Still to come: a full offline copy of playlists
-   (it needs HTTPS that screens trust, for a service worker), and S1's connections for sites
+   can't be reached, screens keep their home page; a web page goes on showing. A playlist is
+   sent to the Android app and PleatView Light (1.0.17) as a list they play and keep in
+   their own cache, so it plays on offline and after a restart; other screens play the
+   playlist page from their browser's cache. Still to come: S1's connections for sites
    elsewhere. Since 12 Nov the console drives renderers itself, so PleatView Light works on
    sites without Home Assistant.

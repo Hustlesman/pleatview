@@ -26,11 +26,13 @@ data class Config(
     val reopenMinutes: Int = 10,
     /** A live stream of the TV's dashboards, rendered by Home Assistant; empty: the TV renders them. */
     val renderStream: String = "",
+    /** A home page that is a playlist of media the app plays and caches itself (PleatView Console). */
+    val homePlaylist: List<PlaylistItem> = emptyList(),
     val rev: String = "",
 ) {
     /** Set up: Home Assistant's address, or a home page of its own from another controller
      *  (PleatView Console), which leaves the setup screen without Home Assistant. */
-    val isConfigured: Boolean get() = haUrl.isNotEmpty() || isHttpUrl(homeDashboard)
+    val isConfigured: Boolean get() = haUrl.isNotEmpty() || isHttpUrl(homeDashboard) || homePlaylist.isNotEmpty()
 
     /** `scheme://host[:port]` of Home Assistant, used to scope the auth bridge. */
     val haOrigin: String? get() = originOf(haUrl)
@@ -67,6 +69,9 @@ data class Config(
         put("return_home_minutes", returnHomeMinutes)
         put("reopen_minutes", reopenMinutes)
         put("render_stream", renderStream)
+        put("home_playlist", JSONArray().apply {
+            homePlaylist.forEach { put(JSONObject().put("url", it.url).put("kind", it.kind).put("seconds", it.seconds)) }
+        })
         put("rev", rev)
     }
 
@@ -99,6 +104,7 @@ data class Config(
                 "render_stream" -> c.copy(renderStream = update.getString(key).trim().also {
                     require(it.isEmpty() || isHttpUrl(it)) { "render_stream must start with http:// or https://" }
                 })
+                "home_playlist" -> c.copy(homePlaylist = parsePlaylist(update.getJSONArray(key)))
                 "rev" -> c.copy(rev = update.getString(key).take(64))
                 "ha_token_set" -> c // read-only, echoed back by clients that round-trip GET /api/config
                 else -> if (strict) throw IllegalArgumentException("unknown config key: $key") else c
@@ -179,6 +185,20 @@ data class Config(
                 val path = normalizeTarget(item.optString("path"))
                 require(path.isNotEmpty()) { "dashboard $i has no path" }
                 Dashboard(item.optString("title").trim().ifEmpty { path }.take(64), path)
+            }
+        }
+
+        private fun parsePlaylist(array: JSONArray): List<PlaylistItem> {
+            require(array.length() <= 500) { "a playlist has at most 500 items" }
+            return (0 until array.length()).map { i ->
+                val item = array.getJSONObject(i)
+                val url = item.optString("url").trim()
+                require(isHttpUrl(url)) { "playlist item $i needs an http(s) url" }
+                val kind = item.optString("kind", PlaylistItem.VIDEO)
+                require(kind in PlaylistItem.KINDS) { "playlist item $i: kind must be video, audio or image" }
+                val seconds = item.optInt("seconds", 10)
+                require(seconds in 1..86_400) { "playlist item $i: seconds must be from 1 to 86400" }
+                PlaylistItem(url, kind, seconds)
             }
         }
 

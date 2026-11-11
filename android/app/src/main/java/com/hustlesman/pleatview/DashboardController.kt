@@ -84,6 +84,7 @@ class DashboardController(
         Log.w(TAG, problem)
         hub.update { lastError = problem }
     }
+    private val playlist = HomePlaylist(activity, container)
     private val rendered = RenderedScreen(activity, container) { problem ->
         hub.update { lastError = problem }
     }
@@ -191,7 +192,7 @@ class DashboardController(
      */
     fun goBack(): Boolean {
         val view = webView ?: return false
-        if (rendered.isShown || wall.isShown || !view.canGoBack()) return false
+        if (rendered.isShown || wall.isShown || playlist.isShown || !view.canGoBack()) return false
         val history = view.copyBackForwardList()
         val current = history.currentItem?.url ?: return false
         val previous = history.getItemAtIndex(history.currentIndex - 1)?.url ?: return false
@@ -215,6 +216,7 @@ class DashboardController(
         webView?.onResume()
         wall.onResume()
         rendered.onResume()
+        playlist.onResume()
     }
 
     fun onPause() {
@@ -222,6 +224,7 @@ class DashboardController(
         webView?.onPause()
         wall.onPause()
         rendered.onPause()
+        playlist.onPause()
     }
 
     fun destroy() {
@@ -235,6 +238,7 @@ class DashboardController(
         networkCallback = null
         wall.hide()
         rendered.hide()
+        playlist.hide()
         destroyWebView()
     }
 
@@ -375,6 +379,18 @@ class DashboardController(
         loadStartedAt = SystemClock.elapsedRealtime()
         clearHistoryOnLoad = true
         val streams = Wall.ids(url)
+        if (config.homePlaylist.isNotEmpty() && url == config.resolve(config.homePath)) {
+            // A playlist as the home page: the app plays (and caches) it; the page waits blank.
+            if (view.url != BLANK) view.loadUrl(BLANK)
+            view.visibility = View.INVISIBLE
+            wall.hide()
+            rendered.hide()
+            playlist.show(config.homePlaylist)
+            callbacks.onStatus(null)
+            publishLocation(null)
+            return
+        }
+        playlist.hide()
         if (config.renderStream.isNotEmpty()) {
             // Home Assistant renders the page (it follows the URL published below), and the
             // TV only plays the result; its own WebView waits blank.

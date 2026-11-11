@@ -275,15 +275,31 @@ class Screens:
         config = dict(screen["config"])
         on = self.scheduled(tenant_id, screen)
         page_id = on["page_id"] if on else screen.get("home_page")
-        if page_id:
-            page = self.store.tenant(tenant_id).page(page_id)
-            if page:
-                config["home_dashboard"] = self.page_url(tenant_id, page)
+        page = self.store.tenant(tenant_id).page(page_id) if page_id else None
+        if page:
+            config["home_dashboard"] = self.page_url(tenant_id, page)
+        playlist: list[dict[str, Any]] = []
+        if "home_playlist" in (features or []):
+            # Apps that play (and cache) a playlist themselves get the list, not the page.
+            if page and page["kind"] == "playlist":
+                playlist = self.playlist_items(tenant_id, page)
+            config["home_playlist"] = playlist
         if "render_stream" in (features or []):
-            target = self.render_target(tenant_id, screen)
+            target = None if playlist else self.render_target(tenant_id, screen)
             config["render_stream"] = (f"{self.screen_url}/play/{tenant_id}/r/"
                                        f"{self.rendering.secret(tenant_id, screen['id'])}/index.m3u8") if target else ""
         return config
+
+    def playlist_items(self, tenant_id: str, page: dict[str, Any]) -> list[dict[str, Any]]:
+        """The playlist's media that are ready, with the addresses screens fetch them at."""
+        tenant = self.store.tenant(tenant_id)
+        items = []
+        for entry in page["items"]:
+            item = tenant.media_item(entry.get("media_id", 0))
+            url = self.media_url(tenant_id, item) if item else None
+            if url:
+                items.append({"url": url, "kind": item["kind"], "seconds": entry.get("seconds") or 10})
+        return items
 
     def render_target(self, tenant_id: str, screen: dict[str, Any]) -> Target | None:
         if not screen.get("renderer_id"):
@@ -302,7 +318,8 @@ class Screens:
             return False
         features = (link.state or {}).get("features") or []
         desired = self.desired(tenant_id, screen, features)
-        target = self.render_target(tenant_id, screen) if "render_stream" in features else None
+        target = (self.render_target(tenant_id, screen)
+                  if "render_stream" in features and not desired.get("home_playlist") else None)
         if target and desired.get("home_dashboard"):
             await self.rendering.show(tenant_id, screen["id"], target, desired["home_dashboard"], link.state)
         elif not target:

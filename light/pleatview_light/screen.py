@@ -15,10 +15,11 @@ from typing import Any, Callable
 
 from .config import Config, is_http
 from .player import Player
+from .playlist import MediaCache
 
 _LOGGER = logging.getLogger(__name__)
 
-FEATURES = ["render_stream", "home_without_ha"]
+FEATURES = ["render_stream", "home_without_ha", "home_playlist"]
 STREAM_RETRY = 2.0
 PIN_SHOWN = 120  # seconds the PIN stays up after someone starts pairing
 
@@ -33,7 +34,8 @@ def _number(value: Any, low: float, high: float, name: str) -> float | None:
 
 class Screen:
     def __init__(self, *, config: Config, save_config: Callable[[Config], None], player: Player,
-                 setup: Callable[[], dict[str, str]], version: str, size: tuple[int, int]) -> None:
+                 setup: Callable[[], dict[str, str]], version: str, size: tuple[int, int],
+                 cache: MediaCache | None = None) -> None:
         self.config = config
         self.save_config = save_config
         self.player = player
@@ -43,6 +45,10 @@ class Screen:
         self.media: dict[str, Any] | None = None
         self.standby = False
         self.pin_until = 0.0
+        self.playing: str | None = None  # "stream", "playlist" or "media"
+        self.playlist_index = 0
+        self.playlist_failures = 0
+        self.cache = cache
         self._timers: dict[str, asyncio.TimerHandle] = {}
         self._rotation: asyncio.Task | None = None
         self.state: dict[str, Any] = {
@@ -85,16 +91,49 @@ class Screen:
             await self.player.text(self.setup_text(), PIN_SHOWN if config.configured else 86400)
             if not config.configured:
                 return
+        if config.home_playlist and self.at_home:
+            await self.play_playlist()
+            return
         if config.render_stream:
+            self.playing = "stream"
             await self.player.play(config.render_stream, live=True)
             if time.monotonic() >= self.pin_until:
                 await self.player.clear_text()
         else:
+            self.playing = None
             await self.player.blank()
             await self.player.text(
                 "PleatView\n\nThis screen plays dashboards that Home Assistant renders.\n"
                 "In Home Assistant, open this screen's options and choose a renderer\n"
                 "under Render on Home Assistant.", 86400)
+
+    @property
+    def at_home(self) -> bool:
+        return self.target in (None, "", self.config.home_path)
+
+    async def play_playlist(self) -> None:
+        """The next item of the home playlist, from the cache when it's there."""
+        items = self.config.home_playlist
+        item = items[self.playlist_index % len(items)]
+        self.playing = "playlist"
+        source = self.cache.source(item["url"]) if self.cache else item["url"]
+        if time.monotonic() >= self.pin_until:
+            await self.player.clear_text()
+        await self.player.play(source, image_seconds=item["seconds"] if item["kind"] == "image" else None)
+
+    async def _playlist_next(self, failed: bool) -> None:
+        items = self.config.home_playlist
+        if not items or self.playing != "playlist":
+            return
+        self.playlist_failures = self.playlist_failures + 1 if failed else 0
+        self.playlist_index = (self.playlist_index + 1) % len(items)
+        if self.playlist_failures >= len(items):  # nothing plays (offline, nothing cached yet)
+            self.playlist_failures = 0
+            self._later("playlist", 15, self.show)
+        elif failed:
+            self._later("playlist", 1, self.show)
+        else:
+            await self.show()
 
     def setup_text(self) -> str:
         s = self.setup()
@@ -122,6 +161,8 @@ class Screen:
                 self.media = None
                 self.update(media=None)
                 await self.show()
+            elif self.playing == "playlist" and not self.standby:
+                await self._playlist_next(failed=event.get("reason") == "error")
             elif self.config.render_stream and not self.standby:
                 # The live stream stopped (Home Assistant restarted, or the renderer did).
                 self._later("stream", STREAM_RETRY, self.show)
@@ -148,6 +189,12 @@ class Screen:
     # Which dashboard Home Assistant should render
 
     def go_to(self, target: str) -> None:
+        was_home = self.at_home
+        self._go_to(target)
+        if self.config.home_playlist and was_home != self.at_home and not self.media:
+            asyncio.ensure_future(self.show())  # between the playlist and a rendered page
+
+    def _go_to(self, target: str) -> None:
         config = self.config
         url = config.resolve(target) if target else None
         self.target = target
@@ -186,10 +233,13 @@ class Screen:
         old, new = self.config, self.config.merge(update)
         self.config = new
         self.save_config(new)
+        if self.cache and new.home_playlist != old.home_playlist:
+            self.playlist_index = 0
+            self.cache.keep(new.home_playlist)
         if (old.home_path, old.ha_url) != (new.home_path, new.ha_url) or self.target is None:
             await self.home()
         self.restart_rotation()
-        if (old.render_stream, old.configured) != (new.render_stream, new.configured):
+        if (old.render_stream, old.configured, old.home_playlist) != (new.render_stream, new.configured, new.home_playlist):
             await self.show()
         self.update(config_rev=new.rev, view="dashboard" if new.configured else "setup")
         return new
@@ -220,6 +270,7 @@ class Screen:
                           "mode": data.get("mode") or "fullscreen", "position": 0, "duration": None,
                           "updated_at": time.time()}
             self.update(media=dict(self.media))
+            self.playing = "media"
             await self.player.clear_text()
             await self.player.play(url, loop=bool(data.get("loop")), volume=volume, start=start)
             if name == "show_image" and duration:

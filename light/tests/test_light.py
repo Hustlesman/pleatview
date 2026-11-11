@@ -124,8 +124,34 @@ class Screens(unittest.IsolatedAsyncioTestCase):
             await screen.command({"command": "play_media", "url": "file:///etc/passwd"})
         with self.assertRaises(ValueError):
             await screen.command({"command": "reboot"})
-        self.assertEqual(screen.state["features"], ["render_stream", "home_without_ha"])
+        self.assertEqual(screen.state["features"], ["render_stream", "home_without_ha", "home_playlist"])
         self.assertEqual(screen.state["screen"]["width"], 1280)
+
+
+class Playlists(unittest.IsolatedAsyncioTestCase):
+    async def test_home_playlist_plays_from_the_cache(self) -> None:
+        import tempfile
+        from pleatview_light.playlist import MediaCache
+
+        with tempfile.TemporaryDirectory() as tmp:
+            cache = MediaCache(Path(tmp))
+            screen, player, _ = make_screen()
+            screen.cache = cache
+            items = [{"url": "http://c/play/t/m/a/play.mp4", "kind": "video"},
+                     {"url": "http://c/play/t/m/b/play.png", "kind": "image", "seconds": 5}]
+            cache.path(items[1]["url"]).write_bytes(b"png")  # the picture is cached, the video not yet
+            cache.keep = lambda items: None  # no downloads in tests
+            await screen.configure({"home_playlist": items, "render_stream": "http://ha/s.m3u8"})
+            self.assertTrue(screen.state["view"] == "dashboard")
+            self.assertEqual(player.calls[-1][:2], ("play", "http://c/play/t/m/a/play.mp4"))  # not cached: streamed
+            await screen.on_player({"event": "end-file", "reason": "eof"})
+            self.assertEqual(player.calls[-1], ("play", str(cache.path(items[1]["url"])), {"image_seconds": 5}))
+            await screen.command({"command": "show_dashboard", "path": "/other"})
+            await asyncio.sleep(0.05)
+            plays = [c for c in player.calls if c[0] == "play"]
+            self.assertEqual(plays[-1][:2], ("play", "http://ha/s.m3u8"))  # away from home: rendered
+            with self.assertRaises(ValueError):
+                Config().merge({"home_playlist": [{"url": "file:///etc/passwd"}]})
 
 
 class ApiRoutes(unittest.IsolatedAsyncioTestCase):

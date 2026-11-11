@@ -4,6 +4,7 @@ import org.json.JSONArray
 import org.json.JSONObject
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -24,6 +25,23 @@ class ConfigTest {
         assertTrue(own.isConfigured)
         assertEquals("https://console.example/screen", own.resolve(own.homePath))
         assertFalse(own.isHaUrl(own.resolve(own.homePath)))
+    }
+
+    @Test
+    fun `a home playlist is checked, kept and sets the app up`() {
+        val items = JSONArray()
+            .put(JSONObject().put("url", "http://console:8791/play/t/m/a/play.mp4").put("kind", "video"))
+            .put(JSONObject().put("url", "http://console:8791/play/t/m/b/play.png").put("kind", "image").put("seconds", 7))
+        val config = Config().merge(JSONObject().put("home_playlist", items))
+        assertTrue(config.isConfigured)
+        assertEquals(listOf("video", "image"), config.homePlaylist.map { it.kind })
+        assertEquals(7, config.homePlaylist[1].seconds)
+        assertEquals(10, config.homePlaylist[0].seconds)
+        assertEquals(config.homePlaylist, Config.fromJson(config.toJson(includeSecrets = true)).homePlaylist)
+        for (bad in listOf(JSONObject().put("url", "file:///etc/passwd"), JSONObject().put("url", "http://x/a").put("kind", "game"),
+                           JSONObject().put("url", "http://x/a").put("seconds", 0))) {
+            assertThrows(IllegalArgumentException::class.java) { Config().merge(JSONObject().put("home_playlist", JSONArray().put(bad))) }
+        }
     }
 
     @Test
