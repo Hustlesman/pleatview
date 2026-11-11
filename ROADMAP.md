@@ -20,9 +20,16 @@ TV and enter its PIN. Nobody should need adb, a computer, or to type a password 
 the remote. The same goes for running the project: checks, the website and releases run
 on their own.
 
+**Principle: a thin agent.** The apps on the screens stay small: they show pages, play
+media, report their state and keep their own keys. Everything else lives on the controller
+side, in Home Assistant's integration, the renderer or the console: rendering, schedules,
+policies, credentials and logs. A feature goes into the screen's app only when it can't
+work anywhere else, such as decoding video or the screen's power. Cheap screens keep up,
+and there's one place to fix and to audit.
+
 ## Status
 
-Last updated 10 November 2026. **Current milestone: M1** (M0 finished early).
+Last updated 11 November 2026. **Current milestone: M1** (M0 finished early).
 
 | Milestone | Target | Needs first | Status |
 | --- | --- | --- | --- |
@@ -31,6 +38,8 @@ Last updated 10 November 2026. **Current milestone: M1** (M0 finished early).
 | [L1](#l1--linux-app) Linux app for mini PCs and Raspberry Pi, alongside M1 and M2 | Fri 18 Dec 2026 | — | In progress |
 | [M2](#m2--public-beta) Public beta, Google Play closed test, phones and tablets | Fri 4 Dec 2026 | M1, 12 beta testers | Not started |
 | [R1](#r1--rendering-for-many-screens) Rendering for many screens: several renderers, chosen per TV | To be scheduled | — | Not started |
+| [S1](#s1--secure-remote-management) Secure remote management: over the internet, a VPN or zero-trust access | To be scheduled | M3's encryption, M4's protocol v2 | Not started |
+| [C1](#c1--pleatview-console) PleatView Console: many sites and tenants, with or without Home Assistant | To be scheduled | M4, S1 | Not started |
 | [M3](#m3--google-play-and-amazon-appstore) Google Play and Amazon Appstore | Fri 15 Jan 2027 | M2, store reviews | Not started |
 | [M4](#m4--web-player) Web player for any TV browser | Fri 29 Jan 2027 | M3 submitted | Not started |
 | [M5](#m5--lg-and-samsung-apps) LG and Samsung apps submitted | Fri 5 Mar 2027 | M4, test TVs | Not started |
@@ -174,13 +183,20 @@ screens (setup, cards, media, menu) are web pages, a start for the M4 web player
       checked on a Raspberry Pi 5 on 6 Nov; the kiosk session still to check)
 - [ ] End-to-end checks against a real Home Assistant, as `tools/e2e/run.py` does for
       Android, in Docker on a virtual screen
+- [ ] **Rendered dashboards** ([Render on Home Assistant](docs/render-on-home-assistant.md)),
+      as on Android
+- [ ] **A light client for the smallest boards** (added 11 Nov, on request), such as a
+      Raspberry Pi Zero 2 W with 512 MB: no browser, only the stream Home Assistant renders,
+      decoded by the board's H.264 hardware. Discovered, paired and controlled like any
+      screen. Checked on a Raspberry Pi Zero 2 W
 - [ ] Checked by hand on an Ubuntu mini PC, a Raspberry Pi 5 and a Raspberry Pi 4
       (video decoding, screen power, HDMI-CEC, touch screens). Raspberry Pi 5 with
       Raspberry Pi OS 13, a monitor and a TV (sound over HDMI): done on 6 Nov, except
       HDMI-CEC (the TV's CEC was off) and touch
 
 **Exit:** the beta package passes the test plan, minus Android-only items, on the three
-devices above, and the README covers installing it.
+devices above, the light client plays a rendered dashboard on a Raspberry Pi Zero 2 W, and
+the README covers installing both.
 
 ## R1 — Rendering for many screens
 
@@ -192,19 +208,81 @@ Assistant OS runs only one copy of the app, and a renderer on another machine wo
 to the network.
 
 - [ ] **Renderers as entries, with an alias** ("Rack A"). The app on Home Assistant OS is
-      found by itself; renderers running with Docker are added with their address and a token
-- [ ] **Renderer sign-in:** the renderer's API asks for that token, so a renderer can run on
-      another machine without being open to the network
+      found by itself. A renderer on another Linux machine (Docker, or a package like the
+      Linux app's) announces itself on the network and pairs with a PIN, like a screen, then
+      reports to PleatView in Home Assistant
+- [ ] **Renderer sign-in, encrypted:** the renderer's API takes only the token from pairing,
+      over TLS with the renderer's own certificate, which Home Assistant pins when pairing.
+      A renderer on another machine is then safe on the network
 - [ ] **A renderer per TV from a list:** *The TV renders itself*, each renderer by its alias, or
       *Automatic* (the least busy renderer)
 - [ ] **Load in Home Assistant:** each renderer as a device, with screens in use out of its
       maximum, processor and memory, so you can see when to add one
 - [ ] **One stream for several TVs** showing the same dashboard at the same size, rendered once
+- [ ] **Notifications, cameras and sound in the stream**, so a screen that only plays the
+      stream (the light client) gets them too
 - [ ] **A sizing guide**, measured: what a wall of four camera sub-streams costs the renderer,
       and the hardware for eight such walls
 
 **Exit:** eight TVs, four cameras each, on two renderers chosen from the list; stopping one
 renderer leaves the other's walls playing, and its own come back when it does.
+
+## S1 — Secure remote management
+
+*To be scheduled* (added 11 Nov 2026, on request). Manage screens away from home and across
+sites, over the internet, a VPN or zero-trust network access (ZTNA), and meet the basic
+security requirements that businesses and installers are asked about. It builds on M3's
+encrypted connections and M4's protocol v2, where screens connect out to their controller.
+The screen's part stays small: a key, TLS and one connection out. Expiry, revocation, logs
+and policies live in the controller.
+
+- [ ] **Screens connect out**, over TLS 1.3 only. Nothing on a screen listens for the
+      internet, so no port is opened, and it works behind NAT, a VPN or a ZTNA connector. The
+      local server is only for setup on the home network, and can be turned off
+- [ ] **A key for each screen and renderer,** made on the device and kept in its key store
+      (the Android Keystore, for one). Pairing registers its public key, and the device
+      proves who it is with it on every connection. No shared secret travels
+- [ ] **Short-lived, revocable credentials:** tokens expire and renew by themselves, a
+      removed screen is cut off at once, and keys can be replaced without pairing again
+- [ ] **An audit log** in the controller: pairings, sign-ins, commands and setting changes,
+      with who and when, kept for a set time and exportable
+- [ ] **A security baseline** (`docs/security-baseline.md`): each provision of ETSI EN 303 645,
+      the baseline for connected consumer devices, and how PleatView meets it, with a threat
+      model for remote management and a check against the EU Cyber Resilience Act's
+      essential requirements. A self-assessment that anyone can verify, not a certificate
+
+**Exit:** a screen on another network is paired, controlled and removed through a ZTNA
+connector and over the open internet, with no open port at the screen's end, and the
+baseline is published.
+
+## C1 — PleatView Console
+
+*To be scheduled* (added 11 Nov 2026, on request; it was in the parking lot). A standalone
+manager for screens in many places, with or without Home Assistant: for installers,
+businesses, and homes with more than one site. It's another controller on protocol v2, so
+the screens' apps don't change. Self-hosted, free and open source, with every package
+pinned and listed, like the renderer's.
+
+- **Tenants, each a silo:** its own sites, screens, renderers, users, keys and logs, stored
+  apart and encrypted with the tenant's own key. Nothing crosses tenants, and a tenant can
+  be exported or deleted whole.
+- **Sites** in each tenant (a building, a branch, a home), each with its screens and
+  renderers. A site keeps playing when the console can't be reached.
+- **Users and roles** per tenant (owner, operator, viewer), with two-factor sign-in.
+- **The screens:** inventory and health, groups, pages, media, schedules and playlists,
+  notifications, renderers per site (R1) and staged updates.
+
+The work, in order:
+
+- [ ] **Design** (`docs/console.md`): the data model, tenant isolation, how a site's own
+      Home Assistant fits in, and the threat model, with the stack and every package put
+      forward for approval
+- [ ] **One site:** pair screens, show pages and media, groups, schedules, the audit log
+- [ ] **Many sites:** sites, a renderer per site, sites that keep playing offline
+- [ ] **Many tenants:** silos, roles, a key per tenant, export and deletion
+
+**Exit:** two tenants with two sites each, screens and a renderer at every site, run from
+one console; isolation tests show neither tenant can see or reach the other's.
 
 ## M2 — Public beta
 
@@ -368,6 +446,7 @@ website and in the README.
 | Android phones, tablets and Chromebooks | Same native app | Google Play | Yes (beta in M2, public in M3) |
 | Fire tablets | Same native app | Amazon Appstore | Yes (M3) |
 | Linux: Ubuntu mini PCs, Raspberry Pi 4 and 5 | Electron app, same integration | `.deb` on GitHub, then an APT repository | Beta in L1 |
+| Linux: Raspberry Pi Zero 2 W and other small boards | Light client that plays dashboards rendered on Home Assistant | `.deb` on GitHub | L1 |
 | iPhone and iPad | Web player in Safari, then a native app that wraps it | App Store | Web player (M4); app in M7 |
 | LG webOS (2021+) | Web player in a webOS app | LG Content Store | Yes (M5) |
 | Samsung Tizen (2021+) | Web player in a Tizen app | Samsung TV Apps | Yes (M5) |
@@ -390,6 +469,8 @@ website and in the README.
 | A Samsung TV's browser plays one video at a time (a 2024 model on Tizen 9, 9 Nov: of four muted YouTube players, only one started). A camera next to a playing video, or a wall of streams, may not work there | Check how many videos a Tizen app can play in M5; until then the web player shows one video at a time on Samsung TVs and says so |
 | Apple rejects an app that mostly shows web pages (App Store guideline 4.2) | Native features beyond the page (discovery, pairing, keep-awake, Guided Access); meanwhile the web player works in Safari |
 | Smart displays close the page after a while: the Nest Hub stops a cast after about 10 minutes, and an Echo Show can go back to its home screen | The integration opens or casts the player again when it stops; checked on each device before it's listed |
+| Remote management opens screens to more than the home network | Screens only connect out, each with its own key, and S1's baseline comes before the console ships |
+| The console is a large new product for one developer | Design first, then one site, many sites and many tenants, each usable on its own; scheduled between store milestones |
 | One developer, many platforms | The rules above: one milestone at a time, a fixed scope, and the parking lot |
 
 ## Parking lot
@@ -405,13 +486,5 @@ Ideas we'll consider after M6, or between milestones if there's slack:
 - Several Home Assistant servers on one TV
 - Run the end-to-end test in CI every week against the Home Assistant beta (GitHub runners have KVM)
 - A Downloader short code for `pleatview.hustlesman.com/apk` (digits instead of a URL on Fire TV)
-- Rendered dashboards on the Linux app, and a light client for screens that can't run a
-  browser at all (a Raspberry Pi Zero W): it would only play the stream Home Assistant
-  renders ([Render on Home Assistant](docs/render-on-home-assistant.md), 1.0.14)
 - Remote-control browsing on rendered dashboards (the keys sent on to the renderer)
 - Prebuilt renderer images, so the renderer app needn't build on each machine
-- A standalone controller for PleatView TVs without Home Assistant: a small program for
-  Windows, macOS and Linux with its web page at `localhost`, offering schedules, playlists,
-  groups of TVs and a media library. Built on protocol v2, so it covers every PleatView TV,
-  and designed alongside M4. It lives in this repository, next to the other clients of the
-  protocol. The TV app gets a mode without Home Assistant
