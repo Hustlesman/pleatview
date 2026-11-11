@@ -230,7 +230,8 @@ to the network.
       so PleatView Light works on sites without Home Assistant
 - [ ] **One stream for several TVs** showing the same dashboard at the same size, rendered once
 - [ ] **Notifications, cameras and sound in the stream**, so a screen that only plays the
-      stream (the light client) gets them too
+      stream (the light client) gets them too (12 Nov: notifications and cameras, drawn by
+      the renderer; checked on a Raspberry Pi Zero 2 W. Sound still to do)
 - [ ] **A sizing guide**, measured: what a wall of four camera sub-streams costs the renderer,
       and the hardware for eight such walls
 

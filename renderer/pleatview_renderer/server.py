@@ -82,6 +82,50 @@ def parse_screen(body: Any) -> Screen:
                   kiosk=kiosk, ha_url=ha_url, token=token)
 
 
+POSITIONS = ("top-left", "top-right", "bottom-left", "bottom-right", "center")
+
+
+def parse_overlay(body: Any) -> dict[str, Any] | None:
+    """A notification or camera to draw on top of a screen's page; None to clear."""
+    if not isinstance(body, dict):
+        raise ValueError("expected a JSON object")
+    kind = body.get("kind")
+    if kind == "clear":
+        return None
+
+    def text(name: str, required: bool = False) -> str:
+        value = body.get(name) or ""
+        if not isinstance(value, str) or len(value) > 1000 or (required and not value):
+            raise ValueError(f"{name} must be text of up to 1000 characters")
+        return value
+
+    def url(name: str, required: bool) -> str:
+        value = body.get(name) or ""
+        if not value and not required:
+            return ""
+        if not isinstance(value, str) or urlsplit(value).scheme not in ("http", "https"):
+            raise ValueError(f"{name} must be an http or https address")
+        return value
+
+    duration = body.get("duration") or (10 if kind == "notify" else 60)
+    if not isinstance(duration, (int, float)) or not 1 <= duration <= 3600:
+        raise ValueError("duration must be from 1 to 3600 seconds")
+    position = body.get("position") or ("top-right" if kind == "notify" else "bottom-right")
+    if position not in POSITIONS:
+        raise ValueError(f"position must be one of {', '.join(POSITIONS)}")
+    if kind == "notify":
+        return {"kind": kind, "message": text("message", True), "title": text("title"),
+                "image_url": url("image_url", False), "position": position, "duration": float(duration)}
+    if kind == "image":
+        size = body.get("size") or 30
+        if not isinstance(size, (int, float)) or not 10 <= size <= 100:
+            raise ValueError("size must be from 10 to 100 (percent of the width)")
+        if body.get("mode") == "fullscreen":
+            size, position = 100, "center"
+        return {"kind": kind, "url": url("url", True), "size": size, "position": position, "duration": float(duration)}
+    raise ValueError("kind must be notify, image or clear")
+
+
 def create_app(root: Path, encoder: str, max_sessions: int = 4, *, pairing: Pairing | None = None,
                require_token: bool = False, identity: dict[str, str] | None = None) -> web.Application:
     sessions: dict[str, Session] = {}
@@ -169,6 +213,18 @@ def create_app(root: Path, encoder: str, max_sessions: int = 4, *, pairing: Pair
         session.start()
         return web.json_response({"playlist": f"/hls/{key}/index.m3u8"})
 
+    async def put_overlay(request: web.Request) -> web.Response:
+        session = sessions.get(request.match_info["key"])
+        if session is None:
+            raise web.HTTPNotFound()
+        try:
+            body = await request.json()
+            item = parse_overlay(body)
+        except ValueError as err:
+            raise web.HTTPBadRequest(text=str(err)) from err
+        await session.overlay(item, kind=str(body.get("clear") or "") if item is None else "")
+        return web.json_response({})
+
     async def delete_session(request: web.Request) -> web.Response:
         session = sessions.pop(request.match_info["key"], None)
         if session:
@@ -227,6 +283,7 @@ def create_app(root: Path, encoder: str, max_sessions: int = 4, *, pairing: Pair
     app.router.add_get("/api/packages", packages)
     app.router.add_put("/api/sessions/{key}", put_session)
     app.router.add_delete("/api/sessions/{key}", delete_session)
+    app.router.add_post("/api/sessions/{key}/overlay", put_overlay)
     app.router.add_get("/hls/{key}/{name}", hls)
     return app
 

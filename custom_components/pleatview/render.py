@@ -145,6 +145,19 @@ class Renderer:
                 return
             self._shown = screen
 
+    async def async_overlay(self, body: dict[str, Any]) -> bool:
+        """Draws a notification or camera into the stream (for screens that only play it)."""
+        if not (target := self.target):
+            return False
+        try:
+            async with async_get_clientsession(self.hass).post(
+                f"{target.base_url}/api/sessions/{self.key}/overlay", json=body, timeout=TIMEOUT, **target.kwargs()
+            ) as response:
+                return response.status == 200
+        except (aiohttp.ClientError, TimeoutError) as err:
+            _LOGGER.debug("Could not draw on the rendered screen: %s", err)
+            return False
+
     async def async_stop(self) -> None:
         self._shown = None
         if not (target := self.target):

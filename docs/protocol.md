@@ -109,7 +109,10 @@ Events stream that sends the full snapshot on connect and after every change
   address in `home_dashboard` sets the app up without `ha_url`, for controllers other than
   Home Assistant, such as PleatView Console (1.0.17 and later). `home_playlist`: the app
   plays `home_playlist` itself as its home page and keeps its media in its own cache, so it
-  plays on offline (Android and PleatView Light, 1.0.17 and later).
+  plays on offline (Android and PleatView Light, 1.0.17 and later). `stream_overlays`: the
+  app only plays the stream, so Home Assistant draws its notifications and cameras into the
+  rendered stream (the renderer's `POST /api/sessions/<key>/overlay`) instead of sending
+  them to the screen (PleatView Light, 1.0.18 and later).
 
 ## Commands
 
