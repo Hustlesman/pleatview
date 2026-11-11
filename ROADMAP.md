@@ -253,10 +253,14 @@ and policies live in the controller.
       removed screen is cut off at once, and keys can be replaced without pairing again
 - [ ] **An audit log** in the controller: pairings, sign-ins, commands and setting changes,
       with who and when, kept for a set time and exportable
-- [ ] **A security baseline** (`docs/security-baseline.md`): each provision of ETSI EN 303 645,
-      the baseline for connected consumer devices, and how PleatView meets it, with a threat
-      model for remote management and a check against the EU Cyber Resilience Act's
-      essential requirements. A self-assessment that anyone can verify, not a certificate
+- [x] **A security baseline** ([docs/security-baseline.md](docs/security-baseline.md)): each
+      provision of ETSI EN 303 645, the baseline for connected consumer devices, and how
+      PleatView meets it, with a threat model for remote management and a check against the
+      EU Cyber Resilience Act's essential requirements. A self-assessment that anyone can
+      verify, not a certificate (12 Nov, with its gaps listed)
+- [ ] **Protocol v2** ([design](docs/protocol-v2.md), 12 Nov): screens connect out over TLS 1.3,
+      enrol with a code and a key pair, and prove the key on every connection. Waiting for
+      decisions on the key type, Light's library and the controller's certificate
 
 **Exit:** a screen on another network is paired, controlled and removed through a ZTNA
 connector and over the open internet, with no open port at the screen's end, and the
