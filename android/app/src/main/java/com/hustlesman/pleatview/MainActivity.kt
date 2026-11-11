@@ -687,7 +687,7 @@ class MainActivity : Activity(), Hub.Display, DashboardController.Callbacks, Med
         )
         menuItems.addView(menuText(info, 15f))
         if (demo != null) menuItems.addView(menuText(getString(R.string.menu_demo_info), 13f))
-        if (config.isConfigured) menuItems.addView(menuText(config.haUrl, 13f))
+        if (config.haUrl.isNotEmpty()) menuItems.addView(menuText(config.haUrl, 13f))
         if (demo == null && !app.hub.canDrawOverlays()) {
             val missing = if (app.hub.canOpenFromBackground()) R.string.menu_overlay_missing_notifications else R.string.menu_overlay_missing
             menuItems.addView(menuText(getString(missing), 13f))

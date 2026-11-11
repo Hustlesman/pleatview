@@ -28,6 +28,8 @@ export class Hub {
       overlay_permission: true,
       sign_in: null,
       battery: null,
+      // What this app can do beyond protocol v1 (docs/protocol.md, "State").
+      features: ["home_without_ha"],
     };
   }
 

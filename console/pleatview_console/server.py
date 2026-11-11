@@ -19,7 +19,7 @@ from aiohttp import web
 from . import VERSION
 from . import totp
 from .auth import DUMMY_HASH, Throttle, check_new_password, check_password, hash_password
-from .screens import Invalid, Screens, check_address, command_params
+from .screens import Invalid, Screens, check_address, command_params, web_url
 from .store import ROLES, TENANT_ID, Store
 from .tvapi import CannotConnect, InvalidPin, PleatViewError, RequestRejected, TooManyAttempts
 
@@ -621,9 +621,34 @@ async def change_screen(request: web.Request) -> web.Response:
         if not isinstance(site_id, int) or isinstance(site_id, bool) or not tenant.site(site_id):
             raise fail(400, "No such site")
         changes["site_id"] = data["site_id"]
+    config = dict(screen["config"])
+    if "home" in data:
+        home = data["home"]
+        if home in (None, ""):
+            config["home_dashboard"] = ""  # the screen goes back to its setup screen
+        else:
+            try:
+                config["home_dashboard"] = web_url(home, "The home page")
+            except Invalid as err:
+                raise fail(400, str(err)) from None
+    if "zoom" in data:
+        zoom = data["zoom"]
+        if zoom in (None, ""):
+            config["zoom"] = 100
+        elif isinstance(zoom, int) and not isinstance(zoom, bool) and 25 <= zoom <= 400:
+            config["zoom"] = zoom
+        else:
+            raise fail(400, "Zoom is a percentage from 25 to 400")
+    if config != screen["config"]:
+        try:
+            await request.app[SCREENS].configure(tenant_id, screen["id"], config)
+        except Invalid as err:
+            raise fail(409, str(err)) from None
+        changes["config"] = config
     if not changes:
         raise fail(400, "Nothing to change")
-    tenant.update_screen(screen["id"], **changes)
+    if set(changes) - {"config"}:
+        tenant.update_screen(screen["id"], **{k: v for k, v in changes.items() if k != "config"})
     tenant.log("screen_changed", user=user["username"], target=f"screen:{screen['id']}", detail=changes,
                address=client_address(request))
     request.app[SCREENS].publish(tenant_id, screen["id"])

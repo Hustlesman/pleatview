@@ -560,7 +560,13 @@ class DashboardController(
         val delay = RETRY_DELAYS_SECONDS[minOf(retryAttempt, RETRY_DELAYS_SECONDS.size - 1)]
         retryAttempt++
         Log.w(TAG, "Dashboard failed to load: $reason; retrying in ${delay}s")
-        callbacks.onStatus(activity.getString(R.string.status_unreachable, Config.originOf(config.haUrl) ?: config.haUrl, delay))
+        val status = if (config.isHaUrl(currentUrl) || config.haUrl.isNotEmpty() && currentUrl == null) {
+            activity.getString(R.string.status_unreachable, Config.originOf(config.haUrl) ?: config.haUrl, delay)
+        } else {
+            // A home page of its own (PleatView Console), or another site.
+            activity.getString(R.string.status_unreachable_page, Config.originOf(currentUrl.orEmpty()) ?: currentUrl.orEmpty(), delay)
+        }
+        callbacks.onStatus(status)
         hub.update {
             lastError = "Can't load ${currentUrl.orEmpty()}: $reason"
             haConnected = false

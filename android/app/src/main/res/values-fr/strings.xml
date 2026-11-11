@@ -33,6 +33,7 @@
     <string name="menu_allow_overlay">Autoriser l\'affichage par-dessus d\'autres applis</string>
     <string name="overlay_settings_missing">Cet appareil n\'a pas de réglage pour cela. Voir pleatview.hustlesman.com/support pour la solution en une ligne.</string>
     <string name="status_unreachable">Home Assistant est injoignable (%1$s). Nouvel essai dans %2$d s…</string>
+    <string name="status_unreachable_page">%1$s est injoignable. Nouvel essai dans %2$d s…</string>
     <string name="status_auth_failed">Home Assistant a refusé le jeton d\'accès. Renvoyez-le depuis Home Assistant ou la page de configuration.</string>
     <string name="status_no_webview">Android System WebView n\'est pas disponible. Installez-le ou mettez-le à jour depuis le Play Store.</string>
     <string name="playback_failed">Échec de la lecture : %1$s</string>

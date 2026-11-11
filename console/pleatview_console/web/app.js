@@ -628,15 +628,31 @@ function notify(screen) {
 }
 
 function editScreen(screen) {
+  const own = screen.managed_by !== "home_assistant";
+  const fields = [
+    { name: "name", label: "Name", value: screen.name },
+    { name: "site_id", label: "Site", options: siteOptions(), value: screen.site_id },
+  ];
+  if (own) {
+    fields.push(
+      { name: "home", label: "Home page", type: "url", required: false, value: screen.config.home_dashboard || "",
+        hint: screen.home_without_ha || !screen.online
+          ? "What the screen shows, and comes back to: any web page. Empty: its setup screen."
+          : "Needs PleatView 1.0.17 or later on this screen." },
+      { name: "zoom", label: "Zoom (%)", type: "number", required: false, value: screen.config.zoom ?? "",
+        hint: "Lower fits more on the screen. Empty: 100." });
+  }
   dialog({
     title: `Edit ${screen.name}`,
-    fields: [
-      { name: "name", label: "Name", value: screen.name },
-      { name: "site_id", label: "Site", options: siteOptions(), value: screen.site_id },
-    ],
+    fields,
     ok: "Save",
     submit: async (data) => {
-      await api("PATCH", `/api/t/${app.tenant}/screens/${screen.id}`, { name: data.name.trim(), site_id: Number(data.site_id) });
+      const change = { name: data.name.trim(), site_id: Number(data.site_id) };
+      if (own) {
+        change.home = data.home.trim();
+        change.zoom = data.zoom.trim() ? Number(data.zoom) : null;
+      }
+      await api("PATCH", `/api/t/${app.tenant}/screens/${screen.id}`, change);
       await loadScreens();
       render();
     },

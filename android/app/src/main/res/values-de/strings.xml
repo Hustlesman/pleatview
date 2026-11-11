@@ -33,6 +33,7 @@
     <string name="menu_allow_overlay">Über anderen Apps einblenden erlauben</string>
     <string name="overlay_settings_missing">Dieses Gerät hat dafür keine Einstellung. Unter pleatview.hustlesman.com/support steht die Lösung in einer Zeile.</string>
     <string name="status_unreachable">Home Assistant ist nicht erreichbar (%1$s). Neuer Versuch in %2$d s …</string>
+    <string name="status_unreachable_page">%1$s ist nicht erreichbar. Neuer Versuch in %2$d s …</string>
     <string name="status_auth_failed">Home Assistant hat das Zugriffstoken abgelehnt. Richte es in Home Assistant oder auf der Einrichtungsseite neu ein.</string>
     <string name="status_no_webview">Android System WebView ist nicht verfügbar. Installiere oder aktualisiere es im Play Store.</string>
     <string name="playback_failed">Wiedergabe fehlgeschlagen: %1$s</string>

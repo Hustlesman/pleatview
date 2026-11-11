@@ -41,13 +41,16 @@ class FakeTv:
         self.tokens: set[str] = set()
         self.commands: list[dict] = []
         self.config = {"ha_url": ""}
-        self.state = {"power": "on", "view": "dashboard", "foreground": True, "url": "http://x/", "app_version": "1.0.16"}
+        self.state = {"power": "on", "view": "dashboard", "foreground": True, "url": "http://x/", "app_version": "1.0.17",
+                      "features": ["home_without_ha"]}
         app = web.Application()
         app.router.add_get("/api/info", self.info)
         app.router.add_post("/api/pair", self.pair)
         app.router.add_post("/api/unpair", self.unpair)
         app.router.add_get("/api/events", self.events)
         app.router.add_get("/api/config", self.get_config)
+        app.router.add_post("/api/config", self.post_config)
+        self.config_posts: list[dict] = []
         app.router.add_post("/api/command", self.command)
         self.server = TestServer(app, host="127.0.0.1")
 
@@ -75,6 +78,13 @@ class FakeTv:
 
     async def get_config(self, request):
         self.authed(request)
+        return web.json_response(self.config)
+
+    async def post_config(self, request):
+        self.authed(request)
+        update = await request.json()
+        self.config_posts.append(update)
+        self.config.update(update)
         return web.json_response(self.config)
 
     async def command(self, request):
@@ -550,7 +560,8 @@ class Pairing(Base):
         view = await self.wait_online(screen_id)
         self.assertEqual(view["name"], "Lobby TV")
         self.assertEqual(view["model"], "Acme Box")
-        self.assertEqual(view["app_version"], "1.0.16")
+        self.assertEqual(view["app_version"], "1.0.17")
+        self.assertTrue(view["home_without_ha"])
         await self.screens.command(self.tenant, screen_id, "show_url",
                                    command_params("show_url", {"url": "https://example.com/"}))
         self.assertEqual(self.tv.commands, [{"command": "show_url", "url": "https://example.com/"}])
@@ -559,6 +570,43 @@ class Pairing(Base):
         await self.screens.unpair(self.tenant, screen_id)
         self.assertEqual(self.tv.tokens, set())
         self.assertEqual(self.store.tenant(self.tenant).screens(), [])
+
+    async def test_settings_stay_on_the_screen(self) -> None:
+        screen_id = await self.screens.pair(self.tenant, self.site, "127.0.0.1", self.tv.server.port, "123456")
+        await self.wait_online(screen_id)
+        await asyncio.sleep(0.1)
+        await self.screens.configure(self.tenant, screen_id, {"home_dashboard": "https://example.com/board", "zoom": 80})
+        self.assertEqual(self.tv.config["home_dashboard"], "https://example.com/board")
+        self.assertEqual(len(self.tv.config["rev"]), 16)
+        sent = len(self.tv.config_posts)
+        await self.restart_screens()
+        await self.wait_online(screen_id)
+        await asyncio.sleep(0.2)
+        self.assertEqual(len(self.tv.config_posts), sent)  # unchanged: nothing sent again
+        self.tv.config = {"ha_url": ""}  # the screen was reset
+        await self.restart_screens()
+        await self.wait_online(screen_id)
+        for _ in range(20):
+            if self.tv.config.get("home_dashboard"):
+                break
+            await asyncio.sleep(0.05)
+        self.assertEqual(self.tv.config["home_dashboard"], "https://example.com/board")
+
+    async def test_home_assistant_keeps_its_screens(self) -> None:
+        self.tv.config = {"ha_url": "http://ha.local:8123"}
+        screen_id = await self.screens.pair(self.tenant, self.site, "127.0.0.1", self.tv.server.port, "123456")
+        for _ in range(50):
+            if self.screens.list(self.tenant)[0]["managed_by"]:
+                break
+            await asyncio.sleep(0.05)
+        with self.assertRaises(Invalid):
+            await self.screens.configure(self.tenant, screen_id, {"home_dashboard": "https://example.com/"})
+        self.assertEqual(self.tv.config_posts, [])
+
+    async def restart_screens(self) -> None:
+        await self.screens.stop()
+        self.screens = Screens(self.store, self.session, discovery=False)
+        await self.screens.start()
 
     async def test_links_come_back_after_a_restart(self) -> None:
         screen_id = await self.screens.pair(self.tenant, self.site, "127.0.0.1", self.tv.server.port, "123456")
