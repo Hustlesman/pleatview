@@ -22,7 +22,7 @@
   "iot_class": "local_push",
   "issue_tracker": "https://github.com/Hustlesman/pleatview/issues",
   "requirements": [],
-  "version": "1.0.17",
+  "version": "1.0.18",
   "zeroconf": [
     "_pleatview._tcp.local.",
     "_pleatview-renderer._tcp.local."

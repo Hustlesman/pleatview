@@ -53,16 +53,16 @@ each later milestone gets its issues when it starts.
 **Want to help?** Tell us about a device that works or doesn't, report a bug, or join the
 Google TV beta ([#9](https://github.com/Hustlesman/pleatview/issues/9)).
 
-Done so far: v1.0.17 is published as a signed release with build attestations (versions are
+Done so far: v1.0.18 is published as a signed release with build attestations (versions are
 1.x from 29 Oct; each milestone ends with the next minor release). One command
 (`tools/e2e/run.py`) tests the Android app and the Home Assistant integration together in
-21 checks, on an Android TV 16 emulator or a real TV: the demo, pairing, automatic sign-in, kiosk mode,
+23 checks, on an Android TV 16 emulator or a real TV: the demo, pairing, automatic sign-in, kiosk mode,
 casting, cameras, notifications, sign-ins, standby, updates, and recovery from a Home Assistant
-restart and from a frozen page. Phone and tablet emulators add touch, turning the screen and the lock screen, for 24.
-`tools/e2e/linux.py` checks the Linux app the same way in Docker, in 15. A Fire TV Stick and a Chromecast HD pass the automated checks,
+restart and from a frozen page. Phone and tablet emulators add touch, turning the screen and the lock screen, for 26.
+`tools/e2e/linux.py` checks the Linux app the same way in Docker, in 16. A Fire TV Stick and a Chromecast HD pass the automated checks,
 and both ran a 42-hour soak test without a crash. A security review on 2 Nov fixed what it
-found, and no dependency has a known vulnerability. 68 app tests, 57 integration tests, 20
-renderer tests, 53 console tests and 7 PleatView Light tests pass. Since 1.0.14, Home Assistant
+found, and no dependency has a known vulnerability. 75 app tests, 59 integration tests, 22
+renderer tests, 53 console tests and 8 PleatView Light tests pass. Since 1.0.14, Home Assistant
 can render a TV's dashboards and stream them to it, which a Home Assistant OS app does too; since
 1.0.17, on renderers paired by name, also on other machines, and for PleatView Light on the
 smallest boards. PleatView Console (in development) manages screens across sites and
