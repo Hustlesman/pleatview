@@ -206,7 +206,11 @@ export class Display {
     }
     if (["Escape", "ContextMenu", "F10", "BrowserBack", "GoBack"].includes(input.key)) {
       event.preventDefault();
-      if (this.signInFlow?.pending) this.signInFlow.dismiss(); // "Not now"
+      const approval = this.pairing?.pendingApproval;
+      if (approval) {
+        this.pairing.decide(approval.id, false); // "Don't allow"
+        this.showApproval();
+      } else if (this.signInFlow?.pending) this.signInFlow.dismiss(); // "Not now"
       else if (this.menuOpen) this.toUi({ type: "close-menu" });
       else this.openMenu();
     } else if (input.key === "MediaPlayPause" || input.key === "MediaStop") {

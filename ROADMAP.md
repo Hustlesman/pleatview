@@ -58,7 +58,8 @@ Done so far: v1.0.17 is published as a signed release with build attestations (v
 (`tools/e2e/run.py`) tests the Android app and the Home Assistant integration together in
 21 checks, on an Android TV 16 emulator or a real TV: the demo, pairing, automatic sign-in, kiosk mode,
 casting, cameras, notifications, sign-ins, standby, updates, and recovery from a Home Assistant
-restart and from a frozen page. Phone and tablet emulators add touch, turning the screen and the lock screen, for 24. A Fire TV Stick and a Chromecast HD pass the automated checks,
+restart and from a frozen page. Phone and tablet emulators add touch, turning the screen and the lock screen, for 24.
+`tools/e2e/linux.py` checks the Linux app the same way in Docker, in 15. A Fire TV Stick and a Chromecast HD pass the automated checks,
 and both ran a 42-hour soak test without a crash. A security review on 2 Nov fixed what it
 found, and no dependency has a known vulnerability. 68 app tests, 57 integration tests, 20
 renderer tests, 53 console tests and 7 PleatView Light tests pass. Since 1.0.14, Home Assistant
@@ -191,8 +192,9 @@ screens (setup, cards, media, menu) are web pages, a start for the M4 web player
       Ubuntu Server and Raspberry Pi OS Lite, set up by one command (the desktop entry
       checked on a Raspberry Pi 5 on 6 Nov; the kiosk session on Raspberry Pi OS Lite on a
       Raspberry Pi Zero 2 W on 11 Nov; Ubuntu Server still to check)
-- [ ] End-to-end checks against a real Home Assistant, as `tools/e2e/run.py` does for
-      Android, in Docker on a virtual screen
+- [x] End-to-end checks against a real Home Assistant, as `tools/e2e/run.py` does for
+      Android, in Docker on a virtual screen (12 Nov: `tools/e2e/linux.py`, 15 checks, from
+      pairing, one-press pairing and sign-ins to standby and a Home Assistant restart)
 - [x] **Rendered dashboards** ([Render on Home Assistant](docs/render-on-home-assistant.md)),
       as on Android (11 Nov; on a Raspberry Pi Zero 2 W it plays, but its 512 MB leave little
       to spare, hence the light client)
