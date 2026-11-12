@@ -82,9 +82,12 @@ def parse_screen(body: Any) -> Screen:
     ha_url, token = body.get("ha_url", ""), body.get("token", "")
     if not isinstance(ha_url, str) or not isinstance(token, str):
         raise ValueError("ha_url and token must be text")
+    rotation = body.get("rotation", 0)
+    if rotation not in (0, 90, 180, 270) or isinstance(rotation, bool):
+        raise ValueError("rotation must be 0, 90, 180 or 270 (degrees the screen is turned clockwise)")
     # Even sizes: H.264 in 4:2:0 needs them.
     return Screen(url=url, width=width // 2 * 2, height=height // 2 * 2, scale=round(float(scale), 3),
-                  kiosk=kiosk, ha_url=ha_url, token=token)
+                  kiosk=kiosk, ha_url=ha_url, token=token, rotation=rotation)
 
 
 POSITIONS = ("top-left", "top-right", "bottom-left", "bottom-right", "center")

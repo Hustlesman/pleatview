@@ -106,8 +106,9 @@ async def test_rendered_dashboards(hass: HomeAssistant, fake_tv: FakeTV, rendere
     assert stream.startswith(f"{HA_URL}/api/pleatview/render/{entry.entry_id}/")
     assert renderer.screens[entry.entry_id] == {
         "url": "http://ha.test:8123/lovelace/0", "width": 1920, "height": 1080, "scale": 1.5,
-        "kiosk": "sidebar", "ha_url": HA_URL, "token": entry.data[CONF_HA_TOKEN],
+        "kiosk": "sidebar", "ha_url": HA_URL, "token": entry.data[CONF_HA_TOKEN], "rotation": 0,
     }
+    assert "rotation" not in fake_tv.config  # a rendered screen gets its picture turned by the renderer
     assert hass.auth.async_validate_access_token(entry.data[CONF_HA_TOKEN]) is not None
 
     # The renderer follows the page the TV wants.

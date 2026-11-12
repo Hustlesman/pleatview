@@ -46,6 +46,11 @@ RENDERER_SERVICE: Final = "_pleatview-renderer._tcp.local."
 
 KIOSK_MODES: Final = ["full", "sidebar", "off"]
 
+# How the screen is mounted, in degrees turned clockwise. The Linux app turns its picture to
+# match; for screens it renders for, the renderer does (the screen only plays the stream).
+CONF_ROTATION: Final = "rotation"
+ROTATIONS: Final = ["0", "90", "180", "270"]
+
 # Notifications: a notice is a card; a warning adds a short tone over whatever plays; an
 # alert adds a stronger one and pauses what plays. The TV makes the tones itself.
 CONF_WARNING_TONE: Final = "warning_tone"
@@ -66,6 +71,7 @@ DEFAULT_OPTIONS: Final = {
     CONF_LAUNCH_ON_BOOT: True,
     CONF_WARNING_TONE: "chime",
     CONF_ALERT_TONE: "alarm",
+    CONF_ROTATION: "0",
 }
 
 # Media types understood by media_player.play_media in addition to the standard ones

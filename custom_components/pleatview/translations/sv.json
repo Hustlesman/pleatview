@@ -75,7 +75,8 @@
           "launch_on_boot": "Öppna PleatView när tv:n startar",
           "render_url": "Rendera på Home Assistant",
           "warning_tone": "Varningston",
-          "alert_tone": "Larmton"
+          "alert_tone": "Larmton",
+          "rotation": "Skärmens montering"
         },
         "data_description": {
           "ha_url": "Lämna tomt för att använda Home Assistants interna URL.",
@@ -89,7 +90,8 @@
           "launch_on_boot": "Kräver behörigheten \"Visa ovanpå andra appar\" på tv:n.",
           "render_url": "PleatView Renderer att använda: en ihopparad med namn, Automatiskt (den minst belastade), en som Home Assistant hittade, eller skriv dess adress, till exempel http://ce7dee09-pleatview-renderer:8780. Home Assistants dator kör då tv:ns instrumentpaneler och skickar tv:n en video av dem. Tomt: tv:n kör dem själv.",
           "warning_tone": "Spelas med aviseringar som skickas som varning. Det som spelas fortsätter.",
-          "alert_tone": "Spelas med aviseringar som skickas som larm, som också pausar det som spelas."
+          "alert_tone": "Spelas med aviseringar som skickas som larm, som också pausar det som spelas.",
+          "rotation": "Hur skärmen hänger. PleatView för Linux, och Home Assistants renderare för de skärmar den renderar åt (som PleatView Light), vrider bilden därefter. Android-tv ignorerar det."
         }
       }
     },
@@ -148,6 +150,14 @@
         "notice": "Information",
         "warning": "Varning",
         "alert": "Larm"
+      }
+    },
+    "rotation": {
+      "options": {
+        "0": "Liggande, som tillverkad",
+        "90": "Stående, vriden medurs",
+        "180": "Upp och ned",
+        "270": "Stående, vriden moturs"
       }
     }
   },

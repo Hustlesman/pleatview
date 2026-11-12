@@ -75,6 +75,8 @@ class Screen:
     kiosk: str = "full"
     ha_url: str = ""
     token: str = field(default="", repr=False)
+    # How the TV's screen is mounted (degrees turned clockwise): the renderer turns the picture.
+    rotation: int = 0
 
 
 def screen_size(state: dict[str, Any]) -> tuple[int, int, float]:

@@ -204,6 +204,11 @@ screens (setup, cards, media, menu) are web pages, a start for the M4 web player
       screen. Done 11 Nov ([light/](light/README.md), Python's standard library and mpv): on a
       Raspberry Pi Zero 2 W it plays a 1080p rendered dashboard with no dropped frames at
       about 10 % CPU and 45 MB, where the Electron app swapped and dropped two frames in three
+- [x] **Screens on their side** (added 12 Nov, on request): *Screen mounted* in each screen's
+      settings (portrait either way, or upside down). The Linux app turns its picture through
+      the compositor; for rendered screens, PleatView Light included, the renderer draws the
+      page upright and turns the stream, so the screen does nothing. Checked on the Raspberry
+      Pi Zero 2 W's portrait screen
 - [ ] Checked by hand on an Ubuntu mini PC, a Raspberry Pi 5 and a Raspberry Pi 4
       (video decoding, screen power, HDMI-CEC, touch screens). Raspberry Pi 5 with
       Raspberry Pi OS 13, a monitor and a TV (sound over HDMI): done on 6 Nov, except

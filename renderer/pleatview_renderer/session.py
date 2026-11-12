@@ -46,6 +46,14 @@ class Screen:
     kiosk: str = "full"
     ha_url: str = ""
     token: str = field(default="", repr=False)
+    # How the TV's screen is mounted, in degrees turned clockwise: the page is drawn upright for
+    # it, and the picture turned back to the screen's own orientation (ROTATE).
+    rotation: int = 0
+
+    @property
+    def page_size(self) -> tuple[int, int]:
+        """The page's size: the screen's, the other way round when it hangs on its side."""
+        return (self.height, self.width) if self.rotation in (90, 270) else (self.width, self.height)
 
     @property
     def ha_origin(self) -> str:
@@ -58,8 +66,13 @@ class Screen:
         return actions.split(self.url)
 
     def restart_needed(self, other: Screen) -> bool:
-        """Size and scale are fixed for a Chromium window; the rest changes in place."""
-        return (self.width, self.height, self.scale) != (other.width, other.height, other.scale)
+        """Size, scale and rotation are fixed for a Chromium window and ffmpeg; the rest changes in place."""
+        return (self.width, self.height, self.scale, self.rotation) != (other.width, other.height, other.scale, other.rotation)
+
+
+# ffmpeg filters that turn the upright page into the picture for a screen mounted this way:
+# turned clockwise, the picture turns anticlockwise, and so on.
+ROTATE = {90: "transpose=2", 180: "hflip,vflip", 270: "transpose=1"}
 
 
 def bitrate(screen: Screen) -> int:
@@ -70,11 +83,14 @@ def bitrate(screen: Screen) -> int:
 def encoder_args(encoder: str, screen: Screen) -> list[str]:
     """ffmpeg's video encoding options: a keyframe every segment, so a TV can join at any."""
     gop = ["-g", str(FPS * SEGMENT_SECONDS)]
+    turn = [ROTATE[screen.rotation]] if screen.rotation in ROTATE else []
     if encoder == "vaapi":
         # Constant quality: the free VA-API drivers have no bitrate control for H.264.
-        return ["-vf", "format=nv12,hwupload", "-c:v", "h264_vaapi", "-bf", "0", *gop, "-rc_mode", "CQP", "-qp", str(VAAPI_QP)]
+        return ["-vf", ",".join([*turn, "format=nv12", "hwupload"]), "-c:v", "h264_vaapi", "-bf", "0", *gop,
+                "-rc_mode", "CQP", "-qp", str(VAAPI_QP)]
     rate = bitrate(screen)
     return [
+        *(["-vf", ",".join(turn)] if turn else []),
         "-c:v", "libx264", "-preset", "veryfast", "-tune", "zerolatency", "-pix_fmt", "yuv420p", *gop,
         "-keyint_min", str(FPS * SEGMENT_SECONDS), "-sc_threshold", "0",
         "-b:v", str(rate), "-maxrate", str(rate * 4 // 3), "-bufsize", str(rate * 2),
@@ -90,7 +106,7 @@ def ffmpeg_args(encoder: str, screen: Screen, display: str, folder: Path, with_s
         *(["-vaapi_device", "/dev/dri/renderD128"] if encoder == "vaapi" else []),
         # The picture waits for the sound that goes with it.
         *(["-itsoffset", str(sound.DELAY)] if with_sound else []),
-        "-f", "x11grab", "-framerate", str(FPS), "-video_size", f"{screen.width}x{screen.height}",
+        "-f", "x11grab", "-framerate", str(FPS), "-video_size", "{}x{}".format(*screen.page_size),
         "-draw_mouse", "0", "-i", display, *sound_in,
         *encoder_args(encoder, screen), *sound_out,
         "-f", "hls", "-hls_time", str(SEGMENT_SECONDS), "-hls_list_size", str(PLAYLIST_SEGMENTS),
@@ -127,7 +143,7 @@ def chromium_args(screen: Screen, profile: Path, port: int, alsa_device: str | N
         "--disable-gpu-compositing",
         "--disable-gpu-rasterization",
         # In Chromium's own pixels, which the scale factor enlarges to fill the display.
-        f"--window-size={round(screen.width / screen.scale)},{round(screen.height / screen.scale)}",
+        f"--window-size={round(screen.page_size[0] / screen.scale)},{round(screen.page_size[1] / screen.scale)}",
         "--window-position=0,0",
         f"--force-device-scale-factor={screen.scale:g}",
         f"--user-data-dir={profile}",
@@ -244,7 +260,7 @@ class Session:
         screen = self.screen
         display = f":{self.display}"
         self._procs.append(await _spawn(
-            "Xvfb", display, "-screen", "0", f"{screen.width}x{screen.height}x24", "-nolisten", "tcp", "-nocursor",
+            "Xvfb", display, "-screen", "0", "{}x{}x24".format(*screen.page_size), "-nolisten", "tcp", "-nocursor",
         ))
         await _wait_for(lambda: Path(f"/tmp/.X11-unix/X{self.display}").exists(), 10)
         env = {**os.environ, "DISPLAY": display}

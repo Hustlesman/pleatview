@@ -54,6 +54,23 @@ class ChromiumTest(unittest.TestCase):
         self.assertTrue({"--use-angle=gl", "--ignore-gpu-blocklist", "--disable-gpu-compositing"} <= set(args))
         self.assertEqual(args[-1], "about:blank")
 
+    def test_a_screen_on_its_side_gets_an_upright_page_turned(self) -> None:
+        # Mounted turned clockwise: the page is drawn portrait, and the picture turned back anticlockwise.
+        side = Screen("http://a", 1920, 1080, 1.0, rotation=90)
+        self.assertEqual(side.page_size, (1080, 1920))
+        self.assertIn("--window-size=1080,1920", session.chromium_args(side, Path("/p"), 9310))
+        args = session.ffmpeg_args("x264", side, ":10", Path("/f"), with_sound=False)
+        self.assertEqual(args[args.index("-video_size") + 1], "1080x1920")
+        self.assertEqual(args[args.index("-vf") + 1], "transpose=2")
+        self.assertEqual(session.encoder_args("vaapi", Screen("http://a", rotation=270))[1], "transpose=1,format=nv12,hwupload")
+        self.assertEqual(session.encoder_args("x264", Screen("http://a", rotation=180))[1], "hflip,vflip")
+        self.assertNotIn("-vf", session.encoder_args("x264", Screen("http://a")))
+        self.assertTrue(Screen("http://a").restart_needed(Screen("http://a", rotation=180)))
+        self.assertEqual(server.parse_screen({"url": "http://a", "rotation": 270}).rotation, 270)
+        for bad in (45, "90", True):
+            with self.assertRaises(ValueError):
+                server.parse_screen({"url": "http://a", "rotation": bad})
+
     def test_every_segment_starts_with_a_keyframe(self) -> None:
         for encoder in ("vaapi", "x264"):
             args = session.encoder_args(encoder, Screen("http://a"))

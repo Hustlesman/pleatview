@@ -75,7 +75,8 @@
           "launch_on_boot": "Åbn PleatView, når tv'et tænder",
           "render_url": "Vis via Home Assistant",
           "warning_tone": "Advarselstone",
-          "alert_tone": "Alarmtone"
+          "alert_tone": "Alarmtone",
+          "rotation": "Skærmens montering"
         },
         "data_description": {
           "ha_url": "Lad stå tomt for at bruge Home Assistants interne URL.",
@@ -89,7 +90,8 @@
           "launch_on_boot": "Kræver tilladelsen \"Vis oven på andre apps\" på tv'et.",
           "render_url": "PleatView Renderer, der skal bruges: en parret efter navn, Automatisk (den mindst travle), en som Home Assistant fandt, eller skriv dens adresse, fx http://ce7dee09-pleatview-renderer:8780. Home Assistants maskine kører så tv'ets dashboards og sender tv'et en video af dem. Tom: tv'et kører dem selv.",
           "warning_tone": "Afspilles med notifikationer, der sendes som advarsel. Det, der spiller, fortsætter.",
-          "alert_tone": "Afspilles med notifikationer, der sendes som alarm, og som også sætter det, der spiller, på pause."
+          "alert_tone": "Afspilles med notifikationer, der sendes som alarm, og som også sætter det, der spiller, på pause.",
+          "rotation": "Hvordan skærmen hænger. PleatView til Linux og Home Assistants renderer for de skærme, den renderer til (som PleatView Light), drejer billedet derefter. Android-tv ignorerer det."
         }
       }
     },
@@ -148,6 +150,14 @@
         "notice": "Besked",
         "warning": "Advarsel",
         "alert": "Alarm"
+      }
+    },
+    "rotation": {
+      "options": {
+        "0": "Liggende, som fremstillet",
+        "90": "Stående, drejet med uret",
+        "180": "På hovedet",
+        "270": "Stående, drejet mod uret"
       }
     }
   },

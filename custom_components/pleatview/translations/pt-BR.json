@@ -75,7 +75,8 @@
           "launch_on_boot": "Abrir o PleatView quando a TV ligar",
           "render_url": "Renderizar no Home Assistant",
           "warning_tone": "Som de aviso",
-          "alert_tone": "Som de alerta"
+          "alert_tone": "Som de alerta",
+          "rotation": "Montagem da tela"
         },
         "data_description": {
           "ha_url": "Deixe vazio para usar a URL interna do Home Assistant.",
@@ -89,7 +90,8 @@
           "launch_on_boot": "Precisa da permissão \"Sobrepor a outros apps\" na TV.",
           "render_url": "O PleatView Renderer a usar: um pareado, pelo nome, Automático (o menos ocupado), um que o Home Assistant encontrou, ou digite o endereço, por exemplo http://ce7dee09-pleatview-renderer:8780. A máquina do Home Assistant então roda os painéis desta TV e envia a ela um vídeo deles. Vazio: a TV os roda.",
           "warning_tone": "Toca com notificações enviadas como aviso. O que estiver tocando continua.",
-          "alert_tone": "Toca com notificações enviadas como alerta, que também pausam o que estiver tocando."
+          "alert_tone": "Toca com notificações enviadas como alerta, que também pausam o que estiver tocando.",
+          "rotation": "Como a tela está pendurada. O PleatView para Linux, e o renderizador do Home Assistant para as telas que ele renderiza (como o PleatView Light), giram a imagem para combinar. TVs Android ignoram isso."
         }
       }
     },
@@ -148,6 +150,14 @@
         "notice": "Informação",
         "warning": "Aviso",
         "alert": "Alerta"
+      }
+    },
+    "rotation": {
+      "options": {
+        "0": "Paisagem, como de fábrica",
+        "90": "Retrato, girada no sentido horário",
+        "180": "De cabeça para baixo",
+        "270": "Retrato, girada no sentido anti-horário"
       }
     }
   },

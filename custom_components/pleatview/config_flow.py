@@ -53,6 +53,7 @@ from .const import (
     CONF_REOPEN_MINUTES,
     CONF_RETURN_HOME_MINUTES,
     CONF_ROTATE_SECONDS,
+    CONF_ROTATION,
     CONF_SCHEME,
     CONF_TOKEN,
     CONF_USER_ID,
@@ -66,6 +67,7 @@ from .const import (
     RENDERER_PREFIX,
     RENDERER_SERVICE,
     RENDER_AUTO,
+    ROTATIONS,
     WARNING_TONES,
 )
 
@@ -467,6 +469,11 @@ class PleatViewOptionsFlow(OptionsFlow):
                 vol.Required(CONF_RELOAD_MINUTES, default=options[CONF_RELOAD_MINUTES]): number(10080, "min"),
                 vol.Required(CONF_KEEP_SCREEN_ON, default=options[CONF_KEEP_SCREEN_ON]): selector.BooleanSelector(),
                 vol.Required(CONF_LAUNCH_ON_BOOT, default=options[CONF_LAUNCH_ON_BOOT]): selector.BooleanSelector(),
+                vol.Required(CONF_ROTATION, default=options[CONF_ROTATION]): selector.SelectSelector(
+                    selector.SelectSelectorConfig(
+                        options=ROTATIONS, translation_key="rotation", mode=selector.SelectSelectorMode.DROPDOWN
+                    )
+                ),
                 # The tones of warnings and alerts (pleatview.notify's level), unless a call names one.
                 vol.Required(CONF_WARNING_TONE, default=options[CONF_WARNING_TONE]): selector.SelectSelector(
                     selector.SelectSelectorConfig(

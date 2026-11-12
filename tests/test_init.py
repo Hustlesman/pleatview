@@ -42,6 +42,18 @@ async def test_setup_pushes_config(hass: HomeAssistant, fake_tv: FakeTV) -> None
     await hass.config_entries.async_unload(entry.entry_id)
 
 
+async def test_rotation_goes_to_screens_that_turn_their_picture(hass: HomeAssistant, fake_tv: FakeTV) -> None:
+    entry = await setup_entry(hass, make_entry(fake_tv, options={"rotation": "90"}))
+    assert "rotation" not in fake_tv.config  # older apps refuse settings they don't know
+    await fake_tv.push(features=["home_without_ha", "rotation"])
+    for _ in range(50):
+        if fake_tv.config.get("rotation") == 90:
+            break
+        await asyncio.sleep(0.05)
+    assert fake_tv.config["rotation"] == 90
+    await hass.config_entries.async_unload(entry.entry_id)
+
+
 async def test_old_home_assistant_gets_a_repair(hass: HomeAssistant, fake_tv: FakeTV) -> None:
     with patch("custom_components.pleatview.MAJOR_VERSION", 2025), patch("custom_components.pleatview.MINOR_VERSION", 1):
         entry = await setup_entry(hass, make_entry(fake_tv))

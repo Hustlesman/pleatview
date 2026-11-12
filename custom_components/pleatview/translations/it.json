@@ -75,7 +75,8 @@
           "launch_on_boot": "Apri PleatView all'accensione della TV",
           "render_url": "Rendering su Home Assistant",
           "warning_tone": "Suono di avviso",
-          "alert_tone": "Suono di allarme"
+          "alert_tone": "Suono di allarme",
+          "rotation": "Montaggio dello schermo"
         },
         "data_description": {
           "ha_url": "Lascia vuoto per usare l'URL interno di Home Assistant.",
@@ -89,7 +90,8 @@
           "launch_on_boot": "Richiede sulla TV l'autorizzazione \"Mostra sopra altre app\".",
           "render_url": "Il PleatView Renderer da usare: uno abbinato per nome, Automatico (il meno occupato), uno trovato da Home Assistant, oppure digita il suo indirizzo, ad es. http://ce7dee09-pleatview-renderer:8780. Il computer di Home Assistant esegue allora le dashboard di questo televisore e gli invia un video. Vuoto: le esegue il televisore.",
           "warning_tone": "Suona con le notifiche inviate come avviso. Ciò che è in riproduzione continua.",
-          "alert_tone": "Suona con le notifiche inviate come allarme, che mettono anche in pausa ciò che è in riproduzione."
+          "alert_tone": "Suona con le notifiche inviate come allarme, che mettono anche in pausa ciò che è in riproduzione.",
+          "rotation": "Come è montato lo schermo. PleatView per Linux, e il renderer di Home Assistant per gli schermi per cui esegue il rendering (come PleatView Light), ruotano l'immagine di conseguenza. Le TV Android lo ignorano."
         }
       }
     },
@@ -148,6 +150,14 @@
         "notice": "Informazione",
         "warning": "Avviso",
         "alert": "Allarme"
+      }
+    },
+    "rotation": {
+      "options": {
+        "0": "Orizzontale, come costruito",
+        "90": "Verticale, ruotato in senso orario",
+        "180": "Capovolto",
+        "270": "Verticale, ruotato in senso antiorario"
       }
     }
   },

@@ -37,6 +37,7 @@ from .const import (
     CONF_REOPEN_MINUTES,
     CONF_RETURN_HOME_MINUTES,
     CONF_ROTATE_SECONDS,
+    CONF_ROTATION,
     CONF_ZOOM,
     DEFAULT_OPTIONS,
 )
@@ -212,6 +213,9 @@ class PleatViewDevice:
         if self.rendering:
             assert self.renderer
             config["render_stream"] = self.ha_url.rstrip("/") + self.renderer.stream_path
+        elif "rotation" in (self.state.get("features") or []):
+            # A screen that turns its own picture (the Linux app); a rendered one gets it turned.
+            config["rotation"] = int(options[CONF_ROTATION])
         digest = hashlib.sha256(json.dumps(config, sort_keys=True).encode()).hexdigest()
         config["rev"] = digest[:16]
         return config
@@ -270,8 +274,12 @@ class PleatViewDevice:
         self._notify()
 
     async def _async_app_updated(self) -> None:
-        if await self.async_refresh_dashboards() or self.renderer:
-            await self._async_resync()
+        changed = await self.async_refresh_dashboards()
+        # What the app takes (its features, such as rotation) is part of its settings too.
+        try:
+            await self.async_sync_config(force=changed or bool(self.renderer))
+        except PleatViewError as err:
+            _LOGGER.warning("Could not update the configuration of %s: %s", self.name, err)
 
     async def async_render(self) -> None:
         """Has the renderer show what the TV would: its page, at its size and zoom."""
@@ -282,7 +290,7 @@ class PleatViewDevice:
         token = self.entry.data.get(CONF_HA_TOKEN, "") if self.entry.data.get(CONF_AUTH_MODE) != AUTH_NONE else ""
         await self.renderer.async_show(Screen(
             url=url, width=width, height=height, scale=round(density * int(options[CONF_ZOOM]) / 100, 3),
-            kiosk=options[CONF_KIOSK], ha_url=self.ha_url, token=token,
+            kiosk=options[CONF_KIOSK], ha_url=self.ha_url, token=token, rotation=int(options[CONF_ROTATION]),
         ))
 
     async def _async_resync(self) -> None:

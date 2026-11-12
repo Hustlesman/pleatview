@@ -52,6 +52,9 @@ doesn't find the TV's speakers. Restart the Pi with the TV on, or run
 
 ## What's different from the Android app
 
+- A screen hung in portrait or upside down: choose *Screen mounted* in its settings in Home
+  Assistant, and PleatView turns the picture (with `wlr-randr`, or `xrandr` on X11).
+
 - `turn_off` blanks the screen and puts it to sleep with `wlopm` (Raspberry Pi OS's
   desktop and other wlroots ones; `wlr-randr` under cage) or `xset` (X11), and puts a TV
   in standby over HDMI-CEC, on whichever HDMI port it's connected to, when `cec-ctl`

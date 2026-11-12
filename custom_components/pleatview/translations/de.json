@@ -75,7 +75,8 @@
           "launch_on_boot": "PleatView beim Einschalten des Fernsehers öffnen",
           "render_url": "Auf Home Assistant darstellen",
           "warning_tone": "Warnton",
-          "alert_tone": "Alarmton"
+          "alert_tone": "Alarmton",
+          "rotation": "Bildschirm montiert"
         },
         "data_description": {
           "ha_url": "Leer lassen, um die interne URL von Home Assistant zu verwenden.",
@@ -89,7 +90,8 @@
           "launch_on_boot": "Braucht auf dem Fernseher die Berechtigung „Über anderen Apps einblenden“.",
           "render_url": "Der zu verwendende PleatView Renderer: ein gekoppelter nach Name, Automatisch (der am wenigsten ausgelastete), einer, den Home Assistant gefunden hat, oder gib seine Adresse ein, z. B. http://ce7dee09-pleatview-renderer:8780. Der Rechner von Home Assistant führt dann die Dashboards dieses Fernsehers aus und sendet ihm ein Video davon. Leer: Der Fernseher führt sie selbst aus.",
           "warning_tone": "Spielt bei Benachrichtigungen der Stufe Warnung. Was sonst läuft, läuft weiter.",
-          "alert_tone": "Spielt bei Benachrichtigungen der Stufe Alarm, die außerdem anhalten, was gerade läuft."
+          "alert_tone": "Spielt bei Benachrichtigungen der Stufe Alarm, die außerdem anhalten, was gerade läuft.",
+          "rotation": "Wie der Bildschirm hängt. PleatView für Linux und der Renderer von Home Assistant für die Bildschirme, für die er rendert (etwa PleatView Light), drehen das Bild passend. Android-Fernseher ignorieren es."
         }
       }
     },
@@ -148,6 +150,14 @@
         "notice": "Hinweis",
         "warning": "Warnung",
         "alert": "Alarm"
+      }
+    },
+    "rotation": {
+      "options": {
+        "0": "Querformat, wie gebaut",
+        "90": "Hochformat, im Uhrzeigersinn gedreht",
+        "180": "Auf dem Kopf",
+        "270": "Hochformat, gegen den Uhrzeigersinn gedreht"
       }
     }
   },
