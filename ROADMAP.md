@@ -37,7 +37,7 @@ Last updated 13 November 2026. **Current milestone: M1** (M0 finished early).
 | [M2](#m2--public-beta) Public beta, Google Play closed test, phones and tablets | Fri 4 Dec 2026 | M1, 12 beta testers | In progress |
 | [R1](#r1--rendering-for-many-screens) Rendering for many screens: several renderers, chosen per TV | To be scheduled | — | Not started |
 | [S1](#s1--secure-remote-management) Secure remote management: over the internet, a VPN or zero-trust access | To be scheduled | M3's encryption, M4's protocol v2 | Not started |
-| [C1](#c1--pleatview-console) PleatView Console: many sites and tenants, with or without Home Assistant | No date yet | Its later parts: M4, S1 | In progress |
+| [C1](#c1--pleatview-console) PleatView Console: many sites, without Home Assistant (commercial, developed separately) | No date yet | M4, S1 | In progress |
 | [M3](#m3--google-play-and-amazon-appstore) Google Play and Amazon Appstore | Fri 15 Jan 2027 | M2, store reviews | In progress |
 | [M4](#m4--web-player) Web player for any TV browser | Fri 29 Jan 2027 | M3 submitted | Not started |
 | [M5](#m5--lg-and-samsung-apps) LG and Samsung apps submitted | Fri 5 Mar 2027 | M4, test TVs | Not started |
@@ -60,11 +60,11 @@ steps, standby, updates, and recovery from a Home Assistant restart and from a f
 Phone and tablet emulators add touch, turning the screen and the lock screen.
 `tools/e2e/linux.py` checks the Linux app the same way in Docker. A Fire TV Stick and a
 Chromecast HD pass the automated checks, and both ran a 42-hour soak test without a crash. A
-security review on 2 Nov fixed what it found. The apps, the integration, the renderer, the
-console and PleatView Light have unit tests that run on every change. Home Assistant can
+security review on 2 Nov fixed what it found. The apps, the integration, the renderer and
+PleatView Light have unit tests that run on every change. Home Assistant can
 render a TV's dashboards and stream them to it, on its own machine or on renderers elsewhere,
-also for PleatView Light on the smallest boards. PleatView Console (in development) manages
-screens across sites and organisations. The Android app, the phone page and the integration
+also for PleatView Light on the smallest boards. PleatView Console, a commercial product in
+development, manages screens across sites and organisations without Home Assistant. The Android app, the phone page and the integration
 are translated into 10 languages besides English, chosen from where Home Assistant is used
 most.
 
@@ -271,37 +271,12 @@ baseline is published.
 
 ## C1 — PleatView Console
 
-*To be scheduled.* A standalone
-manager for screens in many places, with or without Home Assistant: for installers,
-businesses, and homes with more than one site. It's another controller on protocol v2, so
-the screens' apps don't change. Self-hosted, free and open source, with every package
-pinned and listed, like the renderer's.
-
-- **Tenants, each a silo:** its own sites, screens, renderers, users, keys and logs, stored
-  apart and encrypted with the tenant's own key. Nothing crosses tenants, and a tenant can
-  be exported or deleted whole.
-- **Sites** in each tenant (a building, a branch, a home), each with its screens and
-  renderers. A site keeps playing when the console can't be reached.
-- **Users and roles** per tenant (owner, operator, viewer), with two-factor sign-in.
-- **The screens:** inventory and health, groups, pages, media, schedules and playlists,
-  notifications, renderers per site (R1) and staged updates.
-
-The work, in order:
-
-- [x] **Design** ([docs/console.md](docs/console.md)): the data model, tenant isolation, how a
-      site's own Home Assistant fits in, and the threat model. The stack: Debian 13 with
-      Python, aiohttp, cryptography, ffmpeg and tini
-- [ ] **One site:** pair screens, show pages and media, groups, schedules, the audit log.
-      Done so far: first start, sign-in, tenants and sites in separate databases with their
-      own keys, screens found on the network, paired, followed live and sent commands, the
-      activity log, the installable web app, two-factor sign-in and members, home pages
-      without Home Assistant (apps 1.0.17), groups, pages, the media library (any format,
-      converted with ffmpeg) and schedules; checked with a Fire TV Stick
-- [ ] **Many sites:** sites, a renderer per site, sites that keep playing offline
-- [ ] **Many tenants:** silos, roles, a key per tenant, export and deletion
-
-**Exit:** two tenants with two sites each, screens and a renderer at every site, run from
-one console; isolation tests show neither tenant can see or reach the other's.
+*No date yet.* A manager for screens across many sites and organisations, for businesses that
+don't run Home Assistant: installers, shops and offices. It's a commercial product of
+Hustlesman, developed in a private repository. It speaks the same open protocols as Home
+Assistant ([v1](docs/protocol.md), then [v2](docs/protocol-v2.md)), so the screens' apps, the
+renderer and PleatView Light, all open source here, work with either. PleatView with Home
+Assistant stays free and open source.
 
 ## M2 — Public beta
 
@@ -500,7 +475,6 @@ website and in the README.
 | Apple rejects an app that mostly shows web pages (App Store guideline 4.2) | Native features beyond the page (discovery, pairing, keep-awake, Guided Access); meanwhile the web player works in Safari |
 | Smart displays close the page after a while: the Nest Hub stops a cast after about 10 minutes, and an Echo Show can go back to its home screen | The integration opens or casts the player again when it stops; checked on each device before it's listed |
 | Remote management opens screens to more than the home network | Screens only connect out, each with its own key, and S1's baseline comes before the console ships |
-| The console is a large new product for one developer | Design first, then one site, many sites and many tenants, each usable on its own; scheduled between store milestones |
 | One developer, many platforms | The rules above: one milestone at a time, a fixed scope, and the parking lot |
 
 ## Parking lot

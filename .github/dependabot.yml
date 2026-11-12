@@ -48,9 +48,9 @@ updates:
       python-tests:
         patterns: ["*"]
 
-  # The images people run: the renderer and the console.
+  # The image people run: the renderer.
   - package-ecosystem: docker
-    directories: [/renderer, /console]
+    directory: /renderer
     schedule:
       interval: monthly
     cooldown:

@@ -101,26 +101,6 @@ jobs:
           name: renderer-packages
           path: renderer-packages.txt
 
-  console:
-    name: Console
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
-      - name: Build the image
-        run: docker build -t pleatview-console console
-      - name: Tests, inside the image
-        run: >-
-          docker run --rm --entrypoint python3 -v "$PWD:/repo:ro" -w /repo/console pleatview-console
-          -m unittest discover -v tests
-      - name: Installed packages, for audits
-        run: docker run --rm --entrypoint cat pleatview-console /app-packages.txt | tee console-packages.txt
-      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
-        with:
-          name: console-packages
-          path: console-packages.txt
-
   light:
     name: Light client
     runs-on: ubuntu-latest
