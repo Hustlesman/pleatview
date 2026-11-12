@@ -6,6 +6,7 @@ from ipaddress import ip_address
 from unittest.mock import patch
 
 from custom_components.pleatview.api import PleatViewError
+from custom_components.pleatview.config_flow import split_address
 from custom_components.pleatview.const import (
     AUTH_MANAGED,
     AUTH_NONE,
@@ -65,6 +66,28 @@ async def test_user_flow_defaults_to_managed_user(hass: HomeAssistant, fake_tv: 
     assert result["data"][CONF_AUTH_MODE] == AUTH_MANAGED
     assert result["data"][CONF_ALLOW_CONTROL] is True
     assert result["data"][CONF_TOKEN] in fake_tv.tokens
+
+
+def test_addresses_as_screens_show_them() -> None:
+    assert split_address(" 192.168.1.20 ", 8765) == ("192.168.1.20", 8765)
+    assert split_address("192.168.1.20:8770", 8765) == ("192.168.1.20", 8770)
+    assert split_address("http://192.168.1.20:8770/", 8765) == ("192.168.1.20", 8770)
+    assert split_address("living-room.local", 8765) == ("living-room.local", 8765)
+    assert split_address("fe80::1", 8765) == ("fe80::1", 8765)
+    assert split_address("[fe80::1]:8770", 8765) == ("fe80::1", 8770)
+    assert split_address("[fe80::1]", 8765) == ("fe80::1", 8765)
+    assert split_address("192.168.1.20:99999", 8765) == ("192.168.1.20:99999", 8765)
+
+
+async def test_user_flow_takes_the_address_with_its_port(hass: HomeAssistant, fake_tv: FakeTV) -> None:
+    result = await hass.config_entries.flow.async_init(DOMAIN, context={"source": SOURCE_USER})
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {CONF_HOST: f"http://127.0.0.1:{fake_tv.port}/", CONF_PORT: 8765}
+    )
+    assert result["step_id"] == "pair"
+    with patch(SETUP, return_value=True):
+        result = await _pair(hass, result["flow_id"], fake_tv)
+    assert (result["data"][CONF_HOST], result["data"][CONF_PORT]) == ("127.0.0.1", fake_tv.port)
 
 
 async def test_user_flow_cannot_connect(hass: HomeAssistant, socket_enabled) -> None:

@@ -72,6 +72,24 @@ USER_SCHEMA = vol.Schema(
     }
 )
 PIN_SCHEMA = vol.Schema({vol.Required("pin"): str})
+
+
+def split_address(text: str, port: int) -> tuple[str, int]:
+    """The host and port in an address as a screen shows it: '192.168.1.20' (the port field
+    then counts), '192.168.1.20:8765' (PleatView Light) or 'http://192.168.1.20:8765/' (the
+    phone page's address)."""
+    text = text.strip()
+    if "://" in text:
+        text = text.split("://", 1)[1]
+    text = text.split("/", 1)[0]
+    host, sep, tail = text.rpartition(":")
+    if host.startswith("[") and host.endswith("]"):
+        host = host[1:-1]  # [IPv6]:port
+    elif text.startswith("[") and text.endswith("]"):
+        return text[1:-1], port
+    if sep and tail.isdigit() and 0 < int(tail) < 65536 and host and (":" not in host or text.startswith("[")):
+        return host, int(tail)
+    return text, port
 APPROVAL_POLL_SECONDS = 1
 
 _LOGGER = logging.getLogger(__name__)
@@ -115,8 +133,7 @@ class PleatViewConfigFlow(ConfigFlow, domain=DOMAIN):
         """Add a TV by address."""
         errors: dict[str, str] = {}
         if user_input is not None:
-            self._host = user_input[CONF_HOST].strip()
-            self._port = user_input[CONF_PORT]
+            self._host, self._port = split_address(user_input[CONF_HOST], user_input[CONF_PORT])
             try:
                 self._info = await self._client().get_info()
             except PleatViewError:
