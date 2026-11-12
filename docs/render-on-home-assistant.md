@@ -109,7 +109,7 @@ choose the renderer in **Render on Home Assistant**, and *Submit*. The list show
 renderers by name, *Automatic* (the least busy of them, kept until it goes away), and the
 renderers Home Assistant found by itself; you can also type a renderer's address there.
 
-![PleatView's Display settings with the renderer's address in Render on Home Assistant](img/render-6-option.webp)
+![PleatView's Display settings with the list of renderers under Render on Home Assistant](img/render-6-option.webp)
 
 Only that TV changes; every other TV still runs its own dashboards. Empty the field to go
 back.
