@@ -12,6 +12,11 @@ updates:
     groups:
       actions:
         patterns: ["*"]
+    ignore:
+      # From v6 its caching is a proprietary component under Gradle's terms of use; v5 is
+      # all MIT. PleatView's build tools stay open source.
+      - dependency-name: gradle/actions/setup-gradle
+        versions: [">= 6"]
 
   - package-ecosystem: gradle
     directory: /android
