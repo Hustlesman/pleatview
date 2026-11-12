@@ -1235,13 +1235,15 @@ async def delete_tenant(request: web.Request) -> web.Response:
 
 # ---- The web app -----------------------------------------------------------------------
 
-SAFE_FILE = re.compile(r"^[a-z0-9-]+\.(html|js|css|webmanifest|png|svg)$")
+SAFE_FILE = re.compile(r"[a-z0-9-]+\.(html|js|css|webmanifest|png|svg)")
+# The web app's files, listed once: a request picks one by name and never builds a path.
+STATIC_FILES = {path.name: path for path in WEB.iterdir() if path.is_file() and SAFE_FILE.fullmatch(path.name)}
 
 
 async def static(request: web.Request) -> web.Response:
     name = request.match_info.get("name") or "index.html"
-    path = WEB / name
-    if not SAFE_FILE.match(name) or not path.is_file():
+    path = STATIC_FILES.get(name)
+    if path is None:
         raise web.HTTPNotFound()
     headers = {"Cache-Control": "no-cache"}
     if name == "sw.js":

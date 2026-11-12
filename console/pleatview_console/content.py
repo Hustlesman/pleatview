@@ -109,12 +109,19 @@ async def media_file(request: web.Request) -> web.StreamResponse:
     })
 
 
+# The player's own files: paths from this table, never from the request.
+ASSETS = {
+    "player.js": (WEB / "player.js", "text/javascript"),
+    "player.css": (WEB / "player.css", "text/css"),
+}
+
+
 async def asset(request: web.Request) -> web.Response:
-    name = request.match_info["name"]
-    types = {"player.js": "text/javascript", "player.css": "text/css"}
-    if name not in types:
+    found = ASSETS.get(request.match_info["name"])
+    if found is None:
         raise web.HTTPNotFound()
-    return web.Response(body=(WEB / name).read_bytes(), content_type=types[name], charset="utf-8",
+    path, kind = found
+    return web.Response(body=path.read_bytes(), content_type=kind, charset="utf-8",
                         headers={"Cache-Control": "no-cache"})
 
 
