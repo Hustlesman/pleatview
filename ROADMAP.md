@@ -275,7 +275,8 @@ baseline is published.
 don't run Home Assistant: installers, shops and offices. It's a commercial product of
 Hustlesman, developed in a private repository. It speaks the same open protocols as Home
 Assistant ([v1](docs/protocol.md), then [v2](docs/protocol-v2.md)), so the screens' apps, the
-renderer and PleatView Light, all open source here, work with either.
+renderer and PleatView Light, all open source here, work with either. PleatView with Home
+Assistant stays free and open source.
 
 ## M2 — Public beta
 
