@@ -38,9 +38,20 @@ object ToastViews {
     fun create(context: Context, parent: ViewGroup?, notify: Command.Notify): View {
         val view = LayoutInflater.from(context).inflate(R.layout.item_toast, parent, false)
         view.layoutParams?.let { it.width = minOf(it.width, maxWidth(context)) }
+        // A warning's card has an amber edge, an alert's a red one.
+        when (notify.level) {
+            Command.Level.WARNING -> view.setBackgroundResource(R.drawable.card_warning)
+            Command.Level.ALERT -> view.setBackgroundResource(R.drawable.card_alert)
+            Command.Level.NOTICE -> Unit
+        }
         view.findViewById<TextView>(R.id.toast_title).apply {
             text = notify.title
             visibility = if (notify.title.isNullOrEmpty()) View.GONE else View.VISIBLE
+            when (notify.level) {
+                Command.Level.WARNING -> setTextColor(context.getColor(R.color.warning))
+                Command.Level.ALERT -> setTextColor(context.getColor(R.color.alert))
+                Command.Level.NOTICE -> Unit
+            }
         }
         view.findViewById<TextView>(R.id.toast_message).text = notify.message
         notify.imageUrl?.let { url ->

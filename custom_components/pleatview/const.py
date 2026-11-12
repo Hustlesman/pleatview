@@ -46,6 +46,15 @@ RENDERER_SERVICE: Final = "_pleatview-renderer._tcp.local."
 
 KIOSK_MODES: Final = ["full", "sidebar", "off"]
 
+# Notifications: a notice is a card; a warning adds a short tone over whatever plays; an
+# alert adds a stronger one and pauses what plays. The TV makes the tones itself.
+CONF_WARNING_TONE: Final = "warning_tone"
+CONF_ALERT_TONE: Final = "alert_tone"
+LEVELS: Final = ["notice", "warning", "alert"]
+WARNING_TONES: Final = ["chime", "ding", "beep", "none"]
+ALERT_TONES: Final = ["alarm", "siren", "bell", "none"]
+TONES: Final = [*WARNING_TONES[:-1], *ALERT_TONES]
+
 DEFAULT_OPTIONS: Final = {
     CONF_KIOSK: "full",
     CONF_ZOOM: 100,
@@ -55,6 +64,8 @@ DEFAULT_OPTIONS: Final = {
     CONF_RELOAD_MINUTES: 0,
     CONF_KEEP_SCREEN_ON: True,
     CONF_LAUNCH_ON_BOOT: True,
+    CONF_WARNING_TONE: "chime",
+    CONF_ALERT_TONE: "alarm",
 }
 
 # Media types understood by media_player.play_media in addition to the standard ones

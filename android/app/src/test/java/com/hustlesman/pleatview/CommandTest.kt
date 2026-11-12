@@ -20,6 +20,23 @@ class CommandTest {
     }
 
     @Test
+    fun `notifications have a level and, past a notice, a tone`() {
+        val notice = parse("""{"command":"notify","message":"Hi","tone":"chime"}""") as Command.Notify
+        assertEquals(Command.Level.NOTICE, notice.level)
+        assertNull(notice.tone) // a notice is a card only
+        assertEquals(10, notice.duration)
+        val warning = parse("""{"command":"notify","message":"Hi","level":"warning","tone":"beep"}""") as Command.Notify
+        assertEquals(Command.Level.WARNING to "beep", warning.level to warning.tone)
+        val alert = parse("""{"command":"notify","message":"Hi","level":"alert","tone":"siren"}""") as Command.Notify
+        assertEquals(Command.Level.ALERT to "siren", alert.level to alert.tone)
+        assertEquals(30, alert.duration) // an alert stays longer
+        val silent = parse("""{"command":"notify","message":"Hi","level":"alert","tone":"none"}""") as Command.Notify
+        assertNull(silent.tone)
+        val newer = parse("""{"command":"notify","message":"Hi","level":"emergency","tone":"klaxon"}""") as Command.Notify
+        assertEquals(Command.Level.NOTICE, newer.level) // still a card
+    }
+
+    @Test
     fun `show dashboard normalizes path`() {
         assertEquals(Command.ShowDashboard("/lovelace/cams", 30), parse("""{"command":"show_dashboard","path":"lovelace/cams","duration":30}"""))
         assertEquals(Command.ShowDashboard("/x", null), parse("""{"command":"show_dashboard","path":"/x","duration":0}"""))

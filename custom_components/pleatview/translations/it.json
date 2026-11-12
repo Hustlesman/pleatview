@@ -73,7 +73,9 @@
           "reload_minutes": "Ricarica la pagina ogni",
           "keep_screen_on": "Tieni lo schermo acceso",
           "launch_on_boot": "Apri PleatView all'accensione della TV",
-          "render_url": "Rendering su Home Assistant"
+          "render_url": "Rendering su Home Assistant",
+          "warning_tone": "Suono di avviso",
+          "alert_tone": "Suono di allarme"
         },
         "data_description": {
           "ha_url": "Lascia vuoto per usare l'URL interno di Home Assistant.",
@@ -85,7 +87,9 @@
           "reopen_minutes": "Quando qualcuno lascia PleatView per un'altra app, torna appena nulla ha riprodotto audio per questo tempo. 0 non torna mai.",
           "reload_minutes": "Una ricarica completa periodica libera memoria sugli schermi sempre accesi. 0 non ricarica mai.",
           "launch_on_boot": "Richiede sulla TV l'autorizzazione \"Mostra sopra altre app\".",
-          "render_url": "Il PleatView Renderer da usare: uno abbinato per nome, Automatico (il meno occupato), uno trovato da Home Assistant, oppure digita il suo indirizzo, ad es. http://ce7dee09-pleatview-renderer:8780. Il computer di Home Assistant esegue allora le dashboard di questo televisore e gli invia un video. Vuoto: le esegue il televisore."
+          "render_url": "Il PleatView Renderer da usare: uno abbinato per nome, Automatico (il meno occupato), uno trovato da Home Assistant, oppure digita il suo indirizzo, ad es. http://ce7dee09-pleatview-renderer:8780. Il computer di Home Assistant esegue allora le dashboard di questo televisore e gli invia un video. Vuoto: le esegue il televisore.",
+          "warning_tone": "Suona con le notifiche inviate come avviso. Ciò che è in riproduzione continua.",
+          "alert_tone": "Suona con le notifiche inviate come allarme, che mettono anche in pausa ciò che è in riproduzione."
         }
       }
     },
@@ -126,6 +130,24 @@
     "render": {
       "options": {
         "auto": "Automatico: il renderer meno occupato"
+      }
+    },
+    "tone": {
+      "options": {
+        "chime": "Rintocco",
+        "ding": "Ding",
+        "beep": "Bip",
+        "alarm": "Allarme",
+        "siren": "Sirena",
+        "bell": "Campana",
+        "none": "Nessun suono"
+      }
+    },
+    "level": {
+      "options": {
+        "notice": "Informazione",
+        "warning": "Avviso",
+        "alert": "Allarme"
       }
     }
   },
@@ -222,11 +244,19 @@
         },
         "duration": {
           "name": "Durata",
-          "description": "Secondi prima che la scheda scompaia. Predefinito: 10."
+          "description": "Secondi prima che la scheda scompaia. Predefinito: 10, o 30 per un allarme."
         },
         "position": {
           "name": "Posizione",
           "description": "Angolo dello schermo."
+        },
+        "level": {
+          "name": "Livello",
+          "description": "Informazione: una scheda. Avviso: una scheda e un breve suono, senza interrompere ciò che è in riproduzione. Allarme: una scheda e un suono più forte, e ciò che è in riproduzione va in pausa."
+        },
+        "tone": {
+          "name": "Suono",
+          "description": "Il suono di questa notifica, al posto del suono di avviso o di allarme della TV."
         }
       }
     },

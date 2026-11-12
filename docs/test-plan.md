@@ -50,6 +50,7 @@ checklist below and tick what passed. Anything that fails gets its own issue.
 - [ ] MP4 video plays full screen; Home Assistant shows title, position and duration; pause, seek and stop work **(auto: play and stop)**; on a portrait phone the black bars have no frame around them **(auto)**
 - [ ] A camera with a live stream plays in a corner (`show_camera`), at the requested position and size, and closes after `duration`
 - [ ] A camera without streaming shows as moving images **(auto)**
+- [ ] Notification levels: a warning's card has an amber edge and its tone plays while a film in Plex carries on; an alert's card has a red edge, the film pauses, and the alert tone plays; the tones in each TV's settings, and a `tone` in the call, are the ones heard **(auto: a warning leaves PleatView's video playing, an alert pauses it)**
 - [ ] In another app (a film playing in Plex, YouTube or Netflix), `show_camera` with a streaming camera shows it in a corner over the film: the film keeps playing with its sound, the remote still controls it, and `media_stop` or the duration closes the corner **(auto: over the home screen, a camera and a video)**
 - [ ] An RTSP URL plays
 - [ ] Music or internet radio plays in the background with the now-playing card

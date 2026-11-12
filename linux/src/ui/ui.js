@@ -64,7 +64,10 @@ function notify(command) {
     $("toasts").appendChild(stack);
   }
   const card = document.createElement("div");
-  card.className = "toast card";
+  card.className = `toast card level-${command.level || "notice"}`;
+  // A warning's tone mixes in; an alert's stops what plays here first.
+  if (command.level === "alert" && state.media) video.pause();
+  if (command.tone) window.pleatviewTones.play(command.tone);
   if (command.imageUrl) {
     const img = document.createElement("img");
     img.src = command.imageUrl;

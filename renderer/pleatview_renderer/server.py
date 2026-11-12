@@ -90,6 +90,13 @@ def parse_screen(body: Any) -> Screen:
 POSITIONS = ("top-left", "top-right", "bottom-left", "bottom-right", "center")
 
 
+# Notifications: a notice is a card; a warning adds a short tone; an alert a stronger one,
+# and pauses what the page plays. The tones are tones.js's, played into the page (and so
+# into the stream).
+LEVELS = ("notice", "warning", "alert")
+TONES = ("chime", "ding", "beep", "alarm", "siren", "bell")
+
+
 def parse_overlay(body: Any) -> dict[str, Any] | None:
     """A notification or camera to draw on top of a screen's page; None to clear."""
     if not isinstance(body, dict):
@@ -112,7 +119,13 @@ def parse_overlay(body: Any) -> dict[str, Any] | None:
             raise ValueError(f"{name} must be an http or https address")
         return value
 
-    duration = body.get("duration") or (10 if kind == "notify" else 60)
+    level = body.get("level") or "notice"
+    if kind == "notify" and level not in LEVELS:
+        level = "notice"  # a level from a newer Home Assistant: still a card
+    tone = body.get("tone") or ""
+    if not isinstance(tone, str) or tone not in TONES or level == "notice":
+        tone = ""
+    duration = body.get("duration") or (10 if kind == "notify" and level != "alert" else 30 if kind == "notify" else 60)
     if not isinstance(duration, (int, float)) or not 1 <= duration <= 3600:
         raise ValueError("duration must be from 1 to 3600 seconds")
     position = body.get("position") or ("top-right" if kind == "notify" else "bottom-right")
@@ -120,7 +133,8 @@ def parse_overlay(body: Any) -> dict[str, Any] | None:
         raise ValueError(f"position must be one of {', '.join(POSITIONS)}")
     if kind == "notify":
         return {"kind": kind, "message": text("message", True), "title": text("title"),
-                "image_url": url("image_url", False), "position": position, "duration": float(duration)}
+                "image_url": url("image_url", False), "position": position, "duration": float(duration),
+                "level": level, "tone": tone}
     if kind == "image":
         size = body.get("size") or 30
         if not isinstance(size, (int, float)) or not 10 <= size <= 100:

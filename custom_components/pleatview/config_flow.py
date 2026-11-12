@@ -32,9 +32,11 @@ from . import renderers
 from .api import InvalidAuth, InvalidPin, NotFound, PleatViewClient, PleatViewError, TooManyAttempts
 from .render import async_find_renderers
 from .const import (
+    ALERT_TONES,
     AUTH_MANAGED,
     AUTH_NONE,
     AUTH_TOKEN,
+    CONF_ALERT_TONE,
     CONF_ALLOW_CONTROL,
     CONF_AUTH_MODE,
     CONF_DASHBOARDS,
@@ -54,6 +56,7 @@ from .const import (
     CONF_SCHEME,
     CONF_TOKEN,
     CONF_USER_ID,
+    CONF_WARNING_TONE,
     CONF_ZOOM,
     DEFAULT_OPTIONS,
     DEFAULT_PORT,
@@ -63,6 +66,7 @@ from .const import (
     RENDERER_PREFIX,
     RENDERER_SERVICE,
     RENDER_AUTO,
+    WARNING_TONES,
 )
 
 USER_SCHEMA = vol.Schema(
@@ -463,6 +467,17 @@ class PleatViewOptionsFlow(OptionsFlow):
                 vol.Required(CONF_RELOAD_MINUTES, default=options[CONF_RELOAD_MINUTES]): number(10080, "min"),
                 vol.Required(CONF_KEEP_SCREEN_ON, default=options[CONF_KEEP_SCREEN_ON]): selector.BooleanSelector(),
                 vol.Required(CONF_LAUNCH_ON_BOOT, default=options[CONF_LAUNCH_ON_BOOT]): selector.BooleanSelector(),
+                # The tones of warnings and alerts (pleatview.notify's level), unless a call names one.
+                vol.Required(CONF_WARNING_TONE, default=options[CONF_WARNING_TONE]): selector.SelectSelector(
+                    selector.SelectSelectorConfig(
+                        options=WARNING_TONES, translation_key="tone", mode=selector.SelectSelectorMode.DROPDOWN
+                    )
+                ),
+                vol.Required(CONF_ALERT_TONE, default=options[CONF_ALERT_TONE]): selector.SelectSelector(
+                    selector.SelectSelectorConfig(
+                        options=ALERT_TONES, translation_key="tone", mode=selector.SelectSelectorMode.DROPDOWN
+                    )
+                ),
                 # The renderers Home Assistant found, or another address typed in.
                 vol.Optional(CONF_RENDER_URL, description={"suggested_value": current or None}): selector.SelectSelector(
                     selector.SelectSelectorConfig(

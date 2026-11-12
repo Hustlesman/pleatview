@@ -73,7 +73,9 @@
           "reload_minutes": "Ladda om sidan var",
           "keep_screen_on": "Håll skärmen på",
           "launch_on_boot": "Öppna PleatView när tv:n startar",
-          "render_url": "Rendera på Home Assistant"
+          "render_url": "Rendera på Home Assistant",
+          "warning_tone": "Varningston",
+          "alert_tone": "Larmton"
         },
         "data_description": {
           "ha_url": "Lämna tomt för att använda Home Assistants interna URL.",
@@ -85,7 +87,9 @@
           "reopen_minutes": "När någon lämnar PleatView för en annan app kommer den tillbaka när inget har spelat ljud så länge. 0 kommer aldrig tillbaka.",
           "reload_minutes": "En regelbunden fullständig omladdning frigör minne på skärmar som är på länge. 0 laddar aldrig om.",
           "launch_on_boot": "Kräver behörigheten \"Visa ovanpå andra appar\" på tv:n.",
-          "render_url": "PleatView Renderer att använda: en ihopparad med namn, Automatiskt (den minst belastade), en som Home Assistant hittade, eller skriv dess adress, till exempel http://ce7dee09-pleatview-renderer:8780. Home Assistants dator kör då tv:ns instrumentpaneler och skickar tv:n en video av dem. Tomt: tv:n kör dem själv."
+          "render_url": "PleatView Renderer att använda: en ihopparad med namn, Automatiskt (den minst belastade), en som Home Assistant hittade, eller skriv dess adress, till exempel http://ce7dee09-pleatview-renderer:8780. Home Assistants dator kör då tv:ns instrumentpaneler och skickar tv:n en video av dem. Tomt: tv:n kör dem själv.",
+          "warning_tone": "Spelas med aviseringar som skickas som varning. Det som spelas fortsätter.",
+          "alert_tone": "Spelas med aviseringar som skickas som larm, som också pausar det som spelas."
         }
       }
     },
@@ -126,6 +130,24 @@
     "render": {
       "options": {
         "auto": "Automatiskt: den minst belastade renderaren"
+      }
+    },
+    "tone": {
+      "options": {
+        "chime": "Klockspel",
+        "ding": "Pling",
+        "beep": "Pip",
+        "alarm": "Larm",
+        "siren": "Siren",
+        "bell": "Klocka",
+        "none": "Ingen ton"
+      }
+    },
+    "level": {
+      "options": {
+        "notice": "Information",
+        "warning": "Varning",
+        "alert": "Larm"
       }
     }
   },
@@ -222,11 +244,19 @@
         },
         "duration": {
           "name": "Varaktighet",
-          "description": "Sekunder innan kortet försvinner. Standard är 10."
+          "description": "Sekunder innan kortet försvinner. Standard är 10, eller 30 för ett larm."
         },
         "position": {
           "name": "Position",
           "description": "Skärmens hörn."
+        },
+        "level": {
+          "name": "Nivå",
+          "description": "Information: ett kort. Varning: ett kort och en kort ton, utan att avbryta det som spelas. Larm: ett kort och en kraftigare ton, och det som spelas pausas."
+        },
+        "tone": {
+          "name": "Ton",
+          "description": "Den här aviseringens ton i stället för tv:ns varnings- eller larmton."
         }
       }
     },

@@ -116,6 +116,27 @@ notify:
           unit_of_measurement: s
           mode: box
     position: *position
+    level:
+      default: notice
+      selector:
+        select:
+          translation_key: level
+          options:
+            - notice
+            - warning
+            - alert
+    tone:
+      selector:
+        select:
+          translation_key: tone
+          options:
+            - chime
+            - ding
+            - beep
+            - alarm
+            - siren
+            - bell
+            - none
 
 home:
   target:

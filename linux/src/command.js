@@ -2,6 +2,10 @@
 // The wire format is documented in docs/protocol.md.
 import { isHttpUrl, normalizeTarget } from "./config.js";
 
+export const LEVELS = ["notice", "warning", "alert"];
+// The tones the screen makes itself (ui/tones.js), as the Android app does (Tones.kt).
+export const TONES = ["chime", "ding", "beep", "alarm", "siren", "bell"];
+
 export class BadCommand extends Error {}
 
 const MAX_DURATION = 24 * 60 * 60;
@@ -34,15 +38,22 @@ export function parseCommand(json) {
       return { name: "show_web", kind: "image", url: httpUrl(json, "url"), layout: layout(json, "fullscreen"), duration: duration(json) };
     case "play_media":
       return parsePlayMedia(json);
-    case "notify":
+    case "notify": {
+      // A notice is a card; a warning adds a short tone, an alert a stronger one. An unknown
+      // level (from a newer Home Assistant) is still a card.
+      const level = LEVELS.includes(json.level) ? json.level : "notice";
+      const tone = level !== "notice" && TONES.includes(json.tone) ? json.tone : null;
       return {
         name,
         title: optString(json, "title", 200),
         message: requireString(json, "message").slice(0, 2000),
         imageUrl: optHttpUrl(json, "image_url"),
-        duration: duration(json) || 10,
+        duration: duration(json) || (level === "alert" ? 30 : 10),
         position: position(json, "top-right"),
+        level,
+        tone,
       };
+    }
     case "seek":
       return { name, position: number(json, "position", 0, Number.MAX_VALUE) };
     case "set_volume":

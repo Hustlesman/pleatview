@@ -349,6 +349,12 @@ requires.
 - [ ] P1 bugs fixed within 48 hours; a beta build every week
 - [x] Device compatibility table on the website, filled from tester reports (12 Nov: the
       table takes reported devices, and its footer asks for device reports)
+- [x] **Notification levels** (added 12 Nov, on request): a notice is a card; a warning adds a
+      short tone (chime, ding or beep) while whatever plays carries on; an alert pauses it, such
+      as a film in Plex, and sounds a stronger tone (alarm, siren or bell). Each TV's settings
+      in Home Assistant pick its tones, and a notification can name another. The Android and
+      Linux apps make the tones themselves; for rendered screens the renderer plays them into
+      the stream
 - [x] **Cameras over other apps** (added 12 Nov, asked for by prospective testers): a camera
       or video in picture-in-picture stays in a corner over the app in front, such as a film
       in Plex, muted and without taking the remote, instead of bringing PleatView to the

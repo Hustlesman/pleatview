@@ -47,6 +47,7 @@ class Hub(
     private var publishScheduled = false
     private val systemOverlay = SystemOverlay(app)
     private val systemPip = SystemPip(app, this)
+    private val alerting = Alerting(app)
 
     @Volatile
     private var stateJson: String
@@ -170,6 +171,10 @@ class Hub(
             return
         }
         val display = display
+        // A warning's tone, or an alert's tone and pause, whatever is in front.
+        if (command is Command.Notify) {
+            alerting.on(command) { display?.takeIf { it.isVisible }?.handle(Command.Pause) }
+        }
         if (display != null && display.isVisible) {
             display.handle(command)
             return

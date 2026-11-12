@@ -29,11 +29,16 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.util import dt as dt_util
 
 from .const import (
+    CONF_ALERT_TONE,
+    CONF_WARNING_TONE,
     DASHBOARDS_ROOT,
+    DEFAULT_OPTIONS,
     HLS_MIME,
+    LEVELS,
     MEDIA_TYPE_DASHBOARD,
     MEDIA_TYPE_WEB,
     POSITIONS,
+    TONES,
 )
 from .coordinator import PleatViewConfigEntry, PleatViewDevice
 from .entity import PleatViewEntity
@@ -127,6 +132,8 @@ async def async_setup_entry(
             vol.Optional("camera"): cv.entity_domain("camera"),
             vol.Optional("duration"): vol.All(vol.Coerce(int), vol.Range(min=1, max=3600)),
             vol.Optional("position"): vol.In(POSITIONS),
+            vol.Optional("level", default="notice"): vol.In(LEVELS),
+            vol.Optional("tone"): vol.In(TONES),
         },
         "async_notify",
     )
@@ -501,8 +508,18 @@ class PleatViewMediaPlayer(PleatViewEntity, MediaPlayerEntity):
         camera: str | None = None,
         duration: int | None = None,
         position: str | None = None,
+        level: str = "notice",
+        tone: str | None = None,
     ) -> None:
-        """Show a notification card, optionally with an image or camera snapshot."""
+        """Show a notification card, optionally with an image or camera snapshot.
+
+        A warning also plays a short tone, without touching what plays; an alert plays a
+        stronger one and pauses what plays. Their tones are this TV's settings unless the
+        call names one.
+        """
+        if level != "notice" and tone is None:
+            options = {**DEFAULT_OPTIONS, **self._device.entry.options}
+            tone = options[CONF_ALERT_TONE if level == "alert" else CONF_WARNING_TONE]
         image_url = None
         if camera:
             image_url = self._device.media_url(f"/api/camera_proxy/{camera}")
@@ -517,6 +534,8 @@ class PleatViewMediaPlayer(PleatViewEntity, MediaPlayerEntity):
             image_url=image_url,
             duration=duration,
             position=position,
+            level=level,
+            tone=tone if level != "notice" else None,
         )
 
     async def async_home(self) -> None:

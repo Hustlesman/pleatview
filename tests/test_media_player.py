@@ -179,6 +179,20 @@ async def test_media_uses_the_tvs_home_assistant_url(hass: HomeAssistant, fake_t
     await hass.config_entries.async_unload(entry.entry_id)
 
 
+async def test_notification_levels(hass: HomeAssistant, fake_tv: FakeTV) -> None:
+    """A notice is a card; warnings and alerts carry a tone: the TV's setting, or the call's."""
+    entry = await setup_entry(hass, make_entry(fake_tv, options={"alert_tone": "siren"}))
+    target = {ATTR_ENTITY_ID: ENTITY}
+    for extra in ({}, {"level": "warning"}, {"level": "alert"}, {"level": "warning", "tone": "beep"},
+                  {"level": "alert", "tone": "none"}):
+        await hass.services.async_call(DOMAIN, "notify", {**target, "message": "Hi", **extra}, blocking=True)
+    sent = [(c.get("level"), c.get("tone")) for c in fake_tv.commands[-5:]]
+    assert sent == [("notice", None), ("warning", "chime"), ("alert", "siren"), ("warning", "beep"), ("alert", "none")]
+    with pytest.raises(Exception):
+        await hass.services.async_call(DOMAIN, "notify", {**target, "message": "Hi", "level": "panic"}, blocking=True)
+    await hass.config_entries.async_unload(entry.entry_id)
+
+
 async def test_pleatview_services(hass: HomeAssistant, fake_tv: FakeTV) -> None:
     entry = await setup_entry(hass, make_entry(fake_tv))
     target = {ATTR_ENTITY_ID: ENTITY}

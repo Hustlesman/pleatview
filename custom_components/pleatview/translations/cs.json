@@ -73,7 +73,9 @@
           "reload_minutes": "Načíst stránku znovu každých",
           "keep_screen_on": "Nechat obrazovku zapnutou",
           "launch_on_boot": "Otevřít PleatView po zapnutí televize",
-          "render_url": "Vykreslovat v Home Assistantu"
+          "render_url": "Vykreslovat v Home Assistantu",
+          "warning_tone": "Tón varování",
+          "alert_tone": "Tón poplachu"
         },
         "data_description": {
           "ha_url": "Nechte prázdné, aby se použila interní URL Home Assistant.",
@@ -85,7 +87,9 @@
           "reopen_minutes": "Když někdo opustí PleatView kvůli jiné aplikaci, vrátí se, jakmile po tuto dobu nic nehrálo zvuk. 0 se nikdy nevrátí.",
           "reload_minutes": "Pravidelné úplné načtení uvolní paměť na dlouho zapnutých obrazovkách. 0 nikdy nenačítá znovu.",
           "launch_on_boot": "Vyžaduje na televizi oprávnění \"Zobrazení přes ostatní aplikace\".",
-          "render_url": "PleatView Renderer, který se má použít: spárovaný podle názvu, Automaticky (nejméně vytížený), nalezený Home Assistantem, nebo zadejte jeho adresu, např. http://ce7dee09-pleatview-renderer:8780. Počítač s Home Assistantem pak spouští nástěnky této televize a posílá jí jejich video. Prázdné: nástěnky běží přímo v televizi."
+          "render_url": "PleatView Renderer, který se má použít: spárovaný podle názvu, Automaticky (nejméně vytížený), nalezený Home Assistantem, nebo zadejte jeho adresu, např. http://ce7dee09-pleatview-renderer:8780. Počítač s Home Assistantem pak spouští nástěnky této televize a posílá jí jejich video. Prázdné: nástěnky běží přímo v televizi.",
+          "warning_tone": "Zazní u oznámení odeslaných jako varování. Co hraje, hraje dál.",
+          "alert_tone": "Zazní u oznámení odeslaných jako poplach, která také pozastaví, co hraje."
         }
       }
     },
@@ -126,6 +130,24 @@
     "render": {
       "options": {
         "auto": "Automaticky: nejméně vytížený renderer"
+      }
+    },
+    "tone": {
+      "options": {
+        "chime": "Zvonkohra",
+        "ding": "Cinknutí",
+        "beep": "Pípnutí",
+        "alarm": "Poplach",
+        "siren": "Siréna",
+        "bell": "Zvon",
+        "none": "Bez tónu"
+      }
+    },
+    "level": {
+      "options": {
+        "notice": "Informace",
+        "warning": "Varování",
+        "alert": "Poplach"
       }
     }
   },
@@ -222,11 +244,19 @@
         },
         "duration": {
           "name": "Doba",
-          "description": "Sekundy, než karta zmizí. Výchozí je 10."
+          "description": "Sekundy, než karta zmizí. Výchozí je 10, u poplachu 30."
         },
         "position": {
           "name": "Pozice",
           "description": "Roh obrazovky."
+        },
+        "level": {
+          "name": "Úroveň",
+          "description": "Informace: karta. Varování: karta a krátký tón, bez přerušení toho, co hraje. Poplach: karta a silnější tón, a co hraje, se pozastaví."
+        },
+        "tone": {
+          "name": "Tón",
+          "description": "Tón tohoto oznámení místo tónu varování nebo poplachu televize."
         }
       }
     },

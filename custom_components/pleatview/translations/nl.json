@@ -73,7 +73,9 @@
           "reload_minutes": "Pagina herladen elke",
           "keep_screen_on": "Scherm aan laten",
           "launch_on_boot": "PleatView openen als de tv aangaat",
-          "render_url": "Op Home Assistant weergeven"
+          "render_url": "Op Home Assistant weergeven",
+          "warning_tone": "Waarschuwingstoon",
+          "alert_tone": "Alarmtoon"
         },
         "data_description": {
           "ha_url": "Leeg laten om de interne URL van Home Assistant te gebruiken.",
@@ -85,7 +87,9 @@
           "reopen_minutes": "Als iemand PleatView verlaat voor een andere app, komt het terug zodra er zo lang geen geluid heeft gespeeld. 0 komt nooit terug.",
           "reload_minutes": "Regelmatig volledig herladen maakt geheugen vrij op schermen die lang aanstaan. 0 herlaadt nooit.",
           "launch_on_boot": "Heeft op de tv de toestemming \"Weergeven vóór andere apps\" nodig.",
-          "render_url": "De PleatView Renderer die je gebruikt: een gekoppelde op naam, Automatisch (de minst drukke), een die Home Assistant vond, of typ zijn adres, bijvoorbeeld http://ce7dee09-pleatview-renderer:8780. De computer van Home Assistant draait dan de dashboards van deze tv en stuurt de tv er een video van. Leeg: de tv draait ze zelf."
+          "render_url": "De PleatView Renderer die je gebruikt: een gekoppelde op naam, Automatisch (de minst drukke), een die Home Assistant vond, of typ zijn adres, bijvoorbeeld http://ce7dee09-pleatview-renderer:8780. De computer van Home Assistant draait dan de dashboards van deze tv en stuurt de tv er een video van. Leeg: de tv draait ze zelf.",
+          "warning_tone": "Klinkt bij meldingen die als waarschuwing worden verstuurd. Wat verder speelt, gaat door.",
+          "alert_tone": "Klinkt bij meldingen die als alarm worden verstuurd; die pauzeren ook wat er speelt."
         }
       }
     },
@@ -126,6 +130,24 @@
     "render": {
       "options": {
         "auto": "Automatisch: de minst drukke renderer"
+      }
+    },
+    "tone": {
+      "options": {
+        "chime": "Gong",
+        "ding": "Ding",
+        "beep": "Piep",
+        "alarm": "Alarm",
+        "siren": "Sirene",
+        "bell": "Bel",
+        "none": "Geen toon"
+      }
+    },
+    "level": {
+      "options": {
+        "notice": "Mededeling",
+        "warning": "Waarschuwing",
+        "alert": "Alarm"
       }
     }
   },
@@ -222,11 +244,19 @@
         },
         "duration": {
           "name": "Duur",
-          "description": "Seconden voordat de kaart verdwijnt. Standaard 10."
+          "description": "Seconden voordat de kaart verdwijnt. Standaard 10, of 30 bij een alarm."
         },
         "position": {
           "name": "Positie",
           "description": "Hoek van het scherm."
+        },
+        "level": {
+          "name": "Niveau",
+          "description": "Mededeling: een kaart. Waarschuwing: een kaart en een korte toon, zonder te onderbreken wat er speelt. Alarm: een kaart en een krachtigere toon, en wat er speelt, pauzeert."
+        },
+        "tone": {
+          "name": "Toon",
+          "description": "De toon van deze melding, in plaats van de waarschuwings- of alarmtoon van de tv."
         }
       }
     },

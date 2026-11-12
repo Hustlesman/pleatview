@@ -73,7 +73,9 @@
           "reload_minutes": "Recarregar a página a cada",
           "keep_screen_on": "Manter a tela ligada",
           "launch_on_boot": "Abrir o PleatView quando a TV ligar",
-          "render_url": "Renderizar no Home Assistant"
+          "render_url": "Renderizar no Home Assistant",
+          "warning_tone": "Som de aviso",
+          "alert_tone": "Som de alerta"
         },
         "data_description": {
           "ha_url": "Deixe vazio para usar a URL interna do Home Assistant.",
@@ -85,7 +87,9 @@
           "reopen_minutes": "Quando alguém sai do PleatView para outro app, ele volta assim que nada tocar som por esse tempo. 0 nunca volta.",
           "reload_minutes": "Recarregar tudo de tempos em tempos libera memória em telas que ficam ligadas por muito tempo. 0 nunca recarrega.",
           "launch_on_boot": "Precisa da permissão \"Sobrepor a outros apps\" na TV.",
-          "render_url": "O PleatView Renderer a usar: um pareado, pelo nome, Automático (o menos ocupado), um que o Home Assistant encontrou, ou digite o endereço, por exemplo http://ce7dee09-pleatview-renderer:8780. A máquina do Home Assistant então roda os painéis desta TV e envia a ela um vídeo deles. Vazio: a TV os roda."
+          "render_url": "O PleatView Renderer a usar: um pareado, pelo nome, Automático (o menos ocupado), um que o Home Assistant encontrou, ou digite o endereço, por exemplo http://ce7dee09-pleatview-renderer:8780. A máquina do Home Assistant então roda os painéis desta TV e envia a ela um vídeo deles. Vazio: a TV os roda.",
+          "warning_tone": "Toca com notificações enviadas como aviso. O que estiver tocando continua.",
+          "alert_tone": "Toca com notificações enviadas como alerta, que também pausam o que estiver tocando."
         }
       }
     },
@@ -126,6 +130,24 @@
     "render": {
       "options": {
         "auto": "Automático: o renderizador menos ocupado"
+      }
+    },
+    "tone": {
+      "options": {
+        "chime": "Carrilhão",
+        "ding": "Ding",
+        "beep": "Bipe",
+        "alarm": "Alarme",
+        "siren": "Sirene",
+        "bell": "Sino",
+        "none": "Sem som"
+      }
+    },
+    "level": {
+      "options": {
+        "notice": "Informação",
+        "warning": "Aviso",
+        "alert": "Alerta"
       }
     }
   },
@@ -222,11 +244,19 @@
         },
         "duration": {
           "name": "Duração",
-          "description": "Segundos até o card sumir. Padrão: 10."
+          "description": "Segundos até o card sumir. Padrão: 10, ou 30 para um alerta."
         },
         "position": {
           "name": "Posição",
           "description": "Canto da tela."
+        },
+        "level": {
+          "name": "Nível",
+          "description": "Informação: um card. Aviso: um card e um som curto, sem interromper o que está tocando. Alerta: um card e um som mais forte, e o que está tocando é pausado."
+        },
+        "tone": {
+          "name": "Som",
+          "description": "O som desta notificação, no lugar do som de aviso ou de alerta da TV."
         }
       }
     },

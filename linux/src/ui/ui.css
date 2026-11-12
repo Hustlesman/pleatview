@@ -89,6 +89,10 @@ progress::-webkit-progress-value { background: var(--accent); }
 .toast.shown { opacity: 1; }
 .toast img { width: 100%; max-height: 230px; object-fit: cover; border-radius: 10px; margin-bottom: 12px; display: block; }
 .toast-title { font-weight: 700; font-size: 19px; }
+.toast.level-warning { box-shadow: inset 0 0 0 2px #ffb74d; }
+.toast.level-warning .toast-title { color: #ffb74d; }
+.toast.level-alert { box-shadow: inset 0 0 0 3px #ff6e6e; }
+.toast.level-alert .toast-title { color: #ff6e6e; }
 .toast-message { color: var(--text-secondary); white-space: pre-wrap; overflow-wrap: anywhere; }
 
 #banner { position: absolute; top: 24px; left: 50%; transform: translateX(-50%); padding: 12px 20px; max-width: min(640px, calc(var(--w) - 48px)); font-size: 16px; }
