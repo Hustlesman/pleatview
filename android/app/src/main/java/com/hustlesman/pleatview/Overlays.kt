@@ -1,6 +1,7 @@
 package com.hustlesman.pleatview
 
 import android.content.Context
+import android.content.pm.PackageManager
 import android.content.res.Resources
 import android.graphics.BitmapFactory
 import android.graphics.Color
@@ -124,7 +125,7 @@ class SystemOverlay(private val context: Context) {
             minOf((440 * density).toInt(), ToastViews.maxWidth(context)),
             WindowManager.LayoutParams.WRAP_CONTENT,
             type,
-            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE,
+            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or OverlayWindows.touchFlags(context),
             PixelFormat.TRANSLUCENT,
         ).apply {
             gravity = ToastViews.gravity(notify.position)
@@ -140,6 +141,21 @@ class SystemOverlay(private val context: Context) {
             false
         }
     }
+}
+
+object OverlayWindows {
+    /**
+     * Touches pass through an overlay on phones and tablets, so the app below stays usable;
+     * Android then draws the overlay at most 80 % opaque (Android 12+). A TV has no touch
+     * screen: its overlays take touches that never come, and stay fully opaque, so a film
+     * doesn't show through a camera. Keys never go to them either way (not focusable).
+     */
+    fun touchFlags(context: Context): Int =
+        if (context.packageManager.hasSystemFeature(PackageManager.FEATURE_TOUCHSCREEN)) {
+            WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE
+        } else {
+            0
+        }
 }
 
 /** Positions a layer full-screen or as a picture-in-picture box. */
