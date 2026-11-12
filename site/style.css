@@ -63,6 +63,13 @@ p { margin: 0; }
 .hero h1 em { font-style: normal; background: linear-gradient(100deg, var(--cyan), #7fdcfa 60%, var(--cyan)); -webkit-background-clip: text; background-clip: text; color: transparent; }
 .lead { font-size: clamp(18px, 2vw, 21px); color: var(--muted); max-width: 62ch; }
 .actions { display: flex; flex-wrap: wrap; gap: 12px; }
+/* The stores' own badges, at the same visible height. Google's carries its clear space in the
+   picture (41 of its 250 pixels each side), so it's drawn taller and pulled in by as much. */
+.store-badges { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin: 4px 0; }
+.store-badges a { display: block; line-height: 0; }
+.store-badges img { display: block; height: 44px; width: auto; }
+.store-badges img.padded { height: 65.5px; margin: -10.75px; }
+.site-footer .legal { font-size: 12px; opacity: .7; }
 .facts { display: flex; flex-wrap: wrap; gap: 8px 22px; font-size: 14px; color: var(--muted); }
 .facts span::before { content: ""; display: inline-block; width: 6px; height: 6px; margin-right: 9px; border-radius: 50%; background: var(--cyan); vertical-align: 2px; }
 
