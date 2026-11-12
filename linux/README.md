@@ -9,7 +9,9 @@ For Ubuntu and Raspberry Pi OS (bookworm or trixie), on x86-64 and on ARM64 (Ras
 Pi 4 and 5 with the 64-bit OS). Checked on a Raspberry Pi 5 (4 GB) with Raspberry Pi OS 13
 and its desktop, on a monitor and on a TV with sound over HDMI, and on Ubuntu 24.04 in a
 container; mini PCs and the Raspberry Pi 4 are next. A Raspberry Pi 4 needs 2 GB of memory
-or more.
+or more. Walls of video keep a Raspberry Pi 5 busy: a wall of nine live streams played for
+two days on one, but without a cooler it ran at 85 °C, where the Pi slows itself down. Give
+it the Active Cooler or a case with a fan, and the official 27 W power supply.
 
 ## Install
 
