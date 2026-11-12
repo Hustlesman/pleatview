@@ -215,11 +215,14 @@ async def test_notifications_go_into_the_stream_for_screens_that_only_play_it(
 ) -> None:
     """PleatView Light lists stream_overlays: its notifications are drawn into the stream."""
     entry = make_entry(
-        fake_tv, options={"render_url": renderer.url}, **{CONF_AUTH_MODE: AUTH_MANAGED, CONF_HA_TOKEN: "tv-token"})
+        fake_tv, options={"render_url": renderer.url, "rotation": "90"}, **{CONF_AUTH_MODE: AUTH_MANAGED, CONF_HA_TOKEN: "tv-token"})
     entry = await setup_entry(hass, entry)
     await fake_tv.wait_for_stream()
-    await fake_tv.push(features=["render_stream", "stream_overlays"], screen={"width": 1920, "height": 1080, "density": 1.0})
+    await fake_tv.push(features=["render_stream", "stream_overlays", "rotation"], screen={"width": 1920, "height": 1080, "density": 1.0})
     await _until(lambda: entry.entry_id in renderer.screens)
+    # Hung on its side: the renderer turns the stream, and the screen gets the setting for its own text.
+    assert renderer.screens[entry.entry_id]["rotation"] == 90
+    await _until(lambda: fake_tv.config.get("rotation") == 90)
     device = entry.runtime_data
     await device.async_command("notify", message="Someone's at the door", title="Front door", image_url=None)
     assert renderer.overlays[-1] == {"kind": "notify", "message": "Someone's at the door", "title": "Front door"}

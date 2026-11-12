@@ -123,9 +123,10 @@ back.
   mode.
 - The picture is about three seconds behind. A light switched on shows on the dashboard
   three seconds later.
-- A screen hung on its side or upside down: set *Screen mounted* in the TV's settings
-  (portrait, turned clockwise or anticlockwise, or upside down). The renderer draws the
-  dashboard upright for it and turns the picture, so the screen itself does nothing.
+- A screen hung on its side or upside down: set *Screen mounted* in its settings (portrait,
+  turned clockwise or anticlockwise, or upside down). For PleatView Light, which only plays
+  the stream, the renderer draws the dashboard upright and turns the picture, and Light
+  turns its own text. The Linux app turns its whole screen itself. Android TVs ignore it.
 - The TV only shows the picture. Browsing inside a dashboard with the remote, and the sign-in
   questions of webpage dashboards, don't reach the page.
 - The dashboards' sound comes with the picture: a video or a camera with sound on a

@@ -13,6 +13,7 @@ import logging
 import os
 from pathlib import Path
 import shlex
+import textwrap
 from typing import Any, Callable
 
 _LOGGER = logging.getLogger(__name__)
@@ -21,13 +22,38 @@ _LOGGER = logging.getLogger(__name__)
 # (DRM PRIME) and mpv's drawing (text, pictures) on a plane above it. On a Raspberry Pi Zero
 # 2 W this plays a 1080p stream with almost no dropped frames, where copying frames dropped
 # two in three; and drawing the decoder's tiled frames with the GPU shows only black.
+# The osd-overlay that holds text turned for a screen mounted turned.
+TEXT_OVERLAY = 1
+
 DEFAULT_OPTIONS = ("--vo=gpu --gpu-context=drm --hwdec=v4l2m2m --gpu-hwdec-interop=drmprime-overlay "
                    "--drm-draw-plane=overlay --drm-drmprime-video-plane=primary")
+
+
+def turned_text(message: str, rotation: int) -> str:
+    """ASS events for mpv's osd-overlay (1280×720 units): the text and a box behind it, turned
+    for a screen mounted turned (degrees clockwise; ASS turns anticlockwise, as such a screen
+    needs), and wrapped to the width the screen has that way round."""
+    portrait = rotation in (90, 270)
+    size, columns = (30, 34) if portrait else (40, 56)
+    lines: list[str] = []
+    for paragraph in message.split("\n"):
+        lines += textwrap.wrap(paragraph, columns) or [""]
+    width = 660 if portrait else 1180
+    height = round(len(lines) * size * 1.25 + 40)
+    # Escaped as mpv escapes text for ASS: a backslash or a brace would start a tag.
+    body = "\\N".join(line.replace("\\", "\\\u2060").replace("{", "\\{") for line in lines)
+    place = f"\\an5\\pos(640,360)\\frz{rotation}"
+    box = (f"{{{place}\\bord0\\shad0\\1c&H17140F&\\1a&H19&\\p1}}"
+           f"m 0 0 l {width} 0 {width} {height} 0 {height}{{\\p0}}")
+    text = f"{{{place}\\fs{size}\\bord0\\shad0\\1c&HF6F3ED&}}{body}"
+    return f"{box}\n{text}"
 
 
 class Player:
     def __init__(self, socket_path: Path, on_event: Callable[[dict[str, Any]], None]) -> None:
         self.socket_path = socket_path
+        self.rotation = 0  # how the screen is mounted; text is turned to match
+        self._overlay_timer: asyncio.TimerHandle | None = None
         self.on_event = on_event
         self.process: asyncio.subprocess.Process | None = None
         self.writer: asyncio.StreamWriter | None = None
@@ -100,7 +126,9 @@ class Player:
         future = asyncio.get_running_loop().create_future()
         self._pending[self._next] = future
         assert self.writer
-        self.writer.write(json.dumps({"command": list(args), "request_id": self._next}).encode() + b"\n")
+        # A command's arguments in order, or one dict of named arguments (osd-overlay needs those).
+        command = args[0] if len(args) == 1 and isinstance(args[0], dict) else list(args)
+        self.writer.write(json.dumps({"command": command, "request_id": self._next}).encode() + b"\n")
         await self.writer.drain()
         return await asyncio.wait_for(future, 10)
 
@@ -124,10 +152,25 @@ class Player:
         await self.command("stop")
 
     async def text(self, message: str, seconds: float = 3600) -> None:
-        await self.command("show-text", message, int(seconds * 1000))
+        if self._overlay_timer:
+            self._overlay_timer.cancel()
+            self._overlay_timer = None
+        if self.rotation not in (90, 180, 270):
+            await self.command({"name": "osd-overlay", "id": TEXT_OVERLAY, "format": "none", "data": ""})
+            await self.command("set_property", "osd-border-style", "background-box")
+            await self.command("show-text", message, int(seconds * 1000))
+            return
+        # mpv's own text box doesn't turn: draw one, turned with the text, instead.
+        await self.command("show-text", "", 1)
+        await self.command("set_property", "osd-border-style", "outline-and-shadow")
+        await self.command({"name": "osd-overlay", "id": TEXT_OVERLAY, "format": "ass-events",
+                            "data": turned_text(message, self.rotation), "res_x": 1280, "res_y": 720})
+        self._overlay_timer = asyncio.get_running_loop().call_later(
+            seconds, lambda: asyncio.ensure_future(self.clear_text()))
 
     async def clear_text(self) -> None:
         await self.command("show-text", "", 1)
+        await self.command({"name": "osd-overlay", "id": TEXT_OVERLAY, "format": "none", "data": ""})
 
     async def set(self, name: str, value: Any) -> None:
         await self.command("set_property", name, value)

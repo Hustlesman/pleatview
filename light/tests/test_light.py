@@ -126,7 +126,7 @@ class Screens(unittest.IsolatedAsyncioTestCase):
             await screen.command({"command": "play_media", "url": "file:///etc/passwd"})
         with self.assertRaises(ValueError):
             await screen.command({"command": "reboot"})
-        self.assertEqual(screen.state["features"], ["render_stream", "home_without_ha", "home_playlist", "stream_overlays"])
+        self.assertEqual(screen.state["features"], ["render_stream", "home_without_ha", "home_playlist", "stream_overlays", "rotation"])
         self.assertEqual(screen.state["screen"]["width"], 1280)
 
 
@@ -194,3 +194,17 @@ class Announcing(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class Rotation(unittest.TestCase):
+    def test_text_turns_with_the_screen_in_a_box_of_its_own(self) -> None:
+        from pleatview_light.player import turned_text
+        box, text = turned_text("PleatView\nIn Home Assistant: Settings → Devices & services → PleatView {x}", 90).split("\n")
+        self.assertIn("\\frz90", box)
+        self.assertIn("\\p1}m 0 0 l 660", box)  # a box as wide as the screen is that way round
+        self.assertIn("\\frz90", text)
+        self.assertIn("\\N", text)  # wrapped to fit
+        self.assertIn("\\{x}", text)  # a brace is text, not a tag
+        self.assertEqual(Config().merge({"rotation": 270}).rotation, 270)
+        with self.assertRaises(ValueError):
+            Config().merge({"rotation": 45})

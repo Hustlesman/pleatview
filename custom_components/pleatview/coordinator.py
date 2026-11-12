@@ -213,8 +213,9 @@ class PleatViewDevice:
         if self.rendering:
             assert self.renderer
             config["render_stream"] = self.ha_url.rstrip("/") + self.renderer.stream_path
-        elif "rotation" in (self.state.get("features") or []):
-            # A screen that turns its own picture (the Linux app); a rendered one gets it turned.
+        if "rotation" in (self.state.get("features") or []):
+            # The Linux app turns its whole picture; PleatView Light its own text (the renderer
+            # turns its stream).
             config["rotation"] = int(options[CONF_ROTATION])
         digest = hashlib.sha256(json.dumps(config, sort_keys=True).encode()).hexdigest()
         config["rev"] = digest[:16]
@@ -290,7 +291,10 @@ class PleatViewDevice:
         token = self.entry.data.get(CONF_HA_TOKEN, "") if self.entry.data.get(CONF_AUTH_MODE) != AUTH_NONE else ""
         await self.renderer.async_show(Screen(
             url=url, width=width, height=height, scale=round(density * int(options[CONF_ZOOM]) / 100, 3),
-            kiosk=options[CONF_KIOSK], ha_url=self.ha_url, token=token, rotation=int(options[CONF_ROTATION]),
+            kiosk=options[CONF_KIOSK], ha_url=self.ha_url, token=token,
+            # A screen that only plays the stream gets it turned. The Linux app turns its own
+            # screen, reports its turned size, and so gets an upright picture anyway.
+            rotation=int(options[CONF_ROTATION]) if self.stream_overlays else 0,
         ))
 
     async def _async_resync(self) -> None:

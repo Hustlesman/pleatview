@@ -112,9 +112,10 @@ Events stream that sends the full snapshot on connect and after every change
   plays on offline (Android and PleatView Light, 1.0.17 and later). `stream_overlays`: the
   app only plays the stream, so Home Assistant draws its notifications and cameras into the
   rendered stream (the renderer's `POST /api/sessions/<key>/overlay`) instead of sending
-  them to the screen (PleatView Light, 1.0.18 and later). `rotation`: the app turns its
-  picture for `rotation` (the Linux app, 1.0.18 and later); screens that play the rendered
-  stream get the picture turned by the renderer instead.
+  them to the screen (PleatView Light, 1.0.18 and later). `rotation`: the app takes
+  `rotation` (1.0.18 and later): the Linux app turns its whole picture, and reports its turned
+  size; PleatView Light turns its own text, its stream coming turned from the renderer, as
+  for any app with `stream_overlays`.
 
 ## Commands
 
@@ -209,7 +210,7 @@ never sent to Home Assistant.
 | `keep_screen_on` | true | Stop the screensaver while a dashboard is shown |
 | `launch_on_boot` | true | Open after boot (needs `overlay_permission`) |
 | `render_stream` | empty | A live HLS stream of the TV's dashboards, rendered by Home Assistant ([guide](render-on-home-assistant.md)). The app plays it full screen instead of loading pages, and keeps reporting the `url` it would show, which Home Assistant renders. Only for apps with the `render_stream` feature |
-| `rotation` | 0 | How the screen is mounted, in degrees turned clockwise (0, 90, 180 or 270); the app turns its picture to match. Only for apps with the `rotation` feature; for a rendered screen, the renderer's session gets it instead (its picture comes out turned) |
+| `rotation` | 0 | How the screen is mounted, in degrees turned clockwise (0, 90, 180 or 270): the app turns what it draws to match. Only for apps with the `rotation` feature. For apps with `stream_overlays`, the renderer's session gets it too, and the stream comes out turned |
 | `home_playlist` | `[]` | `[{"url": "http://…/play.mp4", "kind": "video", "seconds": 10}]`, up to 500: a home page that is a playlist (`kind` `video`, `audio` or `image`; `seconds` for pictures). The app plays it full screen, in order, again and again, and keeps every item in its own cache, so it plays on without the network and after a restart. Only for apps with the `home_playlist` feature |
 | `rev` | — | Opaque revision set by Home Assistant; any update without `rev` clears it |
 
