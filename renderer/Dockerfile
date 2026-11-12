@@ -15,6 +15,7 @@ RUN apt-get update \
     && useradd --create-home --shell /usr/sbin/nologin render \
     && dpkg-query -W -f '${Package} ${Version} ${Architecture}\n' | sort > /app-packages.txt
 
+COPY asound.conf /etc/asound.conf
 COPY pleatview_renderer /app/pleatview_renderer
 WORKDIR /app
 ENV PYTHONUNBUFFERED=1

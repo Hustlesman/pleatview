@@ -125,6 +125,9 @@ back.
   three seconds later.
 - The TV only shows the picture. Browsing inside a dashboard with the remote, and the sign-in
   questions of webpage dashboards, don't reach the page.
+- The dashboards' sound comes with the picture: a video or a camera with sound on a
+  dashboard plays through the TV, as when the TV runs the page itself. The TV needs PleatView
+  1.0.18 or later; older versions play the stream silently.
 - Notifications, cameras in a corner, media and announcements still play on the TV itself.
   On [PleatView Light](../light/README.md), which only plays the stream, Home Assistant draws
   notifications and cameras into the stream instead.
@@ -175,6 +178,8 @@ Webpage*) or with `pleatview.show_url`.
 - The renderer's own interface has no sign-in, so it must not be reachable from the
   network: the app is only on Home Assistant's internal network, and the `docker run`
   above listens on 127.0.0.1 only.
+- The pages' sound goes nowhere but the stream: the renderer has no sound card, and each
+  screen's Chromium plays into a pipe that only the renderer reads.
 - Chromium, which shows the pages, runs as an unprivileged user. It draws WebGL with Mesa's
   software renderer, which Chromium refuses for browsing at large; the renderer allows it
   because it shows only the pages you choose.

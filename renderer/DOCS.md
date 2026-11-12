@@ -1,7 +1,7 @@
 # PleatView Renderer
 
 Runs the dashboards of TVs that are too slow for them, here on the Home Assistant machine,
-and streams each TV's screen to it as one H.264 video.
+and streams each TV's screen to it as one H.264 video, with the pages' sound.
 
 1. Start the app. Its *Log* shows its address, usually
    `http://ce7dee09-pleatview-renderer:8780`.

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import os
 from pathlib import Path
 import tempfile
 import unittest
@@ -11,7 +12,7 @@ from unittest import mock
 
 from aiohttp.test_utils import AioHTTPTestCase
 
-from pleatview_renderer import actions, page, pairing, server, session
+from pleatview_renderer import actions, page, pairing, server, session, sound
 from pleatview_renderer.session import Screen
 
 APP_HELPER = Path(__file__).parents[2] / "android/app/src/main/assets/pleatview.js"
@@ -60,6 +61,66 @@ class ChromiumTest(unittest.TestCase):
         self.assertIn("h264_vaapi", session.encoder_args("vaapi", Screen("http://a")))
         self.assertIn("6000000", session.encoder_args("x264", Screen("http://a")))
         self.assertIn("1500000", session.encoder_args("x264", Screen("http://a", 640, 360)))
+
+
+class SoundTest(unittest.IsolatedAsyncioTestCase):
+    def test_the_page_plays_into_the_stream(self) -> None:
+        device = sound.alsa_device(Path("/data/profiles/tv-1/sound"))
+        self.assertEqual(device, "pleatview:PIPE=/data/profiles/tv-1/sound")
+        self.assertIsNone(sound.alsa_device(Path("/data/my tv,1/sound")))  # not passed to ALSA
+        args = session.chromium_args(Screen("http://a"), Path("/p"), 9310, device)
+        self.assertIn(f"--alsa-output-device={device}", args)
+        self.assertNotIn("--mute-audio", args)
+        self.assertIn("--mute-audio", session.chromium_args(Screen("http://a"), Path("/p"), 9310))
+        args = session.ffmpeg_args("x264", Screen("http://a"), ":10", Path("/f"), with_sound=True)
+        self.assertLess(args.index("-itsoffset"), args.index(":10"))  # the picture waits for its sound
+        self.assertEqual(args[args.index("pipe:0") - 7:args.index("pipe:0") + 1], [*sound.FFMPEG_INPUT, "-i", "pipe:0"])
+        self.assertTrue({"1:a", "aac"} <= set(args))
+        silent = session.ffmpeg_args("vaapi", Screen("http://a"), ":10", Path("/f"), with_sound=False)
+        self.assertFalse({"-itsoffset", "pipe:0", "1:a"} & set(silent))
+        self.assertEqual(silent[-1], "/f/index.m3u8")
+
+    async def test_sound_in_real_time_with_silence_between(self) -> None:
+        loop = asyncio.get_running_loop()
+        with tempfile.TemporaryDirectory() as tmp:
+            pipes = sound.Sound(Path(tmp) / "sound")
+            pipes.open()
+            ffmpeg = os.dup(pipes.ffmpeg_input)
+            os.set_blocking(ffmpeg, False)
+            pipes.start()
+            received = bytearray()
+            tone = bytes([1, 2, 3, 4]) * (sound.RATE // 10)  # 0.1 seconds of frames
+
+            async def chromium() -> None:  # starts after 0.15 s, and waits while the pipe is full
+                await asyncio.sleep(0.15)
+                fd = os.open(pipes.fifo, os.O_WRONLY | os.O_NONBLOCK)
+                left = memoryview(tone)
+                while left:
+                    try:
+                        left = left[os.write(fd, left[:4096]):]
+                    except BlockingIOError:
+                        await asyncio.sleep(0.005)
+                os.close(fd)  # and plays nothing more
+
+            writer = asyncio.create_task(chromium())
+            start = loop.time()
+            while loop.time() - start < 0.6:
+                await asyncio.sleep(0.01)
+                try:
+                    received += os.read(ffmpeg, 1 << 16)
+                except BlockingIOError:
+                    pass
+            await writer
+            await pipes.stop()
+            os.close(ffmpeg)
+            self.assertFalse(pipes.fifo.exists())
+        seconds = len(received) / sound.FRAME / sound.RATE
+        self.assertGreater(seconds, 0.45)  # one stream that keeps time, sound or not
+        self.assertLess(seconds, 0.65)
+        at = received.find(tone)
+        self.assertGreater(at, 0, "the tone arrives whole, after silence")
+        self.assertEqual(at % sound.FRAME, 0, "and on a frame")
+        self.assertEqual(set(received[:at]) | set(received[at + len(tone):]), {0})
 
 
 class PageTest(unittest.TestCase):

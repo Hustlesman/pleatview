@@ -20,8 +20,8 @@ import androidx.media3.ui.PlayerView
 
 /**
  * The TV's dashboards as Home Assistant renders them (render.py in the integration): one
- * live H.264 stream, played full screen. Home Assistant decides what it shows; the TV only
- * decodes it, which every TV does in hardware.
+ * live H.264 stream, played full screen, with the dashboards' sound as a page would play it.
+ * Home Assistant decides what it shows; the TV only decodes it, which every TV does in hardware.
  */
 class RenderedScreen(private val activity: Activity, private val container: FrameLayout, private val onTrouble: (String?) -> Unit) {
     private val main = Handler(Looper.getMainLooper())
@@ -90,7 +90,6 @@ class RenderedScreen(private val activity: Activity, private val container: Fram
         val player = ExoPlayer.Builder(activity)
             .setMediaSourceFactory(HlsMediaSource.Factory(http))
             .build()
-        player.volume = 0f
         player.addListener(object : Player.Listener {
             override fun onPlayerError(error: PlaybackException) {
                 // Home Assistant or its renderer restarting, or Wi-Fi gone for a moment.
