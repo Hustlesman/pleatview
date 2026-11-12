@@ -10,15 +10,13 @@
 - the Home Assistant integration is in the HACS default list (done 2 Nov),
 - install guides live on [pleatview.hustlesman.com](https://pleatview.hustlesman.com).
 
-Dates assume about 20 hours of development a week, and include store review times. We
-re-check them at the first weekly review.
+Dates include store review times.
 
 **Principle: as little interaction as possible.** Every step a person has to take is a
-step to remove. Setup should be: type a short link into the TV's Downloader app (later,
-one click in the store), press one button to add the integration, confirm the discovered
-TV and enter its PIN. Nobody should need adb, a computer, or to type a password with
-the remote. The same goes for running the project: checks, the website and releases run
-on their own.
+step to remove. Setup should be: install the app from the TV's store, press one button to
+add the integration, confirm the discovered TV and press OK on it. Nobody should need adb,
+a computer, or to type a password with the remote. The same goes for running the project:
+checks, the website and releases run on their own.
 
 **Principle: a thin agent.** The apps on the screens stay small: they show pages, play
 media, report their state and keep their own keys. Everything else lives on the controller
@@ -29,18 +27,18 @@ and there's one place to fix and to audit.
 
 ## Status
 
-Last updated 12 November 2026. **Current milestone: M1** (M0 finished early).
+Last updated 13 November 2026. **Current milestone: M1** (M0 finished early).
 
 | Milestone | Target | Needs first | Status |
 | --- | --- | --- | --- |
 | [M0](#m0--foundation) Foundation | Fri 6 Nov 2026 | — | Done 28 Oct |
 | [M1](#m1--validated-on-real-android-tv-hardware) Validated on real Android TV hardware | Fri 20 Nov 2026 | M0, devices | In progress |
 | [L1](#l1--linux-app) Linux app for mini PCs and Raspberry Pi, alongside M1 and M2 | Fri 18 Dec 2026 | — | In progress |
-| [M2](#m2--public-beta) Public beta, Google Play closed test, phones and tablets | Fri 4 Dec 2026 | M1, 12 beta testers | Not started |
+| [M2](#m2--public-beta) Public beta, Google Play closed test, phones and tablets | Fri 4 Dec 2026 | M1, 12 beta testers | In progress |
 | [R1](#r1--rendering-for-many-screens) Rendering for many screens: several renderers, chosen per TV | To be scheduled | — | Not started |
 | [S1](#s1--secure-remote-management) Secure remote management: over the internet, a VPN or zero-trust access | To be scheduled | M3's encryption, M4's protocol v2 | Not started |
-| [C1](#c1--pleatview-console) PleatView Console: many sites and tenants, with or without Home Assistant | No date yet | Its later parts: M4, S1 | In progress (started 11 Nov) |
-| [M3](#m3--google-play-and-amazon-appstore) Google Play and Amazon Appstore | Fri 15 Jan 2027 | M2, store reviews | Not started |
+| [C1](#c1--pleatview-console) PleatView Console: many sites and tenants, with or without Home Assistant | No date yet | Its later parts: M4, S1 | In progress |
+| [M3](#m3--google-play-and-amazon-appstore) Google Play and Amazon Appstore | Fri 15 Jan 2027 | M2, store reviews | In progress |
 | [M4](#m4--web-player) Web player for any TV browser | Fri 29 Jan 2027 | M3 submitted | Not started |
 | [M5](#m5--lg-and-samsung-apps) LG and Samsung apps submitted | Fri 5 Mar 2027 | M4, test TVs | Not started |
 | [M6](#m6--on-every-store) On every store | Fri 2 Apr 2027 | M5 approvals, 30-day soak | Not started |
@@ -53,22 +51,22 @@ each later milestone gets its issues when it starts.
 **Want to help?** Tell us about a device that works or doesn't, report a bug, or join the
 Google TV beta ([#9](https://github.com/Hustlesman/pleatview/issues/9)).
 
-Done so far: v1.0.18 is published as a signed release with build attestations (versions are
-1.x from 29 Oct; each milestone ends with the next minor release). One command
-(`tools/e2e/run.py`) tests the Android app and the Home Assistant integration together in
-23 checks, on an Android TV 16 emulator or a real TV: the demo, pairing, automatic sign-in, kiosk mode,
-casting, cameras, notifications, sign-ins, standby, updates, and recovery from a Home Assistant
-restart and from a frozen page. Phone and tablet emulators add touch, turning the screen and the lock screen, for 26.
-`tools/e2e/linux.py` checks the Linux app the same way in Docker, in 16. A Fire TV Stick and a Chromecast HD pass the automated checks,
-and both ran a 42-hour soak test without a crash. A security review on 2 Nov fixed what it
-found, and no dependency has a known vulnerability. 75 app tests, 59 integration tests, 22
-renderer tests, 53 console tests and 8 PleatView Light tests pass. Since 1.0.14, Home Assistant
-can render a TV's dashboards and stream them to it, which a Home Assistant OS app does too; since
-1.0.17, on renderers paired by name, also on other machines, and for PleatView Light on the
-smallest boards. PleatView Console (in development) manages screens across sites and
-organisations.
-The Android app, the phone page and the integration are translated into 10 languages besides
-English, chosen from where Home Assistant is used most.
+Done so far: the latest release is published as a signed release with build attestations
+(each milestone ends with the next minor release). PleatView is on the Amazon Appstore for
+Fire TV and in a Google Play beta. One command (`tools/e2e/run.py`) tests the Android app and
+the Home Assistant integration together, on an Android TV emulator or a real TV: the demo,
+pairing, automatic sign-in, kiosk mode, casting, cameras, notifications, sign-ins, page
+steps, standby, updates, and recovery from a Home Assistant restart and from a frozen page.
+Phone and tablet emulators add touch, turning the screen and the lock screen.
+`tools/e2e/linux.py` checks the Linux app the same way in Docker. A Fire TV Stick and a
+Chromecast HD pass the automated checks, and both ran a 42-hour soak test without a crash. A
+security review on 2 Nov fixed what it found. The apps, the integration, the renderer, the
+console and PleatView Light have unit tests that run on every change. Home Assistant can
+render a TV's dashboards and stream them to it, on its own machine or on renderers elsewhere,
+also for PleatView Light on the smallest boards. PleatView Console (in development) manages
+screens across sites and organisations. The Android app, the phone page and the integration
+are translated into 10 languages besides English, chosen from where Home Assistant is used
+most.
 
 ## How we stay on track
 
@@ -80,9 +78,7 @@ English, chosen from where Home Assistant is used most.
 4. **P1 bugs are fixed immediately, in any milestone.** P1 means a crash, failed pairing,
    a dashboard that won't load, or a security issue. Everything else waits for the next
    milestone's scope.
-5. **Weekly check-in, Mondays, 15 minutes.** Update the status table and the GitHub
-   milestones. If a milestone is
-   more than a week late, move scope to the parking lot rather than moving the date.
+5. **A late milestone loses scope, not its date:** the rest goes to the parking lot.
 6. **Every milestone ends with a tagged release** and a changelog.
 
 ## M0 — Foundation
@@ -120,41 +116,31 @@ from GitHub Releases.
       runnable with one command
 - [ ] Test plan passed on: Google TV Streamer, Chromecast with Google TV (HD, the
       low-memory worst case), a TV with Google TV built in, Fire TV (Fire OS 7 or 8).
-      Fire TV Stick (3rd Gen, Fire OS 7.7, 1 GB): every automated check passes
-      (`tools/e2e/run.py --device`, 29 Oct), and it opens by itself after a reboot.
-      Chromecast with Google TV (HD, Android TV 14, 1.4 GB): every automated check passes
-      (30 Oct). By hand on 1 Nov with v1.0.3: an update in place keeps the pairing and
-      settings; a notification shows over YouTube; `show_dashboard` brings PleatView back
-      in front of another app; after Home the entity turns `off`; the menu's *Display over
-      other apps* button leads to the permission. On the Fire TV, clearing PleatView's data
-      makes Home Assistant ask for the new PIN and the settings come back, and removing
-      the integration returns the TV to its setup screen and deletes its Home Assistant
-      user. On 3 Nov the Chromecast moved from the Google Play build to the GitHub one,
-      installed with Downloader: Home Assistant asked for the new PIN and kept the TV's
-      entity and settings. On 12 Nov, on Home Assistant 2026.11.1, both "My Home Assistant"
-      buttons: the repository button opened PleatView in the built-in Marketplace (after its
-      one-time notice about community add-ons), and once it was installed and Home Assistant
-      restarted, the setup button opened *Add a PleatView TV*. Still to do: a sign-in on a
-      real site
-- [x] Home Assistant versions: oldest supported (2025.1), current stable, beta. On 5 Nov
-      all 20 checks passed on 2025.1.4, 2026.10.4 and the 2026.11.0 release, after the
-      2026.11 beta (2026.11.0b3) on 3 Nov. The matrix runs again before each release
+      Done on a Fire TV Stick (3rd Gen, Fire OS 7.7, 1 GB) and a Chromecast with Google TV
+      (HD, Android TV 14, 1.4 GB): every automated check (`tools/e2e/run.py --device`), and
+      by hand: it opens by itself after a reboot; updates, reinstalls and moving between
+      the store and GitHub builds keep the TV's entity and settings (a reinstall asks for
+      the new PIN); notifications show over other apps; `show_dashboard` brings PleatView
+      back in front; the menu leads to *Display over other apps*; removing the integration
+      returns the TV to its setup screen and deletes its Home Assistant user; and both
+      "My Home Assistant" buttons work on Home Assistant 2026.11. Still to do: the Google
+      TV Streamer, a TV with Google TV built in, and a sign-in on a real site
+- [x] Home Assistant versions: oldest supported (2025.1), current stable, beta. Every check
+      passes on 2025.1.4, 2026.10.4 and 2026.11, and passed on the 2026.11 beta before it.
+      The matrix runs again before each release
 - [x] Soak on the Chromecast HD and the Fire TV Stick with `tools/soak/run.py`: a busy
-      household, a live camera and rotation on. 42 hours on both (30 Oct to 1 Nov), stopped
-      before the planned 7 days; the 30-day soak in M6 is the long run. No crashes, and
-      PleatView's memory stayed flat (Chromecast +0.2 %, Fire TV −3 %). Both recovered from a
-      Home Assistant restart. Fire OS's "Are you still watching?" sends the Fire TV to its
-      home screen every 4 hours; twice Fire OS then closed PleatView to free memory, and it
-      came back by itself both times. A 2-minute Wi-Fi drop on the Fire TV left a page
-      frozen, and PleatView didn't recover until its WebView was rebuilt: it now does that
-      by itself when a page stops answering. A first 23-hour run passed on 29 Oct
+      household, a live camera and rotation on, for 42 hours on both (the 30-day soak is in
+      M6). No crashes, and PleatView's memory stayed flat (Chromecast +0.2 %, Fire TV −3 %).
+      Both recovered from a Home Assistant restart, and the Fire TV from Fire OS closing
+      PleatView to free memory. A Wi-Fi drop that left a page frozen led to a fix: PleatView
+      now rebuilds a page that stops answering
 - [x] Decide the foreground-service type Google Play will accept: `connectedDevice`
       (Home Assistant controls the TV over the network), with Wi-Fi kept optional
 - [x] Ask for "Display over other apps" from the PleatView menu on TVs that have that
       settings screen, with adb only as the fallback
 - [x] Test plan covers installing with Downloader and the "My Home Assistant" buttons.
-      Downloader with `pleatview.hustlesman.com/apk`, then discovery and the PIN, worked
-      on the Fire TV on 29 Oct and on the Chromecast on 3 Nov; both buttons on 12 Nov
+      Downloader with `pleatview.hustlesman.com/apk`, then discovery and the PIN, works on
+      the Fire TV and the Chromecast, and so do both buttons
 - [x] Fixes from the first hardware run: Webpage dashboards (Grafana, OpenSearch…) open
       the site directly, with the zoom, instead of in Home Assistant's frame; a
       discovered TV goes straight to the PIN; the setup screen has a QR code for phones
@@ -165,9 +151,9 @@ from GitHub Releases.
 
 ## L1 — Linux app
 
-*Thu 5 Nov → Fri 18 Dec 2026*, alongside M1 and M2 (added 5 Nov, on request: people run
-dashboards on Ubuntu mini PCs and Raspberry Pis connected to screens). A beta package by
-Fri 27 Nov: published with v1.0.9 on 7 Nov.
+*Thu 5 Nov → Fri 18 Dec 2026*, alongside M1 and M2, for the many people who run dashboards
+on Ubuntu mini PCs and Raspberry Pis connected to screens. The beta package came out with
+v1.0.9.
 
 The same integration and protocol v1 as the Android app, so a Linux screen is discovered,
 paired with a PIN and controlled like a TV. It's an Electron app: the same Chromium engine
@@ -175,46 +161,44 @@ as Android's WebView, H.264 and AAC built in, and builds for x86-64 and ARM64. I
 screens (setup, cards, media, menu) are web pages, a start for the M4 web player.
 
 - [x] Protocol v1 server ported from the Android app, with unit tests: pairing, commands,
-      configuration, sign-in requests, events (5 Nov)
+      configuration, sign-in requests, events
 - [x] Discovered over mDNS, paired with the PIN, signs in to Home Assistant without a login
       page, kiosk mode, notification cards, video, audio and announcements, cameras in
-      picture-in-picture, standby; checked in Docker against a Home Assistant (5 Nov)
-- [x] Sign-ins for dashboards behind a login form or a password prompt, as on Android (12 Nov:
-      asked on the screen and from a phone's code, filled by themselves afterwards, saved only
-      once the site accepts them, encrypted; checked in Docker with a password prompt and a
-      login form)
+      picture-in-picture, standby; checked in Docker against a Home Assistant
+- [x] Sign-ins for dashboards behind a login form or a password prompt, as on Android:
+      asked on the screen and from a phone's code, filled in by themselves afterwards, saved
+      only once the site accepts them, encrypted
 - [x] `turn_off` puts the screen to sleep: wlopm (wlr-randr under cage), xset, and HDMI-CEC
-      standby for TVs on either of a Raspberry Pi's HDMI ports (6 Nov)
+      standby for TVs on either of a Raspberry Pi's HDMI ports
 - [x] `.deb` packages for x86-64 and ARM64 on each GitHub release, with checksums and
-      build attestations, installed with two commands from the README and the site (from
-      v1.0.9, 7 Nov); an APT repository later
+      build attestations, installed with two commands from the README and the site; an APT
+      repository later
 - [ ] Starts with the computer: a desktop autostart entry, or a kiosk session (cage) on
       Ubuntu Server and Raspberry Pi OS Lite, set up by one command (the desktop entry
-      checked on a Raspberry Pi 5 on 6 Nov; the kiosk session on Raspberry Pi OS Lite on a
-      Raspberry Pi Zero 2 W on 11 Nov; Ubuntu Server still to check)
+      works on a Raspberry Pi 5, the kiosk session on Raspberry Pi OS Lite on a Raspberry Pi
+      Zero 2 W; Ubuntu Server still to check)
 - [x] End-to-end checks against a real Home Assistant, as `tools/e2e/run.py` does for
-      Android, in Docker on a virtual screen (12 Nov: `tools/e2e/linux.py`, 15 checks, from
-      pairing, one-press pairing and sign-ins to standby and a Home Assistant restart)
+      Android, in Docker on a virtual screen (`tools/e2e/linux.py`: from pairing, one-press
+      pairing, sign-ins and page steps to standby and a Home Assistant restart)
 - [x] **Rendered dashboards** ([Render on Home Assistant](docs/render-on-home-assistant.md)),
-      as on Android (11 Nov; on a Raspberry Pi Zero 2 W it plays, but its 512 MB leave little
-      to spare, hence the light client)
-- [x] **A light client for the smallest boards** (added 11 Nov, on request), such as a
-      Raspberry Pi Zero 2 W with 512 MB: no browser, only the stream Home Assistant renders,
-      decoded by the board's H.264 hardware. Discovered, paired and controlled like any
-      screen. Done 11 Nov ([light/](light/README.md), Python's standard library and mpv): on a
+      as on Android (on a Raspberry Pi Zero 2 W it plays, but its 512 MB leave little to
+      spare, hence the light client)
+- [x] **A light client for the smallest boards**, such as a Raspberry Pi Zero 2 W with
+      512 MB: no browser, only the stream Home Assistant renders, decoded by the board's H.264
+      hardware. Discovered, paired and controlled like any screen ([light/](light/README.md),
+      Python's standard library and mpv): on a
       Raspberry Pi Zero 2 W it plays a 1080p rendered dashboard with no dropped frames at
       about 10 % CPU and 45 MB, where the Electron app swapped and dropped two frames in three
-- [x] **Screens on their side** (added 12 Nov, on request): *Screen mounted* in each screen's
+- [x] **Screens on their side**: *Screen mounted* in each screen's
       settings (portrait either way, or upside down). The Linux app turns its picture through
       the compositor; for PleatView Light the renderer draws the page upright and turns the
       stream, and Light turns its own text. Checked on the Raspberry Pi Zero 2 W's portrait
       screen
 - [ ] Checked by hand on an Ubuntu mini PC, a Raspberry Pi 5 and a Raspberry Pi 4
       (video decoding, screen power, HDMI-CEC, touch screens). Raspberry Pi 5 with
-      Raspberry Pi OS 13, a monitor and a TV (sound over HDMI): done on 6 Nov, except
-      HDMI-CEC (the TV's CEC was off) and touch. Then a wall of nine live streams played on
-      it for 48 hours (10 to 12 Nov, app 1.0.14) without a restart, with its memory level;
-      without a cooler the Pi ran at 85 °C and slowed itself down
+      Raspberry Pi OS 13, a monitor and a TV (sound over HDMI): done, except HDMI-CEC and
+      touch. A wall of nine live streams played on it for 48 hours without a restart and
+      with steady memory; it needs a cooler, or it reaches 85 °C and slows itself down
 
 **Exit:** the beta package passes the test plan, minus Android-only items, on the three
 devices above, the light client plays a rendered dashboard on a Raspberry Pi Zero 2 W, and
@@ -222,7 +206,7 @@ the README covers installing both.
 
 ## R1 — Rendering for many screens
 
-*To be scheduled* (added 10 Nov 2026, on request). [Render on Home Assistant](docs/render-on-home-assistant.md)
+*To be scheduled.* [Render on Home Assistant](docs/render-on-home-assistant.md)
 (1.0.14) gives each TV one address for one renderer. That suits a home with a slow TV or
 two, not a control room: think two 16-channel NVRs on a wall of eight TVs, four cameras each,
 driven by the cheapest 1 GB Google TV sticks. A renderer shows up to 8 screens, Home
@@ -232,22 +216,21 @@ to the network.
 - [x] **Renderers as entries, with an alias** ("Rack A"). The app on Home Assistant OS is
       found by itself. A renderer on another Linux machine (Docker, or a package like the
       Linux app's) announces itself on the network and pairs with a PIN, like a screen, then
-      reports to PleatView in Home Assistant (12 Nov: Docker; the entry's name is the alias)
+      reports to PleatView in Home Assistant (in Docker so far; the entry's name is the alias)
 - [ ] **Renderer sign-in, encrypted:** the renderer's API takes only the token from pairing,
       over TLS with the renderer's own certificate, which Home Assistant pins when pairing.
-      A renderer on another machine is then safe on the network (12 Nov: tokens, and HTTPS
-      with its own certificate or yours, pinned when pairing)
+      A renderer on another machine is then safe on the network (done so far: tokens, and
+      HTTPS with its own certificate or yours, pinned when pairing)
 - [x] **A renderer per TV from a list:** *The TV renders itself*, each renderer by its alias, or
-      *Automatic* (the least busy renderer) (12 Nov)
+      *Automatic* (the least busy renderer)
 - [x] **Load in Home Assistant:** each renderer as a device, with screens in use out of its
-      maximum, processor and memory, so you can see when to add one (12 Nov)
-- [x] **The console drives renderers too** (12 Nov): paired from the console, chosen per screen,
+      maximum, processor and memory, so you can see when to add one
+- [x] **The console drives renderers too**: paired from the console, chosen per screen,
       so PleatView Light works on sites without Home Assistant
 - [ ] **One stream for several TVs** showing the same dashboard at the same size, rendered once
 - [x] **Notifications, cameras and sound in the stream**, so a screen that only plays the
-      stream (the light client) gets them too (12 Nov: notifications and cameras, drawn by
-      the renderer, and the pages' sound, in step with the picture to within a frame; checked
-      on a Raspberry Pi Zero 2 W)
+      stream (the light client) gets them too: notifications and cameras, drawn by the
+      renderer, and the pages' sound, in step with the picture to within a frame
 - [ ] **A sizing guide**, measured: what a wall of four camera sub-streams costs the renderer,
       and the hardware for eight such walls
 
@@ -256,7 +239,7 @@ renderer leaves the other's walls playing, and its own come back when it does.
 
 ## S1 — Secure remote management
 
-*To be scheduled* (added 11 Nov 2026, on request). Manage screens away from home and across
+*To be scheduled.* Manage screens away from home and across
 sites, over the internet, a VPN or zero-trust network access (ZTNA), and meet the basic
 security requirements that businesses and installers are asked about. It builds on M3's
 encrypted connections and M4's protocol v2, where screens connect out to their controller.
@@ -277,10 +260,10 @@ and policies live in the controller.
       provision of ETSI EN 303 645, the baseline for connected consumer devices, and how
       PleatView meets it, with a threat model for remote management and a check against the
       EU Cyber Resilience Act's essential requirements. A self-assessment that anyone can
-      verify, not a certificate (12 Nov, with its gaps listed)
-- [ ] **Protocol v2** ([design](docs/protocol-v2.md), 12 Nov): screens connect out over TLS 1.3,
-      enrol with a code and a key pair, and prove the key on every connection. Decided on
-      12 Nov (P-256 keys, python3-cryptography in Light); built with M4
+      verify, not a certificate, with its gaps listed
+- [ ] **Protocol v2** ([design](docs/protocol-v2.md)): screens connect out over TLS 1.3,
+      enrol with a code and a key pair (P-256), and prove the key on every connection; built
+      with M4
 
 **Exit:** a screen on another network is paired, controlled and removed through a ZTNA
 connector and over the open internet, with no open port at the screen's end, and the
@@ -288,7 +271,7 @@ baseline is published.
 
 ## C1 — PleatView Console
 
-*To be scheduled* (added 11 Nov 2026, on request; it was in the parking lot). A standalone
+*To be scheduled.* A standalone
 manager for screens in many places, with or without Home Assistant: for installers,
 businesses, and homes with more than one site. It's another controller on protocol v2, so
 the screens' apps don't change. Self-hosted, free and open source, with every package
@@ -306,15 +289,14 @@ pinned and listed, like the renderer's.
 The work, in order:
 
 - [x] **Design** ([docs/console.md](docs/console.md)): the data model, tenant isolation, how a
-      site's own Home Assistant fits in, and the threat model. The stack and its packages were
-      approved on 11 Nov: Debian 13 with Python, aiohttp, cryptography, ffmpeg and tini
+      site's own Home Assistant fits in, and the threat model. The stack: Debian 13 with
+      Python, aiohttp, cryptography, ffmpeg and tini
 - [ ] **One site:** pair screens, show pages and media, groups, schedules, the audit log.
-      Started 11 Nov with the foundation: first start, sign-in, tenants and sites in separate
-      databases with their own keys, screens found on the network, paired, followed live and
-      sent commands, the activity log, and the installable web app. Checked with a Fire TV
-      Stick. Then two-factor sign-in and members, home pages without Home Assistant (apps
-      1.0.17), groups, pages, the media library (any format, converted with ffmpeg) and
-      schedules, all on 11 Nov
+      Done so far: first start, sign-in, tenants and sites in separate databases with their
+      own keys, screens found on the network, paired, followed live and sent commands, the
+      activity log, the installable web app, two-factor sign-in and members, home pages
+      without Home Assistant (apps 1.0.17), groups, pages, the media library (any format,
+      converted with ffmpeg) and schedules; checked with a Fire TV Stick
 - [ ] **Many sites:** sites, a renderer per site, sites that keep playing offline
 - [ ] **Many tenants:** silos, roles, a key per tenant, export and deletion
 
@@ -328,52 +310,50 @@ requires.
 
 - [ ] The public beta announced on the Home Assistant Community forum and r/homeassistant
 - [x] GitHub issue templates: bug report (device, OS, Home Assistant version, logs) and
-      device report (12 Nov)
+      device report
 - [x] **Demo for reviewers:** *Try the demo* on the setup screen shows a sample home and
       a 90-second tour of what Home Assistant can show on top of it: a notification, a
       doorbell camera in a corner, another dashboard for a while and a video, each with a
       caption. Back opens its menu: the sample dashboards, the tour again, or the end of the
       demo. Store reviewers can't test without a server, and Google reviews beta builds too.
-      Done on 9 Nov, built into the app rather than on a demo Home Assistant, so there's no
-      server to keep running; in 11 languages, and checked by `tools/e2e/run.py`.
+      It's built into the app rather than on a demo Home Assistant, so there's no server to
+      keep running; in 11 languages, and checked by `tools/e2e/run.py`.
 - [ ] **Phones, tablets and Chromebooks.** The same Android app, made for touch: the menu
       opens by touch, setup and the menu work in portrait, and Home Assistant gets battery
       and charging sensors for wall-mounted tablets. Google Play builds install on phones,
       tablets and Chromebooks as well as TVs. Checked with `tools/e2e/run.py` on phone and
-      tablet emulators, and by hand on a real phone, tablet and Chromebook. (Added 3 Nov;
-      it was in the parking lot.) Done on 3 Nov: touch, portrait layouts, wording, battery
-      and charging sensors, Play builds for every form factor, and phone and tablet
-      emulators passing every check. 5 Nov: cards, the menu and the now-playing bar fit
-      360 dp phones, and a phone turned sideways shows the QR code beside the text (found on
-      an Android 11 phone emulator; the phone emulator now runs at 360 dp). Still to do: the
-      real phone, tablet and Chromebook.
+      tablet emulators, and by hand on a real phone, tablet and Chromebook. Done: touch,
+      portrait layouts, wording, battery and charging sensors, Play builds for every form
+      factor, cards, the menu and the now-playing bar on 360 dp phones, and phone and tablet
+      emulators passing every check. Still to do: a real phone, tablet and Chromebook.
 - [ ] Google Play beta: 12 or more testers on Google TV, Android phones, tablets or
       Chromebooks who stay in for 14 days, which Google requires before PleatView can go
       public. Sign up in
       [#9](https://github.com/Hustlesman/pleatview/issues/9)
 - [ ] P1 bugs fixed within 48 hours; a beta build every week
-- [x] Device compatibility table on the website, filled from tester reports (12 Nov: the
-      table takes reported devices, and its footer asks for device reports)
-- [x] **Notification levels** (added 12 Nov, on request): a notice is a card; a warning adds a
+- [x] Device compatibility table on the website, filled from tester reports (its footer asks
+      for device reports)
+- [x] **Notification levels**: a notice is a card; a warning adds a
       short tone (chime, ding or beep) while whatever plays carries on; an alert pauses it, such
       as a film in Plex, and sounds a stronger tone (alarm, siren or bell). Each TV's settings
       in Home Assistant pick its tones, and a notification can name another. The Android and
       Linux apps make the tones themselves; for rendered screens the renderer plays them into
       the stream
-- [x] **Cameras over other apps** (added 12 Nov, asked for by prospective testers): a camera
+- [x] **Cameras over other apps** (asked for by testers): a camera
       or video in picture-in-picture stays in a corner over the app in front, such as a film
       in Plex, muted and without taking the remote, instead of bringing PleatView to the
       front. A TV that can't decode a second video shows the camera's picture stream instead
 - [x] One-press pairing: approve Home Assistant on the TV with OK, instead of typing the PIN
-      (12 Nov: Android and Linux apps; Home Assistant asks the TV first and falls back to the
-      PIN; checked on an Android TV emulator with the test Home Assistant)
+      (Android and Linux apps; Home Assistant asks the TV first and falls back to the PIN)
+- [x] **Page steps** on every screen: after a page loads, clicks on a button's text or a CSS
+      selector clear cookie banners and pop-ups, then drags and scrolls
+      ([page steps](docs/page-steps.md))
 - [x] Sign-ins for dashboards behind a login form or a password prompt: entered from a phone
       code, saved encrypted on the TV only, used again by themselves
 - [x] **In Home Assistant's Marketplace.** Home Assistant 2026.11 builds HACS in as
-      *Settings → Marketplace*, which lists the HACS default repositories. PleatView joined
-      the HACS default list on 2 Nov ([hacs/default#12905](https://github.com/hacs/default/pull/12905))
-      and its catalogue on 4 Nov. On 5 Nov, Home Assistant 2026.11.0 listed it and installed
-      it without a GitHub account; the install guide says so
+      *Settings → Marketplace*, which lists the HACS default repositories. PleatView is in
+      the HACS default list ([hacs/default#12905](https://github.com/hacs/default/pull/12905)),
+      so Home Assistant 2026.11 lists it and installs it without a GitHub account
 
 **Exit:** ≥12 testers active for 14 days, no open P1 bugs, the five most-reported issues
 fixed, v1.2.0 released.
@@ -383,9 +363,8 @@ fixed, v1.2.0 released.
 *Mon 7 Dec 2026 → Fri 15 Jan 2027* (reviews and holidays included). Install from the
 store on Google TV and Fire TV.
 
-- [x] Store listings with TV, phone and tablet screenshots, a feature graphic and a
-      description (Google Play, 5 Nov: phones, tablets, TVs and Chromebooks, with the
-      site's ideas; Amazon's comes with M3)
+- [x] Store listings with screenshots, graphics and a description, on Google Play (TVs,
+      phones, tablets and Chromebooks) and the Amazon Appstore
 - [ ] Releases go to Google Play automatically from the release workflow
 - [ ] Checked against Google's TV app quality guidelines
 - [ ] Public on Google Play once the beta has run its 14 days
@@ -428,7 +407,7 @@ Home Assistant instead of the other way round.
 - [ ] Checked in Chrome, Firefox, Safari (including an iPad and an iPhone, added to the
       home screen) and a Raspberry Pi kiosk, plus a first run in
       the LG and Samsung TV browsers. Set the minimum webOS and Tizen versions (2021+
-      models expected). A first look on 1 Nov, on a 2024 Samsung (Tizen 9, Chrome 120
+      models expected). A first look on a 2024 Samsung (Tizen 9, Chrome 120
       engine): Home Assistant dashboards work in its browser (connected in 2 s, all cards
       within 20 s, no errors), and it plays H.264, HEVC, VP9 and AV1. Home Assistant
       serves it the older ES5 build, because the browser calls itself "SamsungBrowser/8.0"
@@ -464,7 +443,7 @@ submitted.
 
 - [ ] LG and Samsung approvals, with review feedback fixed
 - [x] Add the manifest category `media_entertainment.tv_streaming` once hassfest's
-      published image accepts it (it does since 30 Oct)
+      published image accepts it
 - [ ] 30-day soak on one Android reference device, one LG TV and one Samsung TV
 - [ ] Website: install guide per platform, automation cookbook, troubleshooting,
       compatibility matrix
@@ -517,7 +496,7 @@ website and in the README.
 | LG or Samsung store approval takes too long | Meanwhile, the web player works in their TV browsers and sideloading is documented |
 | OLED burn-in on displays that stay on 24/7 | Pixel shift option, dark themes, night standby, guidance in the docs |
 | TV screensavers or energy-saving modes override keep-awake on webOS and Tizen | Use the platforms' keep-awake APIs in M5 and document the TV settings |
-| A Samsung TV's browser plays one video at a time (a 2024 model on Tizen 9, 9 Nov: of four muted YouTube players, only one started). A camera next to a playing video, or a wall of streams, may not work there | Check how many videos a Tizen app can play in M5; until then the web player shows one video at a time on Samsung TVs and says so |
+| A Samsung TV's browser plays one video at a time (on a 2024 model on Tizen 9, of four muted YouTube players only one started). A camera next to a playing video, or a wall of streams, may not work there | Check how many videos a Tizen app can play in M5; until then the web player shows one video at a time on Samsung TVs and says so |
 | Apple rejects an app that mostly shows web pages (App Store guideline 4.2) | Native features beyond the page (discovery, pairing, keep-awake, Guided Access); meanwhile the web player works in Safari |
 | Smart displays close the page after a while: the Nest Hub stops a cast after about 10 minutes, and an Echo Show can go back to its home screen | The integration opens or casts the player again when it stops; checked on each device before it's listed |
 | Remote management opens screens to more than the home network | Screens only connect out, each with its own key, and S1's baseline comes before the console ships |
@@ -528,7 +507,6 @@ website and in the README.
 
 Ideas we'll consider after M6, or between milestones if there's slack:
 
-- Picture-in-picture video over other apps (Android overlay window)
 - Update prompts for GitHub installs (store installs update by themselves)
 - Move the Android app to protocol v2, so there's a single protocol
 - TV remote buttons as Home Assistant events for automations
