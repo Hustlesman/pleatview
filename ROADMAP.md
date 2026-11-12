@@ -60,7 +60,7 @@ Done so far: v1.0.17 is published as a signed release with build attestations (v
 casting, cameras, notifications, sign-ins, standby, updates, and recovery from a Home Assistant
 restart and from a frozen page. Phone and tablet emulators add touch, turning the screen and the lock screen, for 24. A Fire TV Stick and a Chromecast HD pass the automated checks,
 and both ran a 42-hour soak test without a crash. A security review on 2 Nov fixed what it
-found, and no dependency has a known vulnerability. 68 app tests, 52 integration tests, 20
+found, and no dependency has a known vulnerability. 68 app tests, 57 integration tests, 20
 renderer tests, 53 console tests and 7 PleatView Light tests pass. Since 1.0.14, Home Assistant
 can render a TV's dashboards and stream them to it, which a Home Assistant OS app does too; since
 1.0.17, on renderers paired by name, also on other machines, and for PleatView Light on the
@@ -130,7 +130,10 @@ from GitHub Releases.
       the integration returns the TV to its setup screen and deletes its Home Assistant
       user. On 3 Nov the Chromecast moved from the Google Play build to the GitHub one,
       installed with Downloader: Home Assistant asked for the new PIN and kept the TV's
-      entity and settings. Still to do: the "My Home Assistant" buttons, a sign-in on a
+      entity and settings. On 12 Nov, on Home Assistant 2026.11.1, both "My Home Assistant"
+      buttons: the repository button opened PleatView in the built-in Marketplace (after its
+      one-time notice about community add-ons), and once it was installed and Home Assistant
+      restarted, the setup button opened *Add a PleatView TV*. Still to do: a sign-in on a
       real site
 - [x] Home Assistant versions: oldest supported (2025.1), current stable, beta. On 5 Nov
       all 20 checks passed on 2025.1.4, 2026.10.4 and the 2026.11.0 release, after the
@@ -148,9 +151,9 @@ from GitHub Releases.
       (Home Assistant controls the TV over the network), with Wi-Fi kept optional
 - [x] Ask for "Display over other apps" from the PleatView menu on TVs that have that
       settings screen, with adb only as the fallback
-- [ ] Test plan covers installing with Downloader and the "My Home Assistant" buttons.
+- [x] Test plan covers installing with Downloader and the "My Home Assistant" buttons.
       Downloader with `pleatview.hustlesman.com/apk`, then discovery and the PIN, worked
-      on the Fire TV on 29 Oct and on the Chromecast on 3 Nov
+      on the Fire TV on 29 Oct and on the Chromecast on 3 Nov; both buttons on 12 Nov
 - [x] Fixes from the first hardware run: Webpage dashboards (Grafana, OpenSearch…) open
       the site directly, with the zoom, instead of in Home Assistant's frame; a
       discovered TV goes straight to the PIN; the setup screen has a QR code for phones
