@@ -199,7 +199,9 @@ screens (setup, cards, media, menu) are web pages, a start for the M4 web player
 - [ ] Checked by hand on an Ubuntu mini PC, a Raspberry Pi 5 and a Raspberry Pi 4
       (video decoding, screen power, HDMI-CEC, touch screens). Raspberry Pi 5 with
       Raspberry Pi OS 13, a monitor and a TV (sound over HDMI): done on 6 Nov, except
-      HDMI-CEC (the TV's CEC was off) and touch
+      HDMI-CEC (the TV's CEC was off) and touch. Then a wall of nine live streams played on
+      it for 48 hours (10 to 12 Nov, app 1.0.14) without a restart, with its memory level;
+      without a cooler the Pi ran at 85 °C and slowed itself down
 
 **Exit:** the beta package passes the test plan, minus Android-only items, on the three
 devices above, the light client plays a rendered dashboard on a Raspberry Pi Zero 2 W, and
