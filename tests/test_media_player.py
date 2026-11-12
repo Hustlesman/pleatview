@@ -189,11 +189,19 @@ async def test_pleatview_services(hass: HomeAssistant, fake_tv: FakeTV) -> None:
         await hass.services.async_call(DOMAIN, "show_camera", {**target, "camera": "camera.door", "duration": 30}, blocking=True)
     with patch("homeassistant.components.camera.async_request_stream", side_effect=HomeAssistantError("no stream")):
         await hass.services.async_call(DOMAIN, "show_camera", {**target, "camera": "camera.door", "mode": "fullscreen"}, blocking=True)
+    # Home Assistant's stream, caught shutting down its idle HLS output: one more try.
+    with patch("homeassistant.components.camera.async_request_stream",
+               side_effect=[ValueError("Stream is not configured for format 'hls'"), "/api/hls/def/master_playlist.m3u8"]), \
+            patch("custom_components.pleatview.media_player.asyncio.sleep"):
+        await hass.services.async_call(DOMAIN, "show_camera", {**target, "camera": "camera.door"}, blocking=True)
+    with patch("homeassistant.components.camera.async_request_stream", side_effect=ValueError("not configured")), \
+            patch("custom_components.pleatview.media_player.asyncio.sleep"):
+        await hass.services.async_call(DOMAIN, "show_camera", {**target, "camera": "camera.door"}, blocking=True)
     await hass.services.async_call(DOMAIN, "notify", {**target, "message": "Ding dong", "title": "Door", "camera": "camera.door"}, blocking=True)
     await hass.services.async_call(DOMAIN, "home", target, blocking=True)
     await hass.services.async_call("notify", "send_message", {ATTR_ENTITY_ID: "notify.living_room_tv", "message": "Hi", "title": "PleatView"}, blocking=True)
 
-    show_dashboard, show_url, hls, mjpeg, notify, home, send_message = fake_tv.commands
+    show_dashboard, show_url, hls, mjpeg, retried, gave_up, notify, home, send_message = fake_tv.commands
     assert show_dashboard == {"command": "show_dashboard", "path": "/lovelace/cams", "duration": 60}
     assert show_url == {"command": "show_url", "url": "https://example.org", "mode": "pip", "size": 40}
     assert hls["command"] == "play_media"
@@ -205,6 +213,8 @@ async def test_pleatview_services(hass: HomeAssistant, fake_tv: FakeTV) -> None:
     assert hls["fallback_url"].startswith(f"{HA_URL}/api/camera_proxy_stream/camera.door?authSig=")
     assert mjpeg["command"] == "show_image"
     assert mjpeg["url"].startswith(f"{HA_URL}/api/camera_proxy_stream/camera.door?authSig=")
+    assert retried["url"].startswith(f"{HA_URL}/api/hls/def/master_playlist.m3u8")
+    assert gave_up["command"] == "show_image"
     assert notify["image_url"].startswith(f"{HA_URL}/api/camera_proxy/camera.door?authSig=")
     assert notify["title"] == "Door"
     assert home == {"command": "home"}
