@@ -175,9 +175,16 @@ class PleatViewMediaPlayer(PleatViewEntity, MediaPlayerEntity):
 
     @property
     def state(self) -> MediaPlayerState:
-        """Off while PleatView is hidden or in standby; idle while showing a dashboard."""
-        if not self._state.get("foreground") or self._state.get("power") == "standby":
+        """Off while PleatView is hidden or in standby; idle while showing a dashboard.
+
+        Hidden behind another app, a camera or video it shows in a corner over that app
+        counts as playing, so Home Assistant shows it and can stop it.
+        """
+        if self._state.get("power") == "standby":
             return MediaPlayerState.OFF
+        if not self._state.get("foreground"):
+            overlay = self._overlay or {}
+            return MediaPlayerState.PLAYING if overlay.get("mode") == "pip" else MediaPlayerState.OFF
         if media := self._media:
             return MEDIA_STATES.get(media.get("state"), MediaPlayerState.IDLE)
         if self._overlay:
@@ -210,7 +217,8 @@ class PleatViewMediaPlayer(PleatViewEntity, MediaPlayerEntity):
             mime = media.get("mime_type") or ""
             return MediaType.MUSIC if mime.startswith("audio/") or media.get("mode") == "background" else MediaType.VIDEO
         if overlay := self._overlay:
-            return MediaType.IMAGE if overlay.get("kind") == "image" else MediaType.URL
+            kind = overlay.get("kind")
+            return MediaType.IMAGE if kind == "image" else MediaType.VIDEO if kind == "video" else MediaType.URL
         return None
 
     @property
@@ -472,6 +480,9 @@ class PleatViewMediaPlayer(PleatViewEntity, MediaPlayerEntity):
             mime_type=HLS_MIME,
             title=title,
             mode=mode,
+            # Where the TV can't play the video (its decoder busy with another app's film),
+            # the camera's picture stream instead.
+            fallback_url=self._device.media_url(f"/api/camera_proxy_stream/{camera}"),
             **layout,
         )
 

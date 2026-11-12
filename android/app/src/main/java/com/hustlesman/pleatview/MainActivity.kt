@@ -392,6 +392,10 @@ class MainActivity : Activity(), Hub.Display, DashboardController.Callbacks, Med
         onLayerClosed()
     }
 
+    override fun onMediaFallback(command: Command.ShowWeb) {
+        main.post { webOverlay.show(command) } // after the player has closed its layer
+    }
+
     override fun onMediaError(message: String) {
         toasts.show(Command.Notify(null, getString(R.string.playback_failed, message), null, 8, Command.Position.TOP_RIGHT))
     }

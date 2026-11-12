@@ -46,6 +46,7 @@ class Hub(
     private val pending = ArrayDeque<Pair<Long, Command>>()
     private var publishScheduled = false
     private val systemOverlay = SystemOverlay(app)
+    private val systemPip = SystemPip(app, this)
 
     @Volatile
     private var stateJson: String
@@ -85,6 +86,7 @@ class Hub(
     fun uiShown() {
         hiddenSince = 0
         everShown = true
+        systemPip.close() // PleatView's own screen is in front again
     }
 
     /** MainActivity left the screen, usually for another app. */
@@ -175,6 +177,12 @@ class Hub(
         when {
             command is Command.Notify -> {
                 if (!systemOverlay.show(command)) Log.i(TAG, "Dropping notification: PleatView is in the background")
+            }
+            // A camera or video in a corner stays over the other app instead of interrupting it.
+            systemPip.takes(command) && systemPip.show(command) -> Unit
+            systemPip.isShown && (command == Command.Stop || command == Command.TurnOff) -> {
+                systemPip.close()
+                display?.handle(command)
             }
             command.needsDisplay -> {
                 if (command == Command.TurnOn) wakeScreen()

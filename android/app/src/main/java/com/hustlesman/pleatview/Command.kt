@@ -31,6 +31,8 @@ sealed class Command {
         val announce: Boolean,
         val volume: Float?,
         val startPosition: Double?,
+        /** A camera's picture stream (MJPEG), shown instead when its video won't play. */
+        val fallbackUrl: String? = null,
     ) : Command() {
         override val needsDisplay get() = !announce
         val isAudio get() = layout.mode == Mode.BACKGROUND
@@ -141,6 +143,7 @@ sealed class Command {
                 announce = announce,
                 volume = if (json.has("volume")) number(json, "volume", 0.0, 1.0).toFloat() else null,
                 startPosition = if (json.has("start_position")) number(json, "start_position", 0.0, Double.MAX_VALUE) else null,
+                fallbackUrl = optHttpUrl(json, "fallback_url"),
             )
         }
 

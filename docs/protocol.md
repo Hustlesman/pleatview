@@ -125,7 +125,7 @@ background, if Android allows it (see `overlay_permission`).
 | `show_dashboard` | `path` (path on HA or full URL), `duration`? (s, then return home) |
 | `show_url` | `url`, layout |
 | `show_image` | `url` (image or MJPEG stream), layout |
-| `play_media` | `url` (http(s)/rtsp(s)), `mime_type`?, `title`?, `artist`?, `image_url`?, `loop`?, `volume`? (0–1), `start_position`? (s), `announce`?, layout |
+| `play_media` | `url` (http(s)/rtsp(s)), `mime_type`?, `title`?, `artist`?, `image_url`?, `loop`?, `volume`? (0–1), `start_position`? (s), `announce`?, `fallback_url`? (a camera's MJPEG stream, shown like `show_image` when the video won't play), layout |
 | `notify` | `message`, `title`?, `image_url`?, `duration`? (s, default 10), `position`? |
 | `play`, `pause`, `stop` | — (`stop` also closes web/image overlays) |
 | `seek` | `position` (s) |
@@ -146,6 +146,13 @@ the background with a now-playing card, video full screen, and images or
 `multipart/x-mixed-replace` (MJPEG) are shown like `show_image`. HLS, DASH, RTSP and
 progressive files are played by ExoPlayer. `announce: true` plays the clip over
 whatever is playing, which is ducked meanwhile.
+
+While PleatView is in the background, picture-in-picture (`mode: pip` on `play_media`,
+`show_image` or `show_url`) shows over the other app instead of bringing PleatView to the
+front, if Android lets PleatView draw over other apps (`overlay_permission`): muted, without
+taking the remote's keys or audio focus, so the other app carries on. The state's `overlay`
+then reports it (`kind` `video`, `image` or `web`, `mode` `pip`) while `foreground` stays
+false. `stop` and `turn_off` close it, as does PleatView coming to the front.
 
 ## Sign-ins
 

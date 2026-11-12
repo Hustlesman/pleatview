@@ -129,11 +129,13 @@ class WebOverlay(
         return view
     }
 
-    /** `<img>` handles JPEG/PNG/GIF/WebP/SVG and MJPEG streams (camera proxies) alike. */
-    private fun imagePage(url: String): String =
-        "<!doctype html><html><head><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">" +
-            "<style>html,body{margin:0;height:100%;background:#000;overflow:hidden}" +
-            "img{width:100%;height:100%;object-fit:contain;display:block}</style></head>" +
-            "<body><img id=\"i\" alt=\"\"><script>document.getElementById('i').src=${JSONObject.quote(url)};</script>" +
-            "</body></html>"
+    companion object {
+        /** `<img>` handles JPEG/PNG/GIF/WebP/SVG and MJPEG streams (camera proxies) alike. */
+        fun imagePage(url: String): String =
+            "<!doctype html><html><head><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">" +
+                "<style>html,body{margin:0;height:100%;background:#000;overflow:hidden}" +
+                "img{width:100%;height:100%;object-fit:contain;display:block}</style></head>" +
+                "<body><img id=\"i\" alt=\"\"><script>document.getElementById('i').src=${JSONObject.quote(url)};</script>" +
+                "</body></html>"
+    }
 }

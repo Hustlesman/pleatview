@@ -42,6 +42,9 @@ class MediaController(
     interface Callbacks {
         fun onMediaClosed()
         fun onMediaError(message: String)
+
+        /** A camera's video didn't play: show its picture stream in the same place instead. */
+        fun onMediaFallback(command: Command.ShowWeb)
     }
 
     private val main = Handler(Looper.getMainLooper())
@@ -295,8 +298,14 @@ class MediaController(
                 return
             }
             Log.w(TAG, "Playback failed: ${error.errorCodeName}", error)
-            callbacks.onMediaError(error.errorCodeName)
+            val failed = request
             main.post { stop() }
+            val fallback = failed?.fallbackUrl
+            if (fallback != null) {
+                callbacks.onMediaFallback(Command.ShowWeb(fallback, Command.WebKind.IMAGE, failed.layout, failed.duration))
+            } else {
+                callbacks.onMediaError(error.errorCodeName)
+            }
         }
     }
 

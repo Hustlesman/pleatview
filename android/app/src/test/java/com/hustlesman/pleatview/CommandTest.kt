@@ -33,6 +33,16 @@ class CommandTest {
         assertEquals(Command.Mode.FULLSCREEN, hls.layout.mode)
         val rtsp = parse("""{"command":"play_media","url":"rtsp://cam/stream","mode":"pip","position":"top-left","size":25}""") as Command.PlayMedia
         assertEquals(Command.Layout(Command.Mode.PIP, Command.Position.TOP_LEFT, 25), rtsp.layout)
+        assertEquals(null, rtsp.fallbackUrl)
+    }
+
+    @Test
+    fun `a camera's video carries its picture stream to fall back on`() {
+        val camera = parse(
+            """{"command":"play_media","url":"http://ha/api/hls/x/master_playlist.m3u8","mode":"pip",""" +
+                """"fallback_url":"http://ha/api/camera_proxy_stream/camera.door?authSig=x"}""",
+        ) as Command.PlayMedia
+        assertEquals("http://ha/api/camera_proxy_stream/camera.door?authSig=x", camera.fallbackUrl)
     }
 
     @Test

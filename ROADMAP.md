@@ -349,6 +349,10 @@ requires.
 - [ ] P1 bugs fixed within 48 hours; a beta build every week
 - [x] Device compatibility table on the website, filled from tester reports (12 Nov: the
       table takes reported devices, and its footer asks for device reports)
+- [x] **Cameras over other apps** (added 12 Nov, asked for by prospective testers): a camera
+      or video in picture-in-picture stays in a corner over the app in front, such as a film
+      in Plex, muted and without taking the remote, instead of bringing PleatView to the
+      front. A TV that can't decode a second video shows the camera's picture stream instead
 - [x] One-press pairing: approve Home Assistant on the TV with OK, instead of typing the PIN
       (12 Nov: Android and Linux apps; Home Assistant asks the TV first and falls back to the
       PIN; checked on an Android TV emulator with the test Home Assistant)

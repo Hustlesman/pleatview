@@ -969,6 +969,52 @@ def checks(r: Run, report: Report, apk: Path) -> None:
             time.sleep(8)
             wait_for("the TV after its new settings", ready, timeout=60)
 
+    def pip_over_other_apps():
+        # A door camera in a corner while someone watches a film in another app: it stays over
+        # that app, which keeps the screen, the remote and the sound (testers asked for this).
+        def resumed() -> str:
+            return adb("shell", "dumpsys activity activities | grep -E 'ResumedActivity'", check=False).strip()
+
+        def pip_window() -> str | None:
+            for window in adb("shell", "dumpsys", "window", "windows", check=False).split("Window #")[1:]:
+                if "PleatView picture-in-picture" in window.split("\n", 1)[0]:
+                    return window
+            return None
+
+        adb("shell", "appops", "set", PACKAGE, "SYSTEM_ALERT_WINDOW", "allow")
+        adb("shell", "input", "keyevent", "KEYCODE_HOME")
+        try:
+            wait_for("the home screen in front", lambda: PACKAGE not in resumed(), timeout=20)
+            wait_for("the entity to turn off", lambda: state()["state"] == "off", timeout=20)
+            seen = []
+            for what, call in (
+                ("camera", lambda: ha.call("pleatview", "show_camera", {"entity_id": entity["id"],
+                                           "camera": "camera.demo_camera", "mode": "pip", "duration": 60})),
+                ("video", lambda: ha.call("media_player", "play_media", {
+                    "entity_id": entity["id"], "media_content_type": "video", "media_content_id": r.video_url,
+                    "extra": {"mode": "pip", "position": "top-right", "size": 30}})),
+            ):
+                call()
+                wait_for(f"the {what} over the other app", lambda: (w := pip_window()) and any(
+                    sign in w for sign in ("Surface: shown=true", "isReadyForDisplay()=true", "isOnScreen=true")),
+                    timeout=20, interval=1)
+                time.sleep(3)
+                if PACKAGE in resumed():
+                    raise AssertionError(f"the {what} brought PleatView to the front instead of staying over the other app")
+                # Home Assistant shows it as playing, so its media card can stop it.
+                shown = wait_for("Home Assistant to show it playing", lambda: (s := state())["state"] == "playing" and s,
+                                 timeout=15, interval=1)
+                report.screenshot(f"06-pip-over-another-app-{what}")
+                seen.append(f"{what} ({shown['attributes'].get('media_content_type')})")
+            ha.call("media_player", "media_stop", {"entity_id": entity["id"]})
+            wait_for("the picture-in-picture to close", lambda: pip_window() is None, timeout=15, interval=1)
+            wait_for("the entity to turn off again", lambda: state()["state"] == "off", timeout=15, interval=1)
+            return f"{' and '.join(seen)} over the home screen, playing in Home Assistant; stop closed it"
+        finally:
+            if PACKAGE not in resumed():
+                adb("shell", "am", "start", "-n", f"{PACKAGE}/.MainActivity")
+            wait_for("the TV back on its dashboard", ready, timeout=60)
+
     def webpage():
         # Home Assistant would show the site in a frame, where many sites refuse to load or
         # lose their cookies; PleatView opens the site itself.
@@ -1462,6 +1508,7 @@ def checks(r: Run, report: Report, apk: Path) -> None:
         ("show_dashboard and home switch dashboards", dashboards),
         ("Rotation keeps a dashboard Home Assistant showed", rotation_waits),
         ("Over another app: a card shows, then PleatView comes back", comes_back),
+        ("Over another app: a camera and a video in picture-in-picture", pip_over_other_apps),
         ("Webpage dashboard opens the site directly", webpage),
         ("Sign-ins: entered from a phone, then saved", sign_ins),
         ("turn_off and turn_on", standby),
