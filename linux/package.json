@@ -1,7 +1,7 @@
 {
   "name": "pleatview",
   "productName": "PleatView",
-  "version": "1.0.17",
+  "version": "1.0.18",
   "description": "Home Assistant dashboards, media and notifications on a screen, controlled by Home Assistant",
   "homepage": "https://pleatview.hustlesman.com",
   "author": "Hustlesman <privacy@hustlesman.com>",
