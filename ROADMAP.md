@@ -389,7 +389,8 @@ store on Google TV and Fire TV.
 - [ ] Releases go to Google Play automatically from the release workflow
 - [ ] Checked against Google's TV app quality guidelines
 - [ ] Public on Google Play once the beta has run its 14 days
-- [ ] Submitted to the Amazon Appstore for Fire TV and Fire tablets (Fire OS devices only)
+- [x] On the Amazon Appstore for Fire TV and Fire tablets (Fire OS devices only): live, at
+      https://www.amazon.com.au/dp/B0HR2T6VWM
 - [ ] **In cars, with Amazon Automotive (Fire TV for Auto):** the rear-seat screens of the
       Stellantis (Jeep) Wagoneer and Grand Wagoneer (AFTLFT962X3) and the BMW 7 Series
       Theatre Screen (AFTLBT962E2) install from the Amazon Appstore too, so the submission

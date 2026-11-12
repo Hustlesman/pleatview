@@ -18,7 +18,7 @@ checklist below and tick what passed. Anything that fails gets its own issue.
 | --- | --- |
 | **Devices** | Google TV Streamer, Chromecast with Google TV (HD), a TV with Google TV built in, Fire TV on Fire OS (or beta testers), Android TV emulator (auto); from M2 also an Android phone, a tablet and a Chromebook, and phone and tablet emulators (auto) |
 | **Home Assistant** | Oldest supported (2025.1), current release, current beta (auto: any version) |
-| **Install paths** | Downloader with `pleatview.hustlesman.com/apk`, adb, Google Play (from M2) |
+| **Install paths** | Amazon Appstore (Fire TV), Google Play (beta from M2), Downloader with `pleatview.hustlesman.com/apk`, adb |
 
 ## Checklist
 
