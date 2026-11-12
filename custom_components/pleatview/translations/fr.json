@@ -73,7 +73,9 @@
           "reload_minutes": "Recharger la page toutes les",
           "keep_screen_on": "Garder l'écran allumé",
           "launch_on_boot": "Ouvrir PleatView au démarrage du téléviseur",
-          "render_url": "Rendu sur Home Assistant"
+          "render_url": "Rendu sur Home Assistant",
+          "warning_tone": "Son d'avertissement",
+          "alert_tone": "Son d'alerte"
         },
         "data_description": {
           "ha_url": "Laisser vide pour utiliser l'URL interne de Home Assistant.",
@@ -85,7 +87,9 @@
           "reopen_minutes": "Quand quelqu'un quitte PleatView pour une autre appli, il revient dès que rien n'a joué de son pendant cette durée. 0 ne revient jamais.",
           "reload_minutes": "Un rechargement complet régulier libère la mémoire sur les écrans allumés longtemps. 0 ne recharge jamais.",
           "launch_on_boot": "Nécessite l'autorisation « Afficher par-dessus d'autres applis » sur le téléviseur.",
-          "render_url": "Le PleatView Renderer à utiliser : un moteur associé, par son nom, Automatique (le moins occupé), un trouvé par Home Assistant, ou saisissez son adresse, par ex. http://ce7dee09-pleatview-renderer:8780. La machine de Home Assistant exécute alors les tableaux de bord de ce téléviseur et lui envoie leur vidéo. Vide : le téléviseur les exécute lui-même."
+          "render_url": "Le PleatView Renderer à utiliser : un moteur associé, par son nom, Automatique (le moins occupé), un trouvé par Home Assistant, ou saisissez son adresse, par ex. http://ce7dee09-pleatview-renderer:8780. La machine de Home Assistant exécute alors les tableaux de bord de ce téléviseur et lui envoie leur vidéo. Vide : le téléviseur les exécute lui-même.",
+          "warning_tone": "Joué avec les notifications envoyées comme avertissement. Ce qui joue continue.",
+          "alert_tone": "Joué avec les notifications envoyées comme alerte, qui mettent aussi en pause ce qui joue."
         }
       }
     },
@@ -126,6 +130,24 @@
     "render": {
       "options": {
         "auto": "Automatique : le moteur de rendu le moins occupé"
+      }
+    },
+    "tone": {
+      "options": {
+        "chime": "Carillon",
+        "ding": "Ding",
+        "beep": "Bip",
+        "alarm": "Alarme",
+        "siren": "Sirène",
+        "bell": "Cloche",
+        "none": "Aucun son"
+      }
+    },
+    "level": {
+      "options": {
+        "notice": "Information",
+        "warning": "Avertissement",
+        "alert": "Alerte"
       }
     }
   },
@@ -222,11 +244,19 @@
         },
         "duration": {
           "name": "Durée",
-          "description": "Secondes avant que la carte disparaisse. 10 par défaut."
+          "description": "Secondes avant que la carte disparaisse. 10 par défaut, ou 30 pour une alerte."
         },
         "position": {
           "name": "Position",
           "description": "Coin de l'écran."
+        },
+        "level": {
+          "name": "Niveau",
+          "description": "Information : une carte. Avertissement : une carte et un son court, sans interrompre ce qui joue. Alerte : une carte et un son plus fort, et ce qui joue est mis en pause."
+        },
+        "tone": {
+          "name": "Son",
+          "description": "Le son de cette notification, à la place du son d'avertissement ou d'alerte du téléviseur."
         }
       }
     },

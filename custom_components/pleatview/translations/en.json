@@ -73,7 +73,9 @@
           "reload_minutes": "Reload the page every",
           "keep_screen_on": "Keep the screen on",
           "launch_on_boot": "Open PleatView when the TV starts",
-          "render_url": "Render on Home Assistant"
+          "render_url": "Render on Home Assistant",
+          "warning_tone": "Warning tone",
+          "alert_tone": "Alert tone"
         },
         "data_description": {
           "ha_url": "Leave empty to use Home Assistant's internal URL.",
@@ -85,7 +87,9 @@
           "reopen_minutes": "When someone leaves PleatView for another app, it comes back once nothing has played sound for this long. 0 never comes back.",
           "reload_minutes": "A periodic full reload clears memory on long-running displays. 0 never reloads.",
           "launch_on_boot": "Needs the \"Display over other apps\" permission on the TV.",
-          "render_url": "The PleatView Renderer to use: a paired one by name, Automatic (the least busy), one Home Assistant found, or type its address, such as http://ce7dee09-pleatview-renderer:8780. Home Assistant's machine then runs this TV's dashboards and sends the TV a video of them, for TVs too slow for heavy dashboards or walls of video. Empty: the TV runs them itself."
+          "render_url": "The PleatView Renderer to use: a paired one by name, Automatic (the least busy), one Home Assistant found, or type its address, such as http://ce7dee09-pleatview-renderer:8780. Home Assistant's machine then runs this TV's dashboards and sends the TV a video of them, for TVs too slow for heavy dashboards or walls of video. Empty: the TV runs them itself.",
+          "warning_tone": "Played with notifications sent as a warning. Whatever else plays carries on.",
+          "alert_tone": "Played with notifications sent as an alert, which also pause whatever plays."
         }
       }
     },
@@ -126,6 +130,24 @@
     "render": {
       "options": {
         "auto": "Automatic: the least busy renderer"
+      }
+    },
+    "tone": {
+      "options": {
+        "chime": "Chime",
+        "ding": "Ding",
+        "beep": "Beep",
+        "alarm": "Alarm",
+        "siren": "Siren",
+        "bell": "Bell",
+        "none": "No tone"
+      }
+    },
+    "level": {
+      "options": {
+        "notice": "Notice",
+        "warning": "Warning",
+        "alert": "Alert"
       }
     }
   },
@@ -222,11 +244,19 @@
         },
         "duration": {
           "name": "Duration",
-          "description": "Seconds before the card disappears. Defaults to 10."
+          "description": "Seconds before the card disappears. Defaults to 10, or 30 for an alert."
         },
         "position": {
           "name": "Position",
           "description": "Screen corner."
+        },
+        "level": {
+          "name": "Level",
+          "description": "Notice: a card. Warning: a card and a short tone, without interrupting what plays. Alert: a card and a stronger tone, and what plays pauses."
+        },
+        "tone": {
+          "name": "Tone",
+          "description": "This notification's tone, instead of the TV's warning or alert tone."
         }
       }
     },

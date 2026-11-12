@@ -194,6 +194,16 @@ class OverlayTest(unittest.TestCase):
         full = server.parse_overlay({"kind": "image", "url": "http://ha/x.jpg", "mode": "fullscreen"})
         self.assertEqual((full["size"], full["position"]), (100, "center"))
         self.assertIsNone(server.parse_overlay({"kind": "clear"}))
+        # Levels: a notice has no tone; a warning or alert keeps a known one; an alert stays 30 s.
+        self.assertEqual((item["level"], item["tone"]), ("notice", ""))
+        alert = server.parse_overlay({"kind": "notify", "message": "Smoke", "level": "alert", "tone": "siren"})
+        self.assertEqual((alert["level"], alert["tone"], alert["duration"]), ("alert", "siren", 30.0))
+        odd = server.parse_overlay({"kind": "notify", "message": "x", "level": "panic", "tone": "<script>"})
+        self.assertEqual((odd["level"], odd["tone"]), ("notice", ""))
+        script = page.alert_script("siren", pause=True)
+        self.assertIn(".pause()", script)
+        self.assertTrue(script.endswith('window.pleatviewTones.play("siren");'))
+        self.assertNotIn(".pause()", page.alert_script("chime", pause=False))
         for bad in ({"kind": "notify"}, {"kind": "image", "url": "javascript:alert(1)"}, {"kind": "notify", "message": "x", "position": "nowhere"},
                     {"kind": "notify", "message": "x", "duration": 99999}, {"kind": "script"}):
             with self.assertRaises(ValueError, msg=bad):
@@ -314,6 +324,12 @@ class SharedCode(unittest.TestCase):
             self.skipTest("the repository's light client isn't here")
         for name in ("mdns.py", "pairing.py"):
             self.assertEqual((light / name).read_text(), (Path(server.__file__).parent / name).read_text(), name)
+
+    def test_tones_same_as_the_linux_app(self) -> None:
+        linux = Path(__file__).resolve().parents[2] / "linux" / "src" / "ui" / "tones.js"
+        if not linux.exists():
+            self.skipTest("the repository's Linux app isn't here")
+        self.assertEqual(linux.read_text(), (Path(server.__file__).parent / "tones.js").read_text())
 
 
 if __name__ == "__main__":

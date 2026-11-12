@@ -260,6 +260,27 @@ def checks(r: LinuxRun, report: Report) -> None:
         wait_for("the dashboard after stop", lambda: state()["state"] == "idle", timeout=20)
         return f"title {playing['attributes'].get('media_title')!r}, playing: {moving}"
 
+    def levels():
+        # A warning's card and tone leave the video playing; an alert's card pauses it.
+        ha.call("media_player", "play_media", {"entity_id": entity["id"], "media_content_type": "video",
+                                               "media_content_id": r.video_url})
+        wait_for("playback", lambda: state()["state"] == "playing", timeout=45)
+        try:
+            ha.call("pleatview", "notify", {"entity_id": entity["id"], "message": "A warning", "level": "warning"})
+            wait_for("the warning card", lambda: screen(r, "ui", "!!document.querySelector('.toast.level-warning')"), timeout=20)
+            time.sleep(3)
+            if state()["state"] != "playing":
+                raise AssertionError(f"a warning stopped the video ({state()['state']})")
+            ha.call("pleatview", "notify", {"entity_id": entity["id"], "message": "An alert", "level": "alert"})
+            wait_for("the alert to pause the video", lambda: state()["state"] == "paused", timeout=15, interval=1)
+            if not screen(r, "ui", "!!document.querySelector('.toast.level-alert')"):
+                raise AssertionError("the alert's card isn't marked as an alert")
+            report.screenshot("03-alert")
+        finally:
+            ha.call("media_player", "media_stop", {"entity_id": entity["id"]})
+            wait_for("the dashboard after stop", lambda: state()["state"] == "idle", timeout=20)
+        return "the warning left the video playing; the alert paused it"
+
     def camera():
         ha.call("pleatview", "show_camera", {"entity_id": entity["id"], "camera": "camera.demo_camera",
                                              "mode": "pip", "duration": 60})
@@ -455,6 +476,7 @@ def checks(r: LinuxRun, report: Report) -> None:
         ("Kiosk mode hides the sidebar and header", kiosk),
         ("Notification card", notification),
         ("Video plays and stops", video),
+        ("Notification levels: a warning plays on, an alert pauses", levels),
         ("Camera in picture-in-picture", camera),
         ("show_dashboard and home", dashboards),
         ("Webpage dashboard opens the site directly", webpage),

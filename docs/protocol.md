@@ -126,7 +126,7 @@ background, if Android allows it (see `overlay_permission`).
 | `show_url` | `url`, layout |
 | `show_image` | `url` (image or MJPEG stream), layout |
 | `play_media` | `url` (http(s)/rtsp(s)), `mime_type`?, `title`?, `artist`?, `image_url`?, `loop`?, `volume`? (0–1), `start_position`? (s), `announce`?, `fallback_url`? (a camera's MJPEG stream, shown like `show_image` when the video won't play), layout |
-| `notify` | `message`, `title`?, `image_url`?, `duration`? (s, default 10), `position`? |
+| `notify` | `message`, `title`?, `image_url`?, `duration`? (s, default 10, or 30 for an alert), `position`?, `level`? (`notice`, `warning` or `alert`; an unknown one is a notice), `tone`? (`chime`, `ding`, `beep`, `alarm`, `siren` or `bell`; none if absent, ignored for a notice) |
 | `play`, `pause`, `stop` | — (`stop` also closes web/image overlays) |
 | `seek` | `position` (s) |
 | `set_volume` | `level` (0–1, PleatView's own playback volume) |
@@ -146,6 +146,14 @@ the background with a now-playing card, video full screen, and images or
 `multipart/x-mixed-replace` (MJPEG) are shown like `show_image`. HLS, DASH, RTSP and
 progressive files are played by ExoPlayer. `announce: true` plays the clip over
 whatever is playing, which is ducked meanwhile.
+
+A notice is only its card. A warning also plays its tone, mixed over whatever plays,
+without taking audio focus. An alert pauses whatever plays first: PleatView's own media,
+and the app in front through audio focus (`AUDIOFOCUS_GAIN`) and the pause media key. It
+then plays its tone, and doesn't resume anything. An app that ignores both is muted for the
+alert's duration, unless the TV's volume is fixed (HDMI), where that could mute the tone
+too. The screens make the tones themselves; Home Assistant sends the TV's chosen tone for
+the level unless the call names one.
 
 While PleatView is in the background, picture-in-picture (`mode: pip` on `play_media`,
 `show_image` or `show_url`) shows over the other app instead of bringing PleatView to the

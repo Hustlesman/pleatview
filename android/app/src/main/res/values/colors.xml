@@ -3,6 +3,9 @@
     <color name="background">#FF0F1417</color>
     <color name="surface_solid">#FF1B2328</color>
     <color name="accent">#FF18BCF2</color>
+    <!-- Notification levels: a warning's edge and title, an alert's. -->
+    <color name="warning">#FFFFB74D</color>
+    <color name="alert">#FFFF6E6E</color>
     <color name="text_primary">#FFFFFFFF</color>
     <color name="text_secondary">#B3FFFFFF</color>
     <color name="button">#FF263139</color>

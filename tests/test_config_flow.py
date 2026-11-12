@@ -233,10 +233,12 @@ async def test_options_flow(hass: HomeAssistant, fake_tv: FakeTV) -> None:
         )
         assert result["errors"] == {"ha_url": "invalid_url"}
         result = await hass.config_entries.options.async_configure(
-            result["flow_id"], {**defaults, "zoom": 75, "dashboards": "Cams = /dashboard-cams"}
+            result["flow_id"], {**defaults, "zoom": 75, "dashboards": "Cams = /dashboard-cams", "alert_tone": "bell"}
         )
     assert result["type"] is FlowResultType.CREATE_ENTRY
     assert entry.options["zoom"] == 75
+    assert entry.options["alert_tone"] == "bell"
+    assert entry.options["warning_tone"] == "chime"  # the default
     assert entry.options["dashboards"] == "Cams = /dashboard-cams"
 
 

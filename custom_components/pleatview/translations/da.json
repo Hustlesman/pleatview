@@ -73,7 +73,9 @@
           "reload_minutes": "Genindlæs siden hvert",
           "keep_screen_on": "Hold skærmen tændt",
           "launch_on_boot": "Åbn PleatView, når tv'et tænder",
-          "render_url": "Vis via Home Assistant"
+          "render_url": "Vis via Home Assistant",
+          "warning_tone": "Advarselstone",
+          "alert_tone": "Alarmtone"
         },
         "data_description": {
           "ha_url": "Lad stå tomt for at bruge Home Assistants interne URL.",
@@ -85,7 +87,9 @@
           "reopen_minutes": "Når nogen forlader PleatView for en anden app, kommer den tilbage, når intet har spillet lyd så længe. 0 kommer aldrig tilbage.",
           "reload_minutes": "En fast fuld genindlæsning frigør hukommelse på skærme, der er tændt længe. 0 genindlæser aldrig.",
           "launch_on_boot": "Kræver tilladelsen \"Vis oven på andre apps\" på tv'et.",
-          "render_url": "PleatView Renderer, der skal bruges: en parret efter navn, Automatisk (den mindst travle), en som Home Assistant fandt, eller skriv dens adresse, fx http://ce7dee09-pleatview-renderer:8780. Home Assistants maskine kører så tv'ets dashboards og sender tv'et en video af dem. Tom: tv'et kører dem selv."
+          "render_url": "PleatView Renderer, der skal bruges: en parret efter navn, Automatisk (den mindst travle), en som Home Assistant fandt, eller skriv dens adresse, fx http://ce7dee09-pleatview-renderer:8780. Home Assistants maskine kører så tv'ets dashboards og sender tv'et en video af dem. Tom: tv'et kører dem selv.",
+          "warning_tone": "Afspilles med notifikationer, der sendes som advarsel. Det, der spiller, fortsætter.",
+          "alert_tone": "Afspilles med notifikationer, der sendes som alarm, og som også sætter det, der spiller, på pause."
         }
       }
     },
@@ -126,6 +130,24 @@
     "render": {
       "options": {
         "auto": "Automatisk: den mindst travle renderer"
+      }
+    },
+    "tone": {
+      "options": {
+        "chime": "Klokkespil",
+        "ding": "Ding",
+        "beep": "Bip",
+        "alarm": "Alarm",
+        "siren": "Sirene",
+        "bell": "Klokke",
+        "none": "Ingen tone"
+      }
+    },
+    "level": {
+      "options": {
+        "notice": "Besked",
+        "warning": "Advarsel",
+        "alert": "Alarm"
       }
     }
   },
@@ -222,11 +244,19 @@
         },
         "duration": {
           "name": "Varighed",
-          "description": "Sekunder, før kortet forsvinder. Standard er 10."
+          "description": "Sekunder, før kortet forsvinder. Standard er 10, eller 30 for en alarm."
         },
         "position": {
           "name": "Placering",
           "description": "Skærmens hjørne."
+        },
+        "level": {
+          "name": "Niveau",
+          "description": "Besked: et kort. Advarsel: et kort og en kort tone uden at afbryde det, der spiller. Alarm: et kort og en kraftigere tone, og det, der spiller, sættes på pause."
+        },
+        "tone": {
+          "name": "Tone",
+          "description": "Denne notifikations tone i stedet for tv'ets advarsels- eller alarmtone."
         }
       }
     },

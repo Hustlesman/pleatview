@@ -73,7 +73,9 @@
           "reload_minutes": "Recargar la página cada",
           "keep_screen_on": "Mantener la pantalla encendida",
           "launch_on_boot": "Abrir PleatView al encender la TV",
-          "render_url": "Renderizar en Home Assistant"
+          "render_url": "Renderizar en Home Assistant",
+          "warning_tone": "Tono de aviso",
+          "alert_tone": "Tono de alerta"
         },
         "data_description": {
           "ha_url": "Déjalo vacío para usar la URL interna de Home Assistant.",
@@ -85,7 +87,9 @@
           "reopen_minutes": "Cuando alguien sale de PleatView a otra app, vuelve en cuanto nada ha reproducido sonido durante este tiempo. 0 no vuelve nunca.",
           "reload_minutes": "Una recarga completa periódica libera memoria en pantallas que pasan mucho tiempo encendidas. 0 no recarga nunca.",
           "launch_on_boot": "Necesita el permiso \"Mostrar sobre otras apps\" en la TV.",
-          "render_url": "El PleatView Renderer que usar: uno vinculado por su nombre, Automático (el menos ocupado), uno que Home Assistant encontró, o escribe su dirección, p. ej. http://ce7dee09-pleatview-renderer:8780. El equipo de Home Assistant ejecuta entonces los paneles de esta TV y le envía un vídeo de ellos. Vacío: la TV los ejecuta."
+          "render_url": "El PleatView Renderer que usar: uno vinculado por su nombre, Automático (el menos ocupado), uno que Home Assistant encontró, o escribe su dirección, p. ej. http://ce7dee09-pleatview-renderer:8780. El equipo de Home Assistant ejecuta entonces los paneles de esta TV y le envía un vídeo de ellos. Vacío: la TV los ejecuta.",
+          "warning_tone": "Suena con las notificaciones enviadas como aviso. Lo que se esté reproduciendo continúa.",
+          "alert_tone": "Suena con las notificaciones enviadas como alerta, que además pausan lo que se esté reproduciendo."
         }
       }
     },
@@ -126,6 +130,24 @@
     "render": {
       "options": {
         "auto": "Automático: el renderizador menos ocupado"
+      }
+    },
+    "tone": {
+      "options": {
+        "chime": "Campanilla",
+        "ding": "Ding",
+        "beep": "Pitido",
+        "alarm": "Alarma",
+        "siren": "Sirena",
+        "bell": "Campana",
+        "none": "Sin tono"
+      }
+    },
+    "level": {
+      "options": {
+        "notice": "Información",
+        "warning": "Aviso",
+        "alert": "Alerta"
       }
     }
   },
@@ -222,11 +244,19 @@
         },
         "duration": {
           "name": "Duración",
-          "description": "Segundos antes de que desaparezca la tarjeta. Por defecto, 10."
+          "description": "Segundos antes de que desaparezca la tarjeta. Por defecto, 10, o 30 para una alerta."
         },
         "position": {
           "name": "Posición",
           "description": "Esquina de la pantalla."
+        },
+        "level": {
+          "name": "Nivel",
+          "description": "Información: una tarjeta. Aviso: una tarjeta y un tono corto, sin interrumpir lo que se reproduce. Alerta: una tarjeta y un tono más fuerte, y lo que se reproduce se pausa."
+        },
+        "tone": {
+          "name": "Tono",
+          "description": "El tono de esta notificación, en lugar del tono de aviso o de alerta de la TV."
         }
       }
     },

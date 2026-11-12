@@ -44,7 +44,13 @@ sealed class Command {
         val imageUrl: String?,
         val duration: Int,
         val position: Position,
+        /** A notice is a card; a warning adds a short tone; an alert a stronger one, and pauses what plays. */
+        val level: Level = Level.NOTICE,
+        /** The tone's name (Tones), or null for none. */
+        val tone: String? = null,
     ) : Command()
+
+    enum class Level(val wire: String) { NOTICE("notice"), WARNING("warning"), ALERT("alert") }
 
     data class Seek(val position: Double) : Command()
     data class SetVolume(val level: Float) : Command()
@@ -93,13 +99,19 @@ sealed class Command {
                 "show_url" -> ShowWeb(httpUrl(json, "url"), WebKind.PAGE, layout(json, Mode.FULLSCREEN), duration(json))
                 "show_image" -> ShowWeb(httpUrl(json, "url"), WebKind.IMAGE, layout(json, Mode.FULLSCREEN), duration(json))
                 "play_media" -> parsePlayMedia(json)
-                "notify" -> Notify(
-                    title = optString(json, "title", 200),
-                    message = requireString(json, "message").take(2000),
-                    imageUrl = optHttpUrl(json, "image_url"),
-                    duration = duration(json)?.takeIf { it > 0 } ?: 10,
-                    position = position(json, Position.TOP_RIGHT),
-                )
+                "notify" -> {
+                    // An unknown level (a newer Home Assistant) is still worth a card.
+                    val level = Level.entries.firstOrNull { it.wire == json.optString("level") } ?: Level.NOTICE
+                    Notify(
+                        title = optString(json, "title", 200),
+                        message = requireString(json, "message").take(2000),
+                        imageUrl = optHttpUrl(json, "image_url"),
+                        duration = duration(json)?.takeIf { it > 0 } ?: if (level == Level.ALERT) 30 else 10,
+                        position = position(json, Position.TOP_RIGHT),
+                        level = level,
+                        tone = optString(json, "tone", 20)?.takeIf { level != Level.NOTICE && it in Tones.NAMES },
+                    )
+                }
                 "seek" -> Seek(number(json, "position", 0.0, Double.MAX_VALUE))
                 "set_volume" -> SetVolume(number(json, "level", 0.0, 1.0).toFloat())
                 "mute" -> Mute(boolean(json, "muted"))

@@ -73,7 +73,9 @@
           "reload_minutes": "Seite neu laden alle",
           "keep_screen_on": "Bildschirm eingeschaltet lassen",
           "launch_on_boot": "PleatView beim Einschalten des Fernsehers öffnen",
-          "render_url": "Auf Home Assistant darstellen"
+          "render_url": "Auf Home Assistant darstellen",
+          "warning_tone": "Warnton",
+          "alert_tone": "Alarmton"
         },
         "data_description": {
           "ha_url": "Leer lassen, um die interne URL von Home Assistant zu verwenden.",
@@ -85,7 +87,9 @@
           "reopen_minutes": "Wenn jemand PleatView für eine andere App verlässt, kommt es zurück, sobald so lange nichts Ton abgespielt hat. 0 kommt nie zurück.",
           "reload_minutes": "Ein regelmäßiges vollständiges Neuladen gibt bei lange laufenden Anzeigen Speicher frei. 0 lädt nie neu.",
           "launch_on_boot": "Braucht auf dem Fernseher die Berechtigung „Über anderen Apps einblenden“.",
-          "render_url": "Der zu verwendende PleatView Renderer: ein gekoppelter nach Name, Automatisch (der am wenigsten ausgelastete), einer, den Home Assistant gefunden hat, oder gib seine Adresse ein, z. B. http://ce7dee09-pleatview-renderer:8780. Der Rechner von Home Assistant führt dann die Dashboards dieses Fernsehers aus und sendet ihm ein Video davon. Leer: Der Fernseher führt sie selbst aus."
+          "render_url": "Der zu verwendende PleatView Renderer: ein gekoppelter nach Name, Automatisch (der am wenigsten ausgelastete), einer, den Home Assistant gefunden hat, oder gib seine Adresse ein, z. B. http://ce7dee09-pleatview-renderer:8780. Der Rechner von Home Assistant führt dann die Dashboards dieses Fernsehers aus und sendet ihm ein Video davon. Leer: Der Fernseher führt sie selbst aus.",
+          "warning_tone": "Spielt bei Benachrichtigungen der Stufe Warnung. Was sonst läuft, läuft weiter.",
+          "alert_tone": "Spielt bei Benachrichtigungen der Stufe Alarm, die außerdem anhalten, was gerade läuft."
         }
       }
     },
@@ -126,6 +130,24 @@
     "render": {
       "options": {
         "auto": "Automatisch: der am wenigsten ausgelastete Renderer"
+      }
+    },
+    "tone": {
+      "options": {
+        "chime": "Gong",
+        "ding": "Ding",
+        "beep": "Piepton",
+        "alarm": "Alarm",
+        "siren": "Sirene",
+        "bell": "Glocke",
+        "none": "Kein Ton"
+      }
+    },
+    "level": {
+      "options": {
+        "notice": "Hinweis",
+        "warning": "Warnung",
+        "alert": "Alarm"
       }
     }
   },
@@ -222,11 +244,19 @@
         },
         "duration": {
           "name": "Dauer",
-          "description": "Sekunden, bis die Karte verschwindet. Standard ist 10."
+          "description": "Sekunden, bis die Karte verschwindet. Standard ist 10, bei einem Alarm 30."
         },
         "position": {
           "name": "Position",
           "description": "Ecke des Bildschirms."
+        },
+        "level": {
+          "name": "Stufe",
+          "description": "Hinweis: eine Karte. Warnung: eine Karte und ein kurzer Ton, ohne zu unterbrechen, was läuft. Alarm: eine Karte und ein kräftigerer Ton, und was läuft, wird angehalten."
+        },
+        "tone": {
+          "name": "Ton",
+          "description": "Der Ton dieser Benachrichtigung statt des Warn- oder Alarmtons des Fernsehers."
         }
       }
     },

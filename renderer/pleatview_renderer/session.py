@@ -287,9 +287,20 @@ class Session:
                 self.overlays.clear()
         else:
             self.overlays[item["kind"]] = (item, time.monotonic() + item["duration"])
+            if item["kind"] == "notify" and (item.get("tone") or item.get("level") == "alert"):
+                await self._sound_alert(item)
         await self._draw_overlays()
         if self.overlays and (self._overlay_task is None or self._overlay_task.done()):
             self._overlay_task = asyncio.create_task(self._keep_overlays())
+
+    async def _sound_alert(self, item: dict[str, Any]) -> None:
+        """A warning's or alert's tone, once, when it arrives."""
+        if not (self._cdp and self._ready.is_set()):
+            return
+        try:
+            await self._cdp.call("Runtime.evaluate", expression=page.alert_script(item.get("tone") or "", item.get("level") == "alert"))
+        except CdpError as err:
+            _LOGGER.debug("%s: tone not played: %s", self.key, err)
 
     async def _draw_overlays(self) -> None:
         now = time.monotonic()

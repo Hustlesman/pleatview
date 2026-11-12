@@ -25,7 +25,10 @@ Raspberry Pi ([PleatView for Linux](linux/README.md)). Made by Hustlesman.
   video in picture-in-picture also over other apps: the door camera in a corner while a
   film plays on, with its sound and the remote left to the film.
 - **Notifications.** `notify.send_message` shows a card on the TV, optionally with a
-  camera snapshot or an animated picture, even over other apps when allowed.
+  camera snapshot or an animated picture, even over other apps when allowed. Three levels:
+  a *notice* is the card; a *warning* adds a short tone (chime, ding or beep) while whatever
+  plays carries on; an *alert* pauses whatever plays, such as a film in Plex, and sounds a
+  stronger one (alarm, siren or bell). Each TV's settings pick its tones.
 - **Any web dashboard.** Webpage dashboards (Grafana, UniFi, OpenSearch…) open directly,
   zoomed to fit. When one asks for a password, the TV shows a QR code: sign in on your
   phone, and the TV keeps the sign-in, encrypted, on the TV only.
@@ -215,7 +218,7 @@ as Grafana's public dashboards, those are the sturdiest choice for a wall displa
 | Cast media | Media panel → choose the TV, or `media_player.play_media`. Animated GIFs play as images; `extra: {loop: true}` repeats a video |
 | Show a camera | `pleatview.show_camera`: live HLS stream, MJPEG fallback, picture-in-picture by default |
 | Speak | `tts.speak` with the TV as `media_player_entity_id`: plays over whatever is on, ducking it |
-| Notify | `notify.send_message`, or `pleatview.notify` for image, camera snapshot, position and duration (animated GIFs move on Android 10 and later) |
+| Notify | `notify.send_message`, or `pleatview.notify` for image, camera snapshot, position, duration and `level` (`notice`, `warning`, `alert`) with an optional `tone` (animated GIFs move on Android 10 and later) |
 | Open a web page | `pleatview.show_url` (full screen or picture-in-picture) |
 | Blank the screen | `media_player.turn_off` / `turn_on` (lets the TV's own sleep timer take over) |
 | Reset | `pleatview.home` (stop media, close overlays, go home), `pleatview.reload` |
@@ -253,6 +256,19 @@ automation:
           title: Front door
           message: Someone is at the door
           camera: camera.front_door
+          level: warning
+```
+
+A smoke alarm pauses the film and sounds the TV's alert tone:
+
+```yaml
+action: pleatview.notify
+target:
+  entity_id: media_player.living_room_tv
+data:
+  title: Smoke alarm
+  message: Smoke detected in the kitchen
+  level: alert
 ```
 
 Show the energy dashboard for five minutes, then return home:

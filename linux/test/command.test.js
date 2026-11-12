@@ -10,7 +10,16 @@ test("show_dashboard normalises its path", () => {
 
 test("notify defaults to ten seconds at the top right", () => {
   assert.deepEqual(parseCommand({ command: "notify", message: " Ding dong " }),
-    { name: "notify", title: null, message: "Ding dong", imageUrl: null, duration: 10, position: "top-right" });
+    { name: "notify", title: null, message: "Ding dong", imageUrl: null, duration: 10, position: "top-right", level: "notice", tone: null });
+});
+
+test("notifications have a level and, past a notice, a tone", () => {
+  const n = (extra) => parseCommand({ command: "notify", message: "Hi", ...extra });
+  assert.equal(n({ tone: "chime" }).tone, null); // a notice is a card only
+  assert.deepEqual([n({ level: "warning", tone: "beep" }).level, n({ level: "warning", tone: "beep" }).tone], ["warning", "beep"]);
+  assert.equal(n({ level: "alert" }).duration, 30); // an alert stays longer
+  assert.equal(n({ level: "alert", tone: "none" }).tone, null);
+  assert.equal(n({ level: "emergency" }).level, "notice"); // still a card
 });
 
 test("play_media picks the layout from the media's kind", () => {

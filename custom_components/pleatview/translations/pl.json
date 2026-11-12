@@ -73,7 +73,9 @@
           "reload_minutes": "Odświeżaj stronę co",
           "keep_screen_on": "Nie wyłączaj ekranu",
           "launch_on_boot": "Otwieraj PleatView po włączeniu telewizora",
-          "render_url": "Renderuj w Home Assistant"
+          "render_url": "Renderuj w Home Assistant",
+          "warning_tone": "Dźwięk ostrzeżenia",
+          "alert_tone": "Dźwięk alarmu"
         },
         "data_description": {
           "ha_url": "Zostaw puste, aby użyć wewnętrznego adresu URL Home Assistant.",
@@ -85,7 +87,9 @@
           "reopen_minutes": "Gdy ktoś opuści PleatView dla innej aplikacji, wraca, gdy przez tyle czasu nic nie odtwarzało dźwięku. 0 nigdy nie wraca.",
           "reload_minutes": "Regularne pełne odświeżenie zwalnia pamięć na ekranach działających długo. 0 nigdy nie odświeża.",
           "launch_on_boot": "Wymaga na telewizorze uprawnienia \"Wyświetlanie nad innymi aplikacjami\".",
-          "render_url": "PleatView Renderer do użycia: sparowany, według nazwy, Automatycznie (najmniej obciążony), znaleziony przez Home Assistant, albo wpisz jego adres, np. http://ce7dee09-pleatview-renderer:8780. Komputer z Home Assistant uruchamia wtedy pulpity tego telewizora i wysyła mu ich obraz wideo. Puste: telewizor uruchamia je sam."
+          "render_url": "PleatView Renderer do użycia: sparowany, według nazwy, Automatycznie (najmniej obciążony), znaleziony przez Home Assistant, albo wpisz jego adres, np. http://ce7dee09-pleatview-renderer:8780. Komputer z Home Assistant uruchamia wtedy pulpity tego telewizora i wysyła mu ich obraz wideo. Puste: telewizor uruchamia je sam.",
+          "warning_tone": "Odtwarzany z powiadomieniami wysłanymi jako ostrzeżenie. To, co gra, gra dalej.",
+          "alert_tone": "Odtwarzany z powiadomieniami wysłanymi jako alarm, które też wstrzymują to, co gra."
         }
       }
     },
@@ -126,6 +130,24 @@
     "render": {
       "options": {
         "auto": "Automatycznie: najmniej obciążony renderer"
+      }
+    },
+    "tone": {
+      "options": {
+        "chime": "Gong",
+        "ding": "Ding",
+        "beep": "Pisk",
+        "alarm": "Alarm",
+        "siren": "Syrena",
+        "bell": "Dzwon",
+        "none": "Bez dźwięku"
+      }
+    },
+    "level": {
+      "options": {
+        "notice": "Informacja",
+        "warning": "Ostrzeżenie",
+        "alert": "Alarm"
       }
     }
   },
@@ -222,11 +244,19 @@
         },
         "duration": {
           "name": "Czas trwania",
-          "description": "Sekundy, po których karta znika. Domyślnie 10."
+          "description": "Sekundy, po których karta znika. Domyślnie 10, a dla alarmu 30."
         },
         "position": {
           "name": "Położenie",
           "description": "Róg ekranu."
+        },
+        "level": {
+          "name": "Poziom",
+          "description": "Informacja: karta. Ostrzeżenie: karta i krótki dźwięk, bez przerywania tego, co gra. Alarm: karta i mocniejszy dźwięk, a to, co gra, zostaje wstrzymane."
+        },
+        "tone": {
+          "name": "Dźwięk",
+          "description": "Dźwięk tego powiadomienia zamiast dźwięku ostrzeżenia lub alarmu telewizora."
         }
       }
     },

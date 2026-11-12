@@ -78,11 +78,13 @@ OVERLAY = """
     "color:#edf3f6;font:400 2.4vh system-ui,sans-serif;box-shadow:0 1vh 4vh rgba(0,0,0,.45)}" +
     ".notify img{display:block;max-width:100%;max-height:40vh;border-radius:.6vw;margin-bottom:1.6vh}" +
     ".notify .title{font-weight:700;font-size:2.8vh;margin-bottom:.6vh}" +
+    ".notify.warning{box-shadow:inset 0 0 0 .25vh #ffb74d,0 1vh 4vh rgba(0,0,0,.45)}.notify.warning .title{color:#ffb74d}" +
+    ".notify.alert{box-shadow:inset 0 0 0 .35vh #ff6e6e,0 1vh 4vh rgba(0,0,0,.45)}.notify.alert .title{color:#ff6e6e}" +
     ".image img{display:block;width:100%;border-radius:1vw;box-shadow:0 1vh 4vh rgba(0,0,0,.5);background:#000}";
   root.appendChild(style);
   items.forEach(function (it) {
     var el = document.createElement("div");
-    el.className = "item " + it.kind + " " + it.position;
+    el.className = "item " + it.kind + " " + it.position + (it.level ? " " + it.level : "");
     if (it.kind === "image") {
       el.style.width = it.size + "vw";
       var img = document.createElement("img");
@@ -112,3 +114,13 @@ OVERLAY = """
 
 def overlay_script(items: list[dict]) -> str:
     return f"({OVERLAY.strip()})({json.dumps(items)})"
+
+
+TONES = (Path(__file__).parent / "tones.js").read_text()
+
+
+def alert_script(tone: str, pause: bool) -> str:
+    """Plays a notification's tone in the page, which the stream carries; an alert first pauses
+    what the page itself plays (other sites' frames can't be reached)."""
+    stop = "document.querySelectorAll('video,audio').forEach(function (m) { m.pause(); });" if pause else ""
+    return f"{stop}{TONES}\nwindow.pleatviewTones.play({json.dumps(tone)});"

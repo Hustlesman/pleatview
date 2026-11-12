@@ -9,6 +9,7 @@ also runs in Docker, listening only on 127.0.0.1.
     tools/e2e/run.py --apk path/to/app.apk   # test a specific APK (release builds skip the DevTools check)
     tools/e2e/run.py --form-factor tablet    # a Pixel Tablet emulator (or phone: a Pixel 8) instead of a TV
     tools/e2e/run.py --keep                  # leave the containers running afterwards
+    tools/e2e/run.py --only levels           # after pairing, only the checks whose name contains "levels"
     tools/e2e/run.py --screens clip.mp4      # then take the website and store pictures (out/<time>/screens),
                                              # with clip.mp4 in picture-in-picture
 
@@ -449,6 +450,19 @@ def brightest(box: list[int], tools_image: str) -> int:
     return int(out.decode().strip() or 255)
 
 
+def colour_pixels(area: tuple[float, float, float, float], rgb: tuple[int, int, int], tools_image: str) -> int:
+    """How many of the screen's pixels in an area (fractions of its width and height) are close to a colour."""
+    png = subprocess.run([*ADB_COMMAND, "exec-out", "screencap", "-p"], capture_output=True, check=False).stdout
+    out = subprocess.run(["docker", "run", "--rm", "-i", "--entrypoint", "python3", tools_image, "-c",
+                          "import io, sys; from PIL import Image; "
+                          "im = Image.open(io.BytesIO(sys.stdin.buffer.read())).convert('RGB'); w, h = im.size; "
+                          f"a = {list(area)}; c = {list(rgb)}; "
+                          "im = im.crop((int(a[0] * w), int(a[1] * h), int(a[2] * w), int(a[3] * h))); "
+                          "print(sum(1 for p in im.getdata() if sum(abs(p[i] - c[i]) for i in range(3)) < 60))"],
+                         input=png, capture_output=True, check=False).stdout
+    return int(out.decode().strip() or 0)
+
+
 def screen_attribute(view_id: str, attribute: str, texts: str | None = None) -> str:
     """An attribute of one of PleatView's views in the current UI dump."""
     for node in (texts if texts is not None else screen_texts()).split("<node"):
@@ -866,6 +880,37 @@ def checks(r: Run, report: Report, apk: Path) -> None:
         ha.call("media_player", "media_stop", {"entity_id": entity["id"]})
         wait_for("the dashboard after stop", lambda: state()["state"] == "idle", timeout=20)
         return f"title {playing['attributes'].get('media_title')!r}, duration {playing['attributes'].get('media_duration')}"
+
+    def levels():
+        # A warning plays a tone and leaves what plays alone; an alert pauses it.
+        ha.call("media_player", "play_media", {"entity_id": entity["id"], "media_content_type": "video",
+                                               "media_content_id": r.video_url, "extra": {"title": "E2E clip"}})
+        wait_for("playback", lambda: state()["state"] == "playing", timeout=45)
+        try:
+            ha.call("pleatview", "notify", {"entity_id": entity["id"], "title": "E2E", "message": "A warning",
+                                            "level": "warning", "tone": "chime"})
+            wait_for("the warning card", lambda: "A warning" in screen_texts(), timeout=20, interval=1)
+            report.screenshot("03-warning")
+            time.sleep(3)
+            if state()["state"] != "playing":
+                raise AssertionError(f"a warning stopped the video ({state()['state']})")
+            ha.call("pleatview", "notify", {"entity_id": entity["id"], "title": "E2E", "message": "An alert",
+                                            "level": "alert", "tone": "alarm", "duration": 45})
+            wait_for("the alert to pause the video", lambda: state()["state"] == "paused", timeout=15, interval=1)
+            report.screenshot("03-alert")
+            # The alert's card has a red edge (colors.xml). Screen dumps don't finish while the
+            # paused player's controls are up, so look at the picture: its top-right corner.
+            edge = wait_for("the alert card's red edge", lambda: (n := colour_pixels((0.5, 0, 1, 0.4), (255, 110, 110), r.tools_image)) > 500 and n,
+                            timeout=20, interval=1)
+            # The emulator runs without sound, so only a real TV can play the tones.
+            tones = adb("logcat", "-d", "-s", "PleatView:*", check=False)
+            if "No tone" in tones and r.device:
+                raise AssertionError("the tone didn't play" + tones.split("No tone", 1)[1][:120])
+        finally:
+            ha.call("media_player", "media_stop", {"entity_id": entity["id"]})
+            wait_for("the dashboard after stop", lambda: state()["state"] == "idle", timeout=20)
+        heard = "tones not checked: the emulator has no sound" if not r.device else "tones played"
+        return f"the warning left the video playing; the alert paused it, its card edged in red ({edge} px); {heard}"
 
     def camera():
         ha.call("pleatview", "show_camera", {"entity_id": entity["id"], "camera": "camera.demo_camera",
@@ -1504,6 +1549,7 @@ def checks(r: Run, report: Report, apk: Path) -> None:
         ("Kiosk mode hides the sidebar and header", kiosk),
         ("Notification card appears", notification),
         ("Video plays and stops", video),
+        ("Notification levels: a warning's tone, an alert pauses", levels),
         ("Camera without a stream shows as picture-in-picture", camera),
         ("show_dashboard and home switch dashboards", dashboards),
         ("Rotation keeps a dashboard Home Assistant showed", rotation_waits),
@@ -1524,6 +1570,8 @@ def checks(r: Run, report: Report, apk: Path) -> None:
            ("A PIN lock screen stays in front of a cast", lock_screen)] if r.args.form_factor != "tv" else []),
         *([("Website and store pictures", screens)] if r.args.screens is not None else []),
     ]:
+        if r.args.only and r.args.only.lower() not in name.lower():
+            continue
         if "id" in entity:
             report.check(name, fn)
         else:
@@ -1542,6 +1590,7 @@ def main() -> int:
                         help="emulator to test on: tv (default), phone or tablet")
     parser.add_argument("--apk", help="APK to test (default: build a debug APK)")
     parser.add_argument("--keep", action="store_true", help="leave the containers running")
+    parser.add_argument("--only", metavar="TEXT", help="after pairing, run only the checks whose name contains TEXT")
     parser.add_argument("--screens", nargs="?", const="", metavar="VIDEO",
                         help="after the checks, take the website and store pictures; VIDEO plays in picture-in-picture")
     args = parser.parse_args()
