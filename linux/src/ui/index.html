@@ -63,6 +63,29 @@
       </div>
     </section>
 
+    <section id="signin" class="layer full" hidden>
+      <div class="approval-panel signin-panel" role="dialog" aria-labelledby="signin-title">
+        <div class="signin-text">
+          <h2 id="signin-title"></h2>
+          <p>This dashboard asks for a username and password. Enter them here, or scan the code with your phone. PleatView keeps the sign-in on this screen only.</p>
+          <p id="signin-failed" class="signin-failed" hidden>That username or password didn't work. Try again.</p>
+          <form id="signin-form" autocomplete="off">
+            <input id="signin-username" placeholder="Username" autocapitalize="none" spellcheck="false">
+            <input id="signin-password" type="password" placeholder="Password" required>
+            <label class="signin-remember"><input type="checkbox" id="signin-remember" checked> Keep me signed in on this screen</label>
+            <div class="approval-buttons">
+              <button type="submit">Sign in</button>
+              <button type="button" id="signin-not-now">Not now</button>
+            </div>
+          </form>
+        </div>
+        <div class="setup-code">
+          <div id="signin-qr" class="qr"></div>
+          <p class="secondary">Scan to sign in with your phone</p>
+        </div>
+      </div>
+    </section>
+
     <div id="curtain" class="layer full" hidden></div>
   </div>
   <audio id="announcement"></audio>

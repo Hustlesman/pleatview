@@ -11,7 +11,7 @@ const state = { offset: { x: 0, y: 0 }, media: null, hls: null, mediaTimer: null
 
 // ---- What the layer covers ------------------------------------------------------------
 
-const FULL = ["setup", "menu", "curtain"];
+const FULL = ["setup", "menu", "approval", "signin", "curtain"];
 
 function reportRegions() {
   const visible = (el) => el && !el.hidden;
@@ -285,6 +285,9 @@ function openMenu(message) {
     for (const d of message.dashboards) add(d.title, () => window.pleatview.send({ type: "action", action: "open", path: d.path }));
     add("Reload", () => window.pleatview.send({ type: "action", action: "reload" }));
   }
+  if (message.signIns) {
+    add(`Forget saved sign-ins (${message.signIns})`, () => window.pleatview.send({ type: "action", action: "forget-sign-ins" }));
+  }
   add("Exit", () => window.pleatview.send({ type: "action", action: "quit" }));
   $("menu").hidden = false;
   window.pleatview.send({ type: "menu", open: true });
@@ -355,6 +358,43 @@ window.pleatview.onMessage((message) => {
     case "approval":
       showApproval(message.approval);
       break;
+    case "sign-in":
+      showSignIn(message.request, message.qr);
+      break;
+  }
+});
+
+// ---- A dashboard asking for a username and password --------------------------------------
+
+function showSignIn(request, qr) {
+  $("signin").hidden = !request;
+  if (request) {
+    $("signin-title").textContent = `Sign in to ${request.title}`;
+    $("signin-failed").hidden = !request.failed;
+    $("signin-qr").innerHTML = qr || ""; // an SVG the app made from the phone page's address
+    $("signin-password").value = "";
+    ($("signin-username").value ? $("signin-password") : $("signin-username")).focus();
+  } else {
+    $("signin-form").reset();
+  }
+  regionsChanged();
+}
+
+$("signin-form").addEventListener("submit", (event) => {
+  event.preventDefault();
+  window.pleatview.send({
+    type: "sign-in",
+    username: $("signin-username").value.trim(),
+    password: $("signin-password").value,
+    remember: $("signin-remember").checked,
+  });
+  $("signin-password").value = "";
+});
+$("signin-not-now").addEventListener("click", () => window.pleatview.send({ type: "sign-in-dismiss" }));
+document.addEventListener("keydown", (event) => {
+  if (!$("signin").hidden && event.key === "Escape") {
+    event.preventDefault();
+    window.pleatview.send({ type: "sign-in-dismiss" });
   }
 });
 

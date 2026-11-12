@@ -8,6 +8,7 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 import { needsDisplay } from "./command.js";
 import { isFrontendPath, pathOf } from "./config.js";
 import { displayPower } from "./power.js";
+import { SignInFlow } from "./signins.js";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const CALLBACK_NAME = /^[A-Za-z_$][A-Za-z0-9_$]{0,63}$/;
@@ -24,9 +25,14 @@ export class Display {
    * @param {() => object} options.setup what the setup screen and menu show: name, address, port, PIN, version
    * @param {string} options.assets folder with pleatview.js
    * @param {() => void} options.quit
+   * @param {import("./signins.js").SignIns} [options.signIns] saved sign-ins for dashboards behind a password
+   * @param {(text: string) => Promise<string>} [options.qrCode] an SVG QR code
    */
-  constructor({ hub, config, setup, assets, quit, pairing = null }) {
+  constructor({ hub, config, setup, assets, quit, pairing = null, signIns = null, qrCode = null }) {
     this.hub = hub;
+    this.signIns = signIns;
+    this.qrCode = qrCode;
+    this.signInFlow = null;
     this.pairing = pairing;
     this.config = config;
     this.setup = setup;
@@ -54,6 +60,16 @@ export class Display {
     this.window.contentView.addChildView(this.dashboard);
     this.window.contentView.addChildView(this.ui);
     this.window.on("resize", () => this.layout());
+    if (this.signIns) {
+      const wc = this.dashboard.webContents;
+      this.signInFlow = new SignInFlow({
+        signIns: this.signIns,
+        onRequest: (request) => this.onSignInRequest(request),
+        evaluate: (js) => wc.executeJavaScript(js),
+        title: () => wc.getTitle(),
+      });
+      this.signInFlow.config = this.config();
+    }
     this.watchDashboard();
     this.watchUi();
     this.ui.webContents.loadFile(join(here, "ui", "index.html"));
@@ -147,6 +163,14 @@ export class Display {
         case "approval":
           this.pairing?.decide(String(message.id ?? ""), Boolean(message.allow));
           break;
+        case "sign-in":
+          if (typeof message.password === "string" && message.password) {
+            this.signInFlow?.apply(String(message.username ?? ""), message.password, message.remember !== false);
+          }
+          break;
+        case "sign-in-dismiss":
+          this.signInFlow?.dismiss();
+          break;
       }
     });
     this.ui.webContents.on("before-input-event", (event, input) => this.onKey(event, input));
@@ -156,6 +180,7 @@ export class Display {
     if (action === "home") this.goHome();
     else if (action === "open" && typeof path === "string") this.showTarget(path, { browsing: true });
     else if (action === "reload") this.dashboard.webContents.reload();
+    else if (action === "forget-sign-ins") this.forgetSignIns(null);
     else if (action === "quit") this.quit();
   }
 
@@ -167,6 +192,7 @@ export class Display {
       haUrl: config.haUrl,
       dashboards: config.dashboards,
       configured: config.isConfigured,
+      signIns: this.signIns?.count ?? 0,
     });
   }
 
@@ -180,7 +206,8 @@ export class Display {
     }
     if (["Escape", "ContextMenu", "F10", "BrowserBack", "GoBack"].includes(input.key)) {
       event.preventDefault();
-      if (this.menuOpen) this.toUi({ type: "close-menu" });
+      if (this.signInFlow?.pending) this.signInFlow.dismiss(); // "Not now"
+      else if (this.menuOpen) this.toUi({ type: "close-menu" });
       else this.openMenu();
     } else if (input.key === "MediaPlayPause" || input.key === "MediaStop") {
       this.toUi({ type: "media", command: { name: input.key === "MediaStop" ? "stop" : "toggle" } });
@@ -206,8 +233,32 @@ export class Display {
         .catch((e) => console.warn("PleatView: page helper failed:", e.message));
     });
     wc.on("did-navigate", (event, url) => this.onLocation(url));
-    wc.on("did-navigate-in-page", (event, url, isMainFrame) => isMainFrame && this.onLocation(url));
+    wc.on("did-navigate-in-page", (event, url, isMainFrame) => {
+      if (!isMainFrame) return;
+      this.onLocation(url);
+      // Single-page apps change routes without loading a page, for example to their login screen.
+      this.signInFlow?.onPageShown(url, false);
+    });
+    wc.on("did-start-navigation", (event, url, isInPlace, isMainFrame) => {
+      if ((event.isMainFrame ?? isMainFrame) && !(event.isSameDocument ?? isInPlace)) this.signInFlow?.onPageStarted();
+    });
+    // A password prompt (HTTP basic auth) from the dashboard's site.
+    wc.on("login", (event, details, authInfo, callback) => {
+      event.preventDefault();
+      let answered = false;
+      const answer = (...credentials) => {
+        if (answered) return;
+        answered = true;
+        callback(...credentials);
+      };
+      if (authInfo.isProxy || !this.signInFlow) return answer();
+      this.signInFlow.onPrompt({ proceed: (u, p) => answer(u, p), cancel: () => answer() }, authInfo.host, authInfo.realm ?? "");
+    });
     wc.on("did-finish-load", () => {
+      if (this.signInFlow) {
+        this.signInFlow.onPageLoaded();
+        this.signInFlow.onPageShown(wc.getURL(), true);
+      }
       this.retryAttempt = 0;
       this.hub.update({ last_error: null });
       this.toUi({ type: "banner", text: null });
@@ -306,12 +357,43 @@ export class Display {
     }
   }
 
+  // ---- Sign-ins -------------------------------------------------------------------------
+
+  /** Shows (or takes away) the question for a dashboard's username and password. */
+  onSignInRequest(request) {
+    this.hub.update({ sign_in: request ? { kind: request.kind, title: request.title, site: request.site, failed: request.failed } : null });
+    if (!request) {
+      this.toUi({ type: "sign-in", request: null });
+      if (!this.menuOpen) this.dashboard.webContents.focus();
+      return;
+    }
+    // The phone page, with the PIN that lets it send this sign-in (as on Android).
+    const { address, port, pin } = this.setup();
+    const url = `http://${address}:${port}/#signin=${encodeURIComponent(request.title)}` +
+      `&to=${encodeURIComponent(request.address)}&pin=${pin}`;
+    const show = (qr) => {
+      if (this.signInFlow?.pending !== request) return;
+      this.toUi({ type: "sign-in", request: { kind: request.kind, title: request.title, failed: request.failed }, qr });
+      this.ui.webContents.focus();
+    };
+    (this.qrCode ? this.qrCode(url) : Promise.resolve("")).then(show, () => show(""));
+  }
+
+  forgetSignIns(site) {
+    const forgotten = this.signIns?.forget(site) ?? 0;
+    if (forgotten) this.toUi({ type: "banner", text: "Saved sign-ins forgotten" });
+    clearTimeout(this.timers.forgotten);
+    if (forgotten) this.timers.forgotten = setTimeout(() => this.toUi({ type: "banner", text: null }), 4000);
+    return forgotten;
+  }
+
   // ---- Configuration ---------------------------------------------------------------------
 
   /** After a config change: what to show, zoom, timers, keeping the screen awake. */
   applyConfig(previous = null) {
     const config = this.config();
     this.hub.update({ config_rev: config.rev, view: config.isConfigured ? "dashboard" : "setup" });
+    if (this.signInFlow) this.signInFlow.config = config;
     if (!this.window) return;
     this.dashboard.webContents.setZoomFactor(config.zoom / 100);
     const moved = !previous || previous.haUrl !== config.haUrl || previous.haToken !== config.haToken ||
@@ -426,7 +508,8 @@ export class Display {
         this.sleep();
         break;
       case "forget_sign_ins":
-        break; // Sign-ins aren't saved on Linux yet: there's nothing to forget.
+        this.forgetSignIns(command.site);
+        break;
     }
   }
 
@@ -464,11 +547,16 @@ export class Display {
       this.hub.update({ url, dashboard: config.isHaUrl(url) ? pathOf(url) : null });
       return;
     }
+    if (this.signInFlow) this.signInFlow.target = url;
+    const load = () => {
+      this.signInFlow?.onNavigate();
+      wc.loadURL(url).catch(() => {});
+    };
     if (config.isHaUrl(url) && config.isHaUrl(wc.getURL()) && !wc.isLoading() && isFrontendPath(pathOf(url))) {
       const js = `window.__pleatview?(window.__pleatview.navigate(${JSON.stringify(pathOf(url))}),true):false`;
-      wc.executeJavaScript(js).then((done) => done || wc.loadURL(url), () => wc.loadURL(url));
+      wc.executeJavaScript(js).then((done) => done || load(), load);
     } else {
-      wc.loadURL(url).catch(() => {});
+      load();
     }
     this.hub.update({ url, dashboard: config.isHaUrl(url) ? pathOf(url) : null });
   }

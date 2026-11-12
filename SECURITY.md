@@ -22,7 +22,9 @@ PleatView is built for a home network you trust. What it does, and what it can't
 - **Sign-ins to other sites** are encrypted with a key that never leaves the TV's Android
   keystore, and each one is offered only to the site it was made for (a password prompt's,
   only on the dashboard that asked). The phone page shows the address a password goes to.
-  Nothing is backed up or copied to another device.
+  Nothing is backed up or copied to another device. The Linux app encrypts them the same way
+  (AES-256-GCM), but a Linux kiosk has no key store: the key is a file of its own, readable
+  only by the app's user, so someone who can read that user's files can read the sign-ins.
 - **Plain HTTP on the local network.** The TV, Home Assistant and the phone setup page talk
   over plain HTTP, like most local smart-home devices. Someone who can read your network's
   traffic could see the tokens and a sign-in typed on the phone. Use a network only your

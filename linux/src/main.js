@@ -12,6 +12,7 @@ import { Display } from "./display.js";
 import { Hub } from "./hub.js";
 import { Advertiser } from "./mdns.js";
 import { Pairing } from "./pairing.js";
+import { SignIns } from "./signins.js";
 import { Store } from "./store.js";
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -32,6 +33,8 @@ const version = app.getVersion();
 const { manufacturer, model } = hardware();
 let config = Config.fromJson(store.readJson("config.json", {}));
 const hub = new Hub({ appVersion: version });
+// Sign-ins for dashboards behind a password: on this screen only, encrypted (signins.js).
+const signIns = new SignIns(store);
 const advertiser = new Advertiser();
 let qr = { text: "", svg: "" };
 
@@ -84,10 +87,9 @@ const api = createApi(
     dispatch: (command) => hub.dispatch(command),
     config: () => config,
     updateConfig,
-    // Sign-ins for dashboards behind a password come later on Linux: nothing is waiting for one.
-    submitSignIn: () => false,
-    signIns: () => [],
-    forgetSignIns: () => 0,
+    submitSignIn: (username, password, remember) => display?.signInFlow?.apply(username, password, remember) ?? false,
+    signIns: () => signIns.describe(),
+    forgetSignIns: (site) => (display ? display.forgetSignIns(site) : signIns.forget(site)),
     setupPage: () => readFileSync(join(assets, "setup.html")),
     approvalRequested: () => display?.showApproval(),
   },
@@ -97,7 +99,8 @@ const api = createApi(
 let display = null;
 
 app.whenReady().then(() => {
-  display = new Display({ hub, config: () => config, setup: setupInfo, assets, quit: () => app.quit(), pairing });
+  const qrCode = (text) => QRCode.toString(text, { type: "svg", errorCorrectionLevel: "M", margin: 2 });
+  display = new Display({ hub, config: () => config, setup: setupInfo, assets, quit: () => app.quit(), pairing, signIns, qrCode });
   hub.display = display;
   display.open();
   api.listen(PORT, "0.0.0.0", () => console.log(`PleatView ${version}: control API on port ${PORT}`));

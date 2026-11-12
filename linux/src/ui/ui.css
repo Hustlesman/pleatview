@@ -111,3 +111,13 @@ progress::-webkit-progress-value { background: var(--accent); }
 .approval-buttons { display: flex; gap: 1.5rem; margin-top: 2rem; }
 .approval-buttons button { font: inherit; padding: 0.8rem 2rem; border-radius: 0.8rem; border: 2px solid #18bcf2; background: transparent; color: inherit; }
 .approval-buttons button:focus { background: #18bcf2; color: #0f1417; outline: none; }
+#signin { display: flex; align-items: center; justify-content: center; background: rgba(15, 20, 23, 0.85); }
+#signin[hidden] { display: none; }
+.signin-panel { display: flex; gap: 3rem; align-items: center; max-width: 75vw; }
+.signin-text { flex: 1; }
+.signin-panel form { display: grid; gap: 1rem; margin-top: 1.5rem; }
+.signin-panel input:not([type="checkbox"]) { font: inherit; padding: 0.7rem 1rem; border-radius: 0.6rem; border: 2px solid #3a4a52; background: #0f1417; color: inherit; }
+.signin-panel input:focus { border-color: #18bcf2; outline: none; }
+.signin-remember { font-size: 1.3rem; }
+.signin-failed { color: #ff8a80; }
+.signin-panel .approval-buttons { margin-top: 0.5rem; }
