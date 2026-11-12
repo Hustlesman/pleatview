@@ -106,8 +106,9 @@ async def test_rendered_dashboards(hass: HomeAssistant, fake_tv: FakeTV, rendere
     assert stream.startswith(f"{HA_URL}/api/pleatview/render/{entry.entry_id}/")
     assert renderer.screens[entry.entry_id] == {
         "url": "http://ha.test:8123/lovelace/0", "width": 1920, "height": 1080, "scale": 1.5,
-        "kiosk": "sidebar", "ha_url": HA_URL, "token": entry.data[CONF_HA_TOKEN],
+        "kiosk": "sidebar", "ha_url": HA_URL, "token": entry.data[CONF_HA_TOKEN], "rotation": 0,
     }
+    assert "rotation" not in fake_tv.config  # a rendered screen gets its picture turned by the renderer
     assert hass.auth.async_validate_access_token(entry.data[CONF_HA_TOKEN]) is not None
 
     # The renderer follows the page the TV wants.
@@ -214,11 +215,14 @@ async def test_notifications_go_into_the_stream_for_screens_that_only_play_it(
 ) -> None:
     """PleatView Light lists stream_overlays: its notifications are drawn into the stream."""
     entry = make_entry(
-        fake_tv, options={"render_url": renderer.url}, **{CONF_AUTH_MODE: AUTH_MANAGED, CONF_HA_TOKEN: "tv-token"})
+        fake_tv, options={"render_url": renderer.url, "rotation": "90"}, **{CONF_AUTH_MODE: AUTH_MANAGED, CONF_HA_TOKEN: "tv-token"})
     entry = await setup_entry(hass, entry)
     await fake_tv.wait_for_stream()
-    await fake_tv.push(features=["render_stream", "stream_overlays"], screen={"width": 1920, "height": 1080, "density": 1.0})
+    await fake_tv.push(features=["render_stream", "stream_overlays", "rotation"], screen={"width": 1920, "height": 1080, "density": 1.0})
     await _until(lambda: entry.entry_id in renderer.screens)
+    # Hung on its side: the renderer turns the stream, and the screen gets the setting for its own text.
+    assert renderer.screens[entry.entry_id]["rotation"] == 90
+    await _until(lambda: fake_tv.config.get("rotation") == 90)
     device = entry.runtime_data
     await device.async_command("notify", message="Someone's at the door", title="Front door", image_url=None)
     assert renderer.overlays[-1] == {"kind": "notify", "message": "Someone's at the door", "title": "Front door"}

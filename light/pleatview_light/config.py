@@ -79,6 +79,9 @@ class Config:
     reopen_minutes: int = 10
     render_stream: str = ""
     home_playlist: list[dict[str, Any]] = field(default_factory=list)
+    # How the screen is mounted, degrees turned clockwise: the renderer turns the stream; this
+    # screen turns its own text (the setup screen, the PIN).
+    rotation: int = 0
     rev: str = ""
 
     @property
@@ -155,6 +158,10 @@ class Config:
                     seconds = _int(f"playlist item {i} seconds", item.get("seconds", 10), 1, 86400)
                     items.append({"url": item["url"], "kind": kind, "seconds": seconds})
                 changes[key] = items
+            elif key == "rotation":
+                if value not in (0, 90, 180, 270) or isinstance(value, bool):
+                    raise ValueError("rotation must be 0, 90, 180 or 270")
+                changes[key] = value
             elif key == "rev":
                 changes[key] = _str(key, value)[:64]
             elif key == "ha_token_set":

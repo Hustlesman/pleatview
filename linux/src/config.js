@@ -19,6 +19,8 @@ export const DEFAULTS = Object.freeze({
   rotateSeconds: 0,
   returnHomeMinutes: 0,
   reopenMinutes: 10,
+  // How the screen is mounted, in degrees turned clockwise; the picture is turned to match.
+  rotation: 0,
   rev: "",
 });
 
@@ -126,6 +128,7 @@ export class Config {
       return_home_minutes: this.returnHomeMinutes,
       reopen_minutes: this.reopenMinutes,
       render_stream: this.renderStream,
+      rotation: this.rotation,
       rev: this.rev,
     };
   }
@@ -156,6 +159,10 @@ export class Config {
         case "rotate_seconds": c.rotateSeconds = intIn(key, value, 0, 24 * 60 * 60); break;
         case "return_home_minutes": c.returnHomeMinutes = intIn(key, value, 0, 24 * 60); break;
         case "reopen_minutes": c.reopenMinutes = intIn(key, value, 0, 24 * 60); break;
+        case "rotation":
+          if (![0, 90, 180, 270].includes(value)) throw new RangeError("rotation must be 0, 90, 180 or 270");
+          c.rotation = value;
+          break;
         case "render_stream": {
           const stream = string(key, value).trim();
           if (stream && !isHttpUrl(stream)) throw new RangeError("render_stream must start with http:// or https://");

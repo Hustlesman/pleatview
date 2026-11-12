@@ -75,7 +75,8 @@
           "launch_on_boot": "PleatView openen als de tv aangaat",
           "render_url": "Op Home Assistant weergeven",
           "warning_tone": "Waarschuwingstoon",
-          "alert_tone": "Alarmtoon"
+          "alert_tone": "Alarmtoon",
+          "rotation": "Scherm gemonteerd"
         },
         "data_description": {
           "ha_url": "Leeg laten om de interne URL van Home Assistant te gebruiken.",
@@ -89,7 +90,8 @@
           "launch_on_boot": "Heeft op de tv de toestemming \"Weergeven vóór andere apps\" nodig.",
           "render_url": "De PleatView Renderer die je gebruikt: een gekoppelde op naam, Automatisch (de minst drukke), een die Home Assistant vond, of typ zijn adres, bijvoorbeeld http://ce7dee09-pleatview-renderer:8780. De computer van Home Assistant draait dan de dashboards van deze tv en stuurt de tv er een video van. Leeg: de tv draait ze zelf.",
           "warning_tone": "Klinkt bij meldingen die als waarschuwing worden verstuurd. Wat verder speelt, gaat door.",
-          "alert_tone": "Klinkt bij meldingen die als alarm worden verstuurd; die pauzeren ook wat er speelt."
+          "alert_tone": "Klinkt bij meldingen die als alarm worden verstuurd; die pauzeren ook wat er speelt.",
+          "rotation": "Hoe het scherm hangt. PleatView voor Linux en de renderer van Home Assistant voor de schermen waarvoor hij rendert (zoals PleatView Light) draaien het beeld mee. Android-tv's negeren het."
         }
       }
     },
@@ -148,6 +150,14 @@
         "notice": "Mededeling",
         "warning": "Waarschuwing",
         "alert": "Alarm"
+      }
+    },
+    "rotation": {
+      "options": {
+        "0": "Liggend, zoals gemaakt",
+        "90": "Staand, met de klok mee gedraaid",
+        "180": "Ondersteboven",
+        "270": "Staand, tegen de klok in gedraaid"
       }
     }
   },

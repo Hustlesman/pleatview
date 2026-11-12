@@ -33,4 +33,7 @@ In `/etc/default/pleatview-light`, then `sudo systemctl restart pleatview-light`
 | `PLEATVIEW_LIGHT_MPV_OPTIONS=...` | mpv's video options. The default decodes in hardware on Raspberry Pis and puts the video on its own display plane: `--vo=gpu --gpu-context=drm --hwdec=v4l2m2m --gpu-hwdec-interop=drmprime-overlay --drm-draw-plane=overlay --drm-drmprime-video-plane=primary` |
 | `PLEATVIEW_LIGHT_PORT=8765` | The control port |
 
+A screen hung in portrait or upside down needs no setting here: choose *Screen mounted* in
+its settings in Home Assistant, and the renderer sends the picture already turned.
+
 Only Python's standard library and mpv: nothing else is installed.

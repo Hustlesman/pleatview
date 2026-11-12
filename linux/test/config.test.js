@@ -70,3 +70,9 @@ test("files Home Assistant serves itself aren't frontend pages", () => {
   assert.equal(isFrontendPath("/hacsfiles/card/card.js"), false);
   assert.equal(isFrontendPath("/api/camera_proxy_stream/camera.door"), false);
 });
+
+test("rotation is how the screen is mounted: 0, 90, 180 or 270 degrees", () => {
+  assert.equal(new Config().rotation, 0);
+  assert.equal(new Config().merge({ rotation: 90 }).toJson().rotation, 90);
+  for (const bad of [45, "90", -90]) assert.throws(() => new Config().merge({ rotation: bad }), RangeError);
+});

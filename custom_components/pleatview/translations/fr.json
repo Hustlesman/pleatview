@@ -75,7 +75,8 @@
           "launch_on_boot": "Ouvrir PleatView au démarrage du téléviseur",
           "render_url": "Rendu sur Home Assistant",
           "warning_tone": "Son d'avertissement",
-          "alert_tone": "Son d'alerte"
+          "alert_tone": "Son d'alerte",
+          "rotation": "Montage de l'écran"
         },
         "data_description": {
           "ha_url": "Laisser vide pour utiliser l'URL interne de Home Assistant.",
@@ -89,7 +90,8 @@
           "launch_on_boot": "Nécessite l'autorisation « Afficher par-dessus d'autres applis » sur le téléviseur.",
           "render_url": "Le PleatView Renderer à utiliser : un moteur associé, par son nom, Automatique (le moins occupé), un trouvé par Home Assistant, ou saisissez son adresse, par ex. http://ce7dee09-pleatview-renderer:8780. La machine de Home Assistant exécute alors les tableaux de bord de ce téléviseur et lui envoie leur vidéo. Vide : le téléviseur les exécute lui-même.",
           "warning_tone": "Joué avec les notifications envoyées comme avertissement. Ce qui joue continue.",
-          "alert_tone": "Joué avec les notifications envoyées comme alerte, qui mettent aussi en pause ce qui joue."
+          "alert_tone": "Joué avec les notifications envoyées comme alerte, qui mettent aussi en pause ce qui joue.",
+          "rotation": "Comment l'écran est accroché. PleatView pour Linux, et le moteur de rendu de Home Assistant pour les écrans qu'il rend (comme PleatView Light), tournent l'image en conséquence. Les téléviseurs Android l'ignorent."
         }
       }
     },
@@ -148,6 +150,14 @@
         "notice": "Information",
         "warning": "Avertissement",
         "alert": "Alerte"
+      }
+    },
+    "rotation": {
+      "options": {
+        "0": "Paysage, tel quel",
+        "90": "Portrait, tourné dans le sens horaire",
+        "180": "À l'envers",
+        "270": "Portrait, tourné dans le sens antihoraire"
       }
     }
   },

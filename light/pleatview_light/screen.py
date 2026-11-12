@@ -20,7 +20,9 @@ from .playlist import MediaCache
 _LOGGER = logging.getLogger(__name__)
 
 # stream_overlays: Home Assistant draws notifications and cameras into the rendered stream.
-FEATURES = ["render_stream", "home_without_ha", "home_playlist", "stream_overlays"]
+# rotation: Home Assistant sends how the screen is mounted; the renderer turns the stream, and
+# this screen its own text.
+FEATURES = ["render_stream", "home_without_ha", "home_playlist", "stream_overlays", "rotation"]
 STREAM_RETRY = 2.0
 PIN_SHOWN = 120  # seconds the PIN stays up after someone starts pairing
 
@@ -40,6 +42,7 @@ class Screen:
         self.config = config
         self.save_config = save_config
         self.player = player
+        player.rotation = config.rotation
         self.setup = setup  # name, address, port, pin
         self.listeners: set[asyncio.Queue] = set()
         self.target: str | None = None  # what Home Assistant should render (a path or URL)
@@ -242,6 +245,9 @@ class Screen:
         if (old.home_path, old.ha_url) != (new.home_path, new.ha_url) or self.target is None:
             await self.home()
         self.restart_rotation()
+        if old.rotation != new.rotation:
+            self.player.rotation = new.rotation
+            await self.pin_changed()  # text on screen now turns too
         if (old.render_stream, old.configured, old.home_playlist) != (new.render_stream, new.configured, new.home_playlist):
             await self.show()
         self.update(config_rev=new.rev, view="dashboard" if new.configured else "setup")

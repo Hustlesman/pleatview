@@ -75,7 +75,8 @@
           "launch_on_boot": "Otwieraj PleatView po włączeniu telewizora",
           "render_url": "Renderuj w Home Assistant",
           "warning_tone": "Dźwięk ostrzeżenia",
-          "alert_tone": "Dźwięk alarmu"
+          "alert_tone": "Dźwięk alarmu",
+          "rotation": "Montaż ekranu"
         },
         "data_description": {
           "ha_url": "Zostaw puste, aby użyć wewnętrznego adresu URL Home Assistant.",
@@ -89,7 +90,8 @@
           "launch_on_boot": "Wymaga na telewizorze uprawnienia \"Wyświetlanie nad innymi aplikacjami\".",
           "render_url": "PleatView Renderer do użycia: sparowany, według nazwy, Automatycznie (najmniej obciążony), znaleziony przez Home Assistant, albo wpisz jego adres, np. http://ce7dee09-pleatview-renderer:8780. Komputer z Home Assistant uruchamia wtedy pulpity tego telewizora i wysyła mu ich obraz wideo. Puste: telewizor uruchamia je sam.",
           "warning_tone": "Odtwarzany z powiadomieniami wysłanymi jako ostrzeżenie. To, co gra, gra dalej.",
-          "alert_tone": "Odtwarzany z powiadomieniami wysłanymi jako alarm, które też wstrzymują to, co gra."
+          "alert_tone": "Odtwarzany z powiadomieniami wysłanymi jako alarm, które też wstrzymują to, co gra.",
+          "rotation": "Jak wisi ekran. PleatView dla Linuksa oraz renderer Home Assistant dla ekranów, które renderuje (np. PleatView Light), obracają obraz odpowiednio. Telewizory z Androidem to ignorują."
         }
       }
     },
@@ -148,6 +150,14 @@
         "notice": "Informacja",
         "warning": "Ostrzeżenie",
         "alert": "Alarm"
+      }
+    },
+    "rotation": {
+      "options": {
+        "0": "Poziomo, jak fabrycznie",
+        "90": "Pionowo, obrócony zgodnie z ruchem wskazówek zegara",
+        "180": "Do góry nogami",
+        "270": "Pionowo, obrócony przeciwnie do ruchu wskazówek zegara"
       }
     }
   },

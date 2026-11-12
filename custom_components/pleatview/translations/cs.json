@@ -75,7 +75,8 @@
           "launch_on_boot": "Otevřít PleatView po zapnutí televize",
           "render_url": "Vykreslovat v Home Assistantu",
           "warning_tone": "Tón varování",
-          "alert_tone": "Tón poplachu"
+          "alert_tone": "Tón poplachu",
+          "rotation": "Uchycení obrazovky"
         },
         "data_description": {
           "ha_url": "Nechte prázdné, aby se použila interní URL Home Assistant.",
@@ -89,7 +90,8 @@
           "launch_on_boot": "Vyžaduje na televizi oprávnění \"Zobrazení přes ostatní aplikace\".",
           "render_url": "PleatView Renderer, který se má použít: spárovaný podle názvu, Automaticky (nejméně vytížený), nalezený Home Assistantem, nebo zadejte jeho adresu, např. http://ce7dee09-pleatview-renderer:8780. Počítač s Home Assistantem pak spouští nástěnky této televize a posílá jí jejich video. Prázdné: nástěnky běží přímo v televizi.",
           "warning_tone": "Zazní u oznámení odeslaných jako varování. Co hraje, hraje dál.",
-          "alert_tone": "Zazní u oznámení odeslaných jako poplach, která také pozastaví, co hraje."
+          "alert_tone": "Zazní u oznámení odeslaných jako poplach, která také pozastaví, co hraje.",
+          "rotation": "Jak obrazovka visí. PleatView pro Linux a renderer Home Assistantu pro obrazovky, pro které vykresluje (např. PleatView Light), obraz podle toho otočí. Televize s Androidem to ignorují."
         }
       }
     },
@@ -148,6 +150,14 @@
         "notice": "Informace",
         "warning": "Varování",
         "alert": "Poplach"
+      }
+    },
+    "rotation": {
+      "options": {
+        "0": "Na šířku, jak je vyrobena",
+        "90": "Na výšku, otočená po směru hodinových ručiček",
+        "180": "Vzhůru nohama",
+        "270": "Na výšku, otočená proti směru hodinových ručiček"
       }
     }
   },

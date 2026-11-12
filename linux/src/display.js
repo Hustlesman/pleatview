@@ -8,6 +8,7 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 import { needsDisplay } from "./command.js";
 import { isFrontendPath, pathOf } from "./config.js";
 import { displayPower } from "./power.js";
+import { rotateDisplay } from "./rotation.js";
 import { SignInFlow } from "./signins.js";
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -60,6 +61,8 @@ export class Display {
     this.window.contentView.addChildView(this.dashboard);
     this.window.contentView.addChildView(this.ui);
     this.window.on("resize", () => this.layout());
+    // The screen turned (rotation) or another one plugged in: fill it again.
+    screen.on("display-metrics-changed", () => this.window.setBounds(screen.getPrimaryDisplay().bounds));
     if (this.signIns) {
       const wc = this.dashboard.webContents;
       this.signInFlow = new SignInFlow({
@@ -399,6 +402,10 @@ export class Display {
     this.hub.update({ config_rev: config.rev, view: config.isConfigured ? "dashboard" : "setup" });
     if (this.signInFlow) this.signInFlow.config = config;
     if (!this.window) return;
+    // At start only when the screen hangs turned, so a rotation set in the desktop stays.
+    if (previous ? previous.rotation !== config.rotation : config.rotation !== 0) {
+      rotateDisplay(config.rotation).then((turned) => console.log(`PleatView: turned ${turned.join(", ") || "no screen"} for ${config.rotation}°`));
+    }
     this.dashboard.webContents.setZoomFactor(config.zoom / 100);
     const moved = !previous || previous.haUrl !== config.haUrl || previous.haToken !== config.haToken ||
       previous.kiosk !== config.kiosk || previous.renderStream !== config.renderStream;
