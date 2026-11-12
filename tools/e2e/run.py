@@ -948,15 +948,16 @@ def checks(r: Run, report: Report, apk: Path) -> None:
             # paused player's controls are up, so look at the picture: its top-right corner.
             edge = wait_for("the alert card's red edge", lambda: (n := colour_pixels((0.5, 0, 1, 0.4), (255, 110, 110), r.tools_image)) > 500 and n,
                             timeout=20, interval=1)
-            # The emulator runs without sound, so only a real TV can play the tones.
+            # Both tones played (the emulator's sound goes nowhere, but Android plays it all the same).
             tones = adb("logcat", "-d", "-s", "PleatView:*", check=False)
-            if "No tone" in tones and r.device:
-                raise AssertionError("the tone didn't play" + tones.split("No tone", 1)[1][:120])
+            for tone in ("chime", "alarm"):
+                if f"Tone: {tone}" not in tones:
+                    why = tones.split("No tone", 1)[1][:120] if "No tone" in tones else ""
+                    raise AssertionError(f"the {tone} didn't play{why}")
         finally:
             ha.call("media_player", "media_stop", {"entity_id": entity["id"]})
             wait_for("the dashboard after stop", lambda: state()["state"] == "idle", timeout=20)
-        heard = "tones not checked: the emulator has no sound" if not r.device else "tones played"
-        return f"the warning left the video playing; the alert paused it, its card edged in red ({edge} px); {heard}"
+        return f"the warning's chime left the video playing; the alert paused it with its alarm, its card edged in red ({edge} px)"
 
     def camera():
         ha.call("pleatview", "show_camera", {"entity_id": entity["id"], "camera": "camera.demo_camera",

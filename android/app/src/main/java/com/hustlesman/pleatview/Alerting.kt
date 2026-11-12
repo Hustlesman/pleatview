@@ -80,11 +80,14 @@ class Alerting(private val app: Context) {
             Log.w(TAG, "No tone: ${e.message}")
             return
         }
-        // A TV without a usable output for this kind of sound gives an uninitialized track.
+        // A TV without a usable output for this kind of sound gives an uninitialized track. A
+        // static track only counts as initialized once its sound is in: until then its state is
+        // STATE_NO_STATIC_DATA, which is fine.
         try {
-            check(track.state == AudioTrack.STATE_INITIALIZED) { "no output" }
-            track.write(samples, 0, samples.size)
+            check(track.state != AudioTrack.STATE_UNINITIALIZED) { "no output" }
+            check(track.write(samples, 0, samples.size) == samples.size) { "the tone didn't fit" }
             track.play()
+            Log.i(TAG, "Tone: $name")
         } catch (e: Exception) {
             Log.w(TAG, "No tone: ${e.message}")
             track.release()
