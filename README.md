@@ -57,6 +57,9 @@ Three steps, and no computer needed for the TV.
 
 ### 1. TV app
 
+<a href="https://www.amazon.com.au/dp/B0HR2T6VWM"><img src="site/img/badges/amazon-appstore.png" alt="Available at Amazon Appstore" height="44" align="middle"></a>
+<a href="https://play.google.com/apps/testing/com.hustlesman.pleatview"><img src="site/img/badges/google-play.png" alt="Get it on Google Play" height="65" align="middle"></a>
+
 - **Fire TV and Fire tablets:** from the Amazon Appstore. Search for *PleatView* on the TV,
   or [open it on Amazon](https://www.amazon.com.au/dp/B0HR2T6VWM).
 - **Google TV, Android TV, phones and tablets:** Google Play has a beta until it goes public.
@@ -469,6 +472,7 @@ much. The app has the same link as a QR code under *Support PleatView* in its me
 
 [MIT](LICENSE). PleatView is not affiliated with Home Assistant, Nabu Casa, Google,
 Amazon, Raspberry Pi, Canonical, LG or Samsung; their names are used only to describe
-compatibility. The demo's video clip is *Caminandes: Gran Dillama*, © 2013 Blender
+compatibility. Google Play and the Google Play logo are trademarks of Google LLC. Amazon,
+Amazon Appstore and their logos are trademarks of Amazon.com, Inc. or its affiliates. The demo's video clip is *Caminandes: Gran Dillama*, © 2013 Blender
 Foundation, [CC BY 3.0](https://creativecommons.org/licenses/by/3.0/); its photos are CC0
 ([credits](android/app/src/main/assets/demo/CREDITS.txt)).
