@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import logging
 from typing import Any
 
@@ -464,8 +465,14 @@ class PleatViewMediaPlayer(PleatViewEntity, MediaPlayerEntity):
                 "show_image", url=self._device.media_url(f"/api/camera_proxy_stream/{camera}"), mode=mode, **layout)
             return
         try:
-            stream_path = await async_request_stream(self.hass, camera, "hls")
-        except HomeAssistantError as err:
+            try:
+                stream_path = await async_request_stream(self.hass, camera, "hls")
+            except ValueError:
+                # Home Assistant's stream raises this when it's asked again just as it shuts
+                # down an idle HLS output (seen right after a camera's duration ran out).
+                await asyncio.sleep(1)
+                stream_path = await async_request_stream(self.hass, camera, "hls")
+        except (HomeAssistantError, ValueError) as err:
             _LOGGER.debug("No HLS stream for %s (%s); showing MJPEG instead", camera, err)
             await self._device.async_command(
                 "show_image",
