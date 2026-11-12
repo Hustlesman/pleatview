@@ -1,0 +1,52 @@
+# Updates are proposed as pull requests, reviewed like any other change before they're merged.
+# Monthly and grouped per ecosystem, and only for versions out for a week (a bad release is
+# usually pulled by then).
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+    cooldown:
+      default-days: 7
+    groups:
+      actions:
+        patterns: ["*"]
+
+  - package-ecosystem: gradle
+    directory: /android
+    schedule:
+      interval: monthly
+    cooldown:
+      default-days: 7
+    groups:
+      android:
+        patterns: ["*"]
+
+  - package-ecosystem: npm
+    directory: /linux
+    schedule:
+      interval: monthly
+    cooldown:
+      default-days: 7
+    groups:
+      linux:
+        patterns: ["*"]
+
+  - package-ecosystem: pip
+    directory: /
+    schedule:
+      interval: monthly
+    cooldown:
+      default-days: 7
+    groups:
+      python-tests:
+        patterns: ["*"]
+
+  # The images people run: the renderer and the console.
+  - package-ecosystem: docker
+    directories: [/renderer, /console]
+    schedule:
+      interval: monthly
+    cooldown:
+      default-days: 7

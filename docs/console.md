@@ -189,9 +189,9 @@ installed package and version, for audits and vulnerability scans.
 
 ## Packages
 
-Approved on 11 Nov 2026, all from Debian 13's main archive, on `debian:trixie-slim` pinned by
-digest: `python3`, `python3-aiohttp`, `python3-cryptography` (certificates, encryption,
-device keys), `ffmpeg` and `tini`. Anything more needs approval first.
+All from Debian 13's main archive, on `debian:trixie-slim` pinned by digest: `python3`,
+`python3-aiohttp`, `python3-cryptography` (certificates, encryption, device keys), `ffmpeg`
+and `tini`. Nothing else is installed.
 
 ## Threats considered
 
@@ -208,19 +208,19 @@ device keys), `ffmpeg` and `tini`. Anything more needs approval first.
 
 ## The work, in order
 
-1. **Foundation** (done 11 Nov): the server, first start, sign-in, tenants and sites,
+1. **Foundation** (done): the server, first start, sign-in, tenants and sites,
    discovering and pairing screens, their live state, commands, the audit log, the
    installable web app, the Docker image and tests.
-2. Two-factor sign-in, members and roles in the web app (done 11 Nov).
-3. The apps' home page without Home Assistant (Android and Linux; done 11 Nov).
-4. Groups, pages and the media library with conversion (done 11 Nov).
-5. Schedules (done 11 Nov): a page as the home page by day and time, on a screen, a group or
+2. Two-factor sign-in, members and roles in the web app (done).
+3. The apps' home page without Home Assistant (Android and Linux; done).
+4. Groups, pages and the media library with conversion (done).
+5. Schedules (done): a page as the home page by day and time, on a screen, a group or
    a site, by the site's clock (the most specific wins). Playlists came with step 4.
-6. Many sites and organisations (11 Nov: time zones per site; organisations renamed, exported
+6. Many sites and organisations (so far: time zones per site; organisations renamed, exported
    as JSON without secrets, and deleted with their key by an administrator). While the console
    can't be reached, screens keep their home page; a web page goes on showing. A playlist is
    sent to the Android app and PleatView Light (1.0.17) as a list they play and keep in
    their own cache, so it plays on offline and after a restart; other screens play the
    playlist page from their browser's cache. Still to come: S1's connections for sites
-   elsewhere. Since 12 Nov the console drives renderers itself, so PleatView Light works on
+   elsewhere. The console drives renderers itself, so PleatView Light works on
    sites without Home Assistant.

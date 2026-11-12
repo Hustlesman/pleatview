@@ -1,7 +1,7 @@
 # PleatView protocol v2: screens connect out (design)
 
 Status: a design for [S1](../ROADMAP.md#s1--secure-remote-management) and the web player
-([M4](../ROADMAP.md#m4--web-player)), 12 Nov 2026, decided the same day. It's built with M4,
+([M4](../ROADMAP.md#m4--web-player)), November 2026. It's built with M4,
 so Home Assistant and the console get it in the same app version.
 
 ## Why
@@ -67,11 +67,11 @@ Once enrolled with a v2 controller, a screen can turn its v1 server off (a setti
 controller sets). Home Assistant's integration serves `/api/pleatview/v2` itself, so the
 same app works with Home Assistant and with the console.
 
-## Decided (12 Nov 2026)
+## Decisions
 
 - **Keys:** ECDSA P-256, which every Android Keystore has since Android 6 and browsers'
   WebCrypto has too (the web player).
-- **PleatView Light** signs with `python3-cryptography` from Debian (approved).
+- **PleatView Light** signs with `python3-cryptography` from Debian.
 - **The controller's certificate:** one the screen's system trusts, or one pinned at
   enrolment.
 - **Home Assistant and the console together,** with M4.
