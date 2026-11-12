@@ -20,7 +20,8 @@ docker build -q -t "$image" "$root/tools/android-build" > /dev/null
 # installed APK (a different key forces an uninstall, which wipes pairing and settings).
 mkdir -p "$HOME/.gradle" "$HOME/.android"
 
-# The keystore lives outside the repository; mount its folder read-only.
+# The whole repository is mounted: unit tests read examples shared with the other apps
+# (tests/fixtures). The keystore lives outside the repository; mount its folder read-only.
 keystore=()
 if [ -n "${PLEATVIEW_KEYSTORE:-}" ]; then
   dir="$(cd "$(dirname "$PLEATVIEW_KEYSTORE")" && pwd)"
@@ -34,6 +35,6 @@ exec docker run --rm \
   "${keystore[@]}" \
   -v "$HOME/.gradle:/gradle" \
   -v "$HOME/.android:/tmp/home/.android" \
-  -v "$root/android:/work" \
-  -w /work \
+  -v "$root:/repo" \
+  -w /repo/android \
   "$image" ./gradlew --no-daemon --console=plain "${tasks[@]}"

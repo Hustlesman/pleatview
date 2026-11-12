@@ -144,36 +144,17 @@ back.
 
 ## Clicks and drags after a page loads
 
-Some pages keep nothing in their address: a map's view, a side bar, a cookie banner. The
-renderer can click and drag on them once they load. Add the steps to the end of the page's
-address, after `#pleatview=`, separated by `;`:
-
-| Step | What it does |
-| --- | --- |
-| `wait:3` | Waits 3 seconds (60 at most) |
-| `click:Reject all` | Clicks the first button, link or other element showing that text, whatever its capitals. It waits up to 20 seconds for it, and goes on without it if it never shows |
-| `click:50,20` | Clicks at 50 % of the screen's width and 20 % of its height |
-| `drag:80,60,30,45` | Drags from one place to another with the left mouse button, in percent |
-| `rightdrag:50,60,50,50` | The same with the right button, which turns or tilts many 3D maps |
-| `scroll:50,50,-300` | Turns the mouse wheel there by 300 pixels: up, or zoom in on many maps |
-
-For example, Radware's live threat map with its side bar collapsed, turned left and tilted
-slightly so New Zealand shows with Europe, Africa and Asia:
+Pages the renderer draws take [page steps](page-steps.md) too: clicks on a button's text or
+a CSS selector, clicks at a place, drags and scrolls, added to the page's address after
+`#pleatview=`, to clear a cookie banner, close a pop-up or turn a map. For example, Radware's
+live threat map with its side bar collapsed and the map turned:
 
 ```text
 https://livethreatmap.radware.com/#pleatview=wait:5;click:Collapse;wait:2;drag:80,65,45,43;wait:2;click:Reject all
 ```
 
-Use the address for a Webpage dashboard (*Settings → Dashboards → Add dashboard →
-Webpage*) or with `pleatview.show_url`.
-
-- The steps run again after every load, because a reload loses what they did. A click
-  that reloads the page, as many cookie banners do, starts them again: put such clicks last.
-- Places are percentages, so the same steps fit every TV. A TV at a higher density gets the
-  page's narrower layout (a 1080p TV at density 2 shows it 960 pixels wide), where a button
-  can be elsewhere or missing. A click on text finds the button wherever it is.
-- Steps act on the page itself, not inside its frames, and only when the renderer shows
-  it. A TV that runs its own pages ignores them.
+The renderer draws the page at the TV's size and density, so the steps press the same places
+they would on the TV.
 
 ## Privacy and security
 

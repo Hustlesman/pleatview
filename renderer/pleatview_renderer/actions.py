@@ -6,7 +6,9 @@ dashboard or `pleatview.show_url` carries them with no setting anywhere else:
 
     https://example.com/map#pleatview=click:Reject all;click:Collapse;drag:70,60,35,45
 
-Places are percentages of the screen's width and height, so the steps fit every TV size.
+A click names the text it presses, a CSS selector (`click:css=#consent .accept`), or a place.
+Places are percentages of the screen's width and height, so the steps fit every TV size. The
+Android and Linux apps take the same steps on the pages they show themselves.
 """
 
 from __future__ import annotations
@@ -15,6 +17,7 @@ import asyncio
 from dataclasses import dataclass
 import json
 import logging
+from pathlib import Path
 from typing import Any, Protocol
 from urllib.parse import unquote
 
@@ -36,6 +39,7 @@ class Step:
     kind: str  # wait, click, drag, rightdrag, scroll
     text: str = ""
     numbers: tuple[float, ...] = ()
+    css: str = ""  # a click on what this CSS selector matches
 
 
 def split(url: str) -> tuple[str, tuple[Step, ...]]:
@@ -62,11 +66,17 @@ def parse(text: str) -> tuple[Step, ...]:
             seconds = _numbers(arg, 1, 0, MAX_WAIT, f"wait takes seconds from 0 to {MAX_WAIT}")[0]
             steps.append(Step("wait", numbers=(seconds,)))
         elif name == "click":
+            if arg.lower().startswith("css="):
+                selector = arg[4:].strip()
+                if not selector or len(selector) > 200:
+                    raise ValueError("click:css= takes a CSS selector, such as #consent .accept")
+                steps.append(Step("click", css=selector))
+                continue
             try:
                 steps.append(Step("click", numbers=_numbers(arg, 2, 0, 100, "")))
             except ValueError:
                 if not arg or len(arg) > 200:
-                    raise ValueError("click takes the text of what to click, or x,y in percent") from None
+                    raise ValueError("click takes the text of what to click, css= and a selector, or x,y in percent") from None
                 steps.append(Step("click", text=arg))
         elif name in ("drag", "rightdrag"):
             steps.append(Step(name, numbers=_numbers(arg, 4, 0, 100, f"{name} takes x1,y1,x2,y2 in percent")))
@@ -96,26 +106,8 @@ class Browser(Protocol):
     async def call(self, method: str, **params: Any) -> dict[str, Any]: ...
 
 
-# The middle of the first thing on the page that shows [text] (case aside): buttons and links
-# first, then any element of its own; null while there's none on the screen.
-FIND = """
-((wanted) => {
-  const label = (el) => (el.innerText || el.value || el.getAttribute('aria-label') || el.title || '')
-    .trim().replace(/\\s+/g, ' ').toLowerCase();
-  const shown = (el) => {
-    const r = el.getBoundingClientRect(), s = getComputedStyle(el);
-    return r.width > 0 && r.height > 0 && s.visibility !== 'hidden' && s.pointerEvents !== 'none'
-      && r.right > 0 && r.bottom > 0 && r.left < innerWidth && r.top < innerHeight;
-  };
-  const pick = (selector, own) => [...document.querySelectorAll(selector)]
-    .find((el) => (!own || el.children.length === 0) && label(el) === wanted && shown(el));
-  const el = pick('button, a, [role=button], input[type=button], input[type=submit], summary, label', false)
-    || pick('body *', true);
-  if (!el) return null;
-  const r = el.getBoundingClientRect();
-  return [r.left + r.width / 2, r.top + r.height / 2];
-})(%s)
-"""
+# Where a click presses: shared with the Android and Linux apps (find.js).
+FIND = (Path(__file__).parent / "find.js").read_text()
 
 
 async def perform(browser: Browser, steps: tuple[Step, ...], name: str = "") -> None:
@@ -130,9 +122,9 @@ async def perform(browser: Browser, steps: tuple[Step, ...], name: str = "") -> 
             await asyncio.sleep(step.numbers[0])
             continue
         if step.kind == "click":
-            where = point(*step.numbers) if step.numbers else await _find(browser, step.text)
+            where = point(*step.numbers) if step.numbers else await _find(browser, step)
             if where is None:
-                _LOGGER.info("%s: nothing showing %r to click", name, step.text)
+                _LOGGER.info("%s: nothing showing %r to click", name, step.css or step.text)
                 continue
             await _press(browser, *where)
         elif step.kind in ("drag", "rightdrag"):
@@ -150,11 +142,15 @@ async def _value(browser: Browser, expression: str) -> Any:
     return result.get("result", {}).get("value")
 
 
-async def _find(browser: Browser, text: str) -> tuple[float, float] | None:
+async def _find(browser: Browser, step: Step) -> tuple[float, float] | None:
     loop = asyncio.get_running_loop()
     deadline = loop.time() + FIND_SECONDS
+    wanted = {"css": step.css} if step.css else {"text": step.text}
     while True:
-        found = await _value(browser, FIND % json.dumps(text.lower()))
+        found = await _value(browser, f"({FIND.strip()})({json.dumps(wanted)})")
+        if found == "bad selector":
+            _LOGGER.info("the page can't read the selector %r", step.css)
+            return None
         if found:
             return found[0], found[1]
         if loop.time() > deadline:

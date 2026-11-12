@@ -59,6 +59,7 @@ checklist below and tick what passed. Anything that fails gets its own issue.
 - [ ] A video cast with `extra: {loop: true}` starts again at the end
 - [ ] A web page opens full screen and as picture-in-picture (`show_url`)
 - [ ] A Webpage dashboard opens the site itself, not Home Assistant's frame, and keeps its sign-in (try one that needs a cookie, such as OpenSearch's playground) **(auto)**
+- [ ] Page steps (`#pleatview=`) on a Webpage dashboard and with `show_url`: a click on text clears a cookie banner, a click on CSS closes a pop-up, then a drag and a scroll, as real input **(auto)**
 - [ ] A Webpage dashboard with `/api/pleatview/wall?v=…` shows the wall in a browser, the Linux app and the TV; on the TV app, one renderer process per row; Back and other dashboards leave it, and its renderers end
 - [ ] *Render on Home Assistant*: with the renderer's address set for a TV, a wall of nine live streams plays smoothly on a Chromecast HD and a Fire TV Stick; the home dashboard shows signed in, in kiosk mode, at the TV's zoom; the remote's channel keys and `show_dashboard` switch what the renderer shows; restarting the renderer brings the picture back by itself; emptying the address goes back to the TV's own rendering
 - [ ] A dashboard behind a password prompt, and one behind a login form: the TV asks, the phone code signs in, and after a restart the saved sign-in is used without asking **(auto)**
