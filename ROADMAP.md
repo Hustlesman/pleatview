@@ -178,7 +178,10 @@ screens (setup, cards, media, menu) are web pages, a start for the M4 web player
 - [x] Discovered over mDNS, paired with the PIN, signs in to Home Assistant without a login
       page, kiosk mode, notification cards, video, audio and announcements, cameras in
       picture-in-picture, standby; checked in Docker against a Home Assistant (5 Nov)
-- [ ] Sign-ins for dashboards behind a login form or a password prompt, as on Android
+- [x] Sign-ins for dashboards behind a login form or a password prompt, as on Android (12 Nov:
+      asked on the screen and from a phone's code, filled by themselves afterwards, saved only
+      once the site accepts them, encrypted; checked in Docker with a password prompt and a
+      login form)
 - [x] `turn_off` puts the screen to sleep: wlopm (wlr-randr under cage), xset, and HDMI-CEC
       standby for TVs on either of a Raspberry Pi's HDMI ports (6 Nov)
 - [x] `.deb` packages for x86-64 and ARM64 on each GitHub release, with checksums and

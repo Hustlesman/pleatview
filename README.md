@@ -403,8 +403,8 @@ back to the local debug key. The app bundle for Google Play is
 
 - Android TVs (Google TV, Android TV, Fire TV), Android phones and tablets, and in beta
   Linux. LG webOS and Samsung Tizen need a separate web client, which is on the roadmap.
-- The Linux app doesn't have sign-ins for dashboards behind a password yet, and its own
-  screen is in English only (the phone page and the integration are translated).
+- The Linux app's own screen is in English only (the phone page and the integration are
+  translated).
 - Without the overlay permission, Home Assistant can't bring PleatView to the front, and
   notifications only show while PleatView is open.
 - `turn_on` can't reliably wake a TV that is fully asleep. Wake the panel with HDMI-CEC

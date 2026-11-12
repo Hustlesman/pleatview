@@ -56,9 +56,13 @@ doesn't find the TV's speakers. Restart the Pi with the TV on, or run
   desktop and other wlroots ones; `wlr-randr` under cage) or `xset` (X11), and puts a TV
   in standby over HDMI-CEC, on whichever HDMI port it's connected to, when `cec-ctl`
   (package `v4l-utils`) is installed.
-- Not yet: sign-ins for dashboards behind a login form or a password prompt, RTSP
-  streams (cameras play through Home Assistant's HLS stream instead), and translations of
-  the app's own screen. The phone page is translated, as on Android.
+- Sign-ins for dashboards behind a login form or a password prompt work as on Android:
+  the screen asks, with fields to type them in and a code to scan with a phone, and keeps
+  each sign-in for its own site only. They're encrypted with a key of the screen's own,
+  kept in a separate file that only you can read; a Linux kiosk has no key store like
+  Android's. *Forget saved sign-ins* in the menu removes them.
+- Not yet: RTSP streams (cameras play through Home Assistant's HLS stream instead) and
+  translations of the app's own screen. The phone page is translated, as on Android.
 - Settings live in `~/.config/pleatview`, readable only by you.
 
 ## Develop
