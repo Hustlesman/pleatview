@@ -146,8 +146,9 @@ casting and notifications need the integration.
 Every release runs `tools/e2e/run.py` on a TV against a real Home Assistant: pairing,
 dashboards, kiosk mode, notifications, video, cameras, Webpage dashboards, sign-ins,
 standby, a Home Assistant restart, a frozen page and an update in place. Last run on
-5 November 2026; [the test plan](docs/test-plan.md) lists every check. The Linux app is
-checked by hand for now.
+5 November 2026; [the test plan](docs/test-plan.md) lists every check. The Linux app gets
+the same kind of run, `tools/e2e/linux.py`, in Docker on a virtual screen (15 checks, all
+passing on 12 November), and is checked by hand on a Raspberry Pi 5.
 
 | Device | Result |
 | --- | --- |

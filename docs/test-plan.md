@@ -4,7 +4,8 @@ What we check before a release and on each reference device. `tools/e2e/run.py` 
 the items marked **(auto)** against a real Home Assistant, on an Android TV emulator (or, with
 `--form-factor phone` or `tablet`, a Pixel 8 emulator set to 360 dp wide like most Samsung
 phones, or a Pixel Tablet emulator) or, with `--device`, on
-a real TV over the network. The rest need a person.
+a real TV over the network. The rest need a person. `tools/e2e/linux.py` runs the Linux
+app's share of the automated checks the same way, in Docker on a virtual screen.
 
 Record a device run as a GitHub issue titled `Test run: vX.Y.Z on <device>`. Start with
 `tools/e2e/run.py --device <TV address> --ha-url … --ha-token-file …` and paste its

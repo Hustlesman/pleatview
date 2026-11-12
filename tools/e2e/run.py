@@ -753,6 +753,15 @@ def checks(r: Run, report: Report, apk: Path) -> None:
         flow_path = f"/api/config/config_entries/flow/{flow['flow_id']}"
         try:
             _, result = ha.api("POST", flow_path, {"host": r.tv_address[0], "port": r.tv_address[1]})
+            if result.get("step_id") == "approve":
+                # Home Assistant asks the TV first (one-press pairing). Back refuses, and the
+                # setup falls back to the PIN.
+                wait_for("the pairing question on the TV", lambda: "Pair with Home Assistant?" in screen_texts(), timeout=30)
+                report.screenshot("01-approve")
+                adb("shell", "input", "keyevent", "KEYCODE_BACK")
+                result = wait_for("the PIN step after refusing",
+                                  lambda: (step := ha.api("GET", flow_path)[1]).get("step_id") == "pair" and step,
+                                  timeout=30)
             if result.get("step_id") != "pair":
                 raise AssertionError(f"expected the PIN step, got {result}")
             _, result = ha.api("POST", flow_path, {"pin": "000000"})
