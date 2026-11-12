@@ -63,7 +63,7 @@
   <h3>The TV says Home Assistant rejected the access token</h3>
   <p>In Home Assistant, open the PleatView integration and choose <em>Reload</em> from its ⋮ menu; it issues a new token. If you use your own long-lived token, enter a new one with <em>Reconfigure</em>.</p>
 
-  <h3>Home Assistant can't bring PleatView to the front, or notifications only show while it's open</h3>
+  <h3>Home Assistant can't bring PleatView to the front, or notifications and cameras only show while it's open</h3>
   <p>Android only allows this for apps that may display over other apps. Open PleatView's menu (press Back on the home dashboard) and choose <em>Allow display over other apps</em>. If your TV has no such setting, which is common on Google TV, grant it once from a computer:</p>
   <p><code>adb shell appops set com.hustlesman.pleatview SYSTEM_ALERT_WINDOW allow</code></p>
 
@@ -74,7 +74,7 @@
   <p>Scan the code on the TV with your phone and sign in there. The TV saves the sign-in once the site accepts it and signs in again by itself after that. It keeps it encrypted on the TV only, for that one site. To remove it, press Back on the home dashboard and choose <em>Forget saved sign-ins</em>. Sites with two-step sign-in or a CAPTCHA still need you to finish on the TV with the remote.</p>
 
   <h3>A camera doesn't play</h3>
-  <p>Live video needs Home Assistant's <em>stream</em> integration, which is part of the default configuration. Cameras that can't stream are shown as a sequence of still images instead.</p>
+  <p>Live video needs Home Assistant's <em>stream</em> integration, which is part of the default configuration. Cameras that can't stream are shown as a sequence of still images instead, and so is a camera over another app on a TV that can't decode a second video while the app plays its own.</p>
 
   <h3>I cleared PleatView's data or reinstalled it</h3>
   <p>Home Assistant notices and asks for the new PIN under <em>Settings → Devices &amp; services</em>. After that, all settings come back automatically.</p>

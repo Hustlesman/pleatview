@@ -3,8 +3,13 @@ name: Website
 on:
   push:
     branches: [main]
-    paths: [site/**, .github/workflows/pages.yml]
+    paths: [site/**, tools/site-release.py, .github/workflows/pages.yml]
+  # The site shows the latest release's version and date (tools/site-release.py). The
+  # release workflow asks for a deploy on main (only main may deploy the site), and a
+  # daily one catches anything missed.
   workflow_dispatch:
+  schedule:
+    - cron: "17 20 * * *"
 
 # Actions are pinned to commits: this workflow publishes the website.
 permissions:
@@ -26,6 +31,10 @@ jobs:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           persist-credentials: false
+      - name: The latest release's version and date
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 tools/site-release.py site
       - uses: actions/configure-pages@983d7736d9b0ae728b81ab479565c72886d7745b # v5.0.0
       - uses: actions/upload-pages-artifact@56afc609e74202658d3ffba0e8f6dda462b719fa # v3.0.1
         with:
