@@ -55,18 +55,26 @@ Three steps, and no computer needed for the TV.
 
 ### 1. TV app
 
-On the TV, install the free **Downloader** app (from Google Play on Google TV, or the
-Amazon Appstore on Fire TV). Open it, enter **`pleatview.hustlesman.com/apk`** and
-choose *Install*. Android asks once to allow installs from Downloader.
+- **Fire TV and Fire tablets:** from the Amazon Appstore. Search for *PleatView* on the TV,
+  or [open it on Amazon](https://www.amazon.com.au/dp/B0HR2T6VWM).
+- **Google TV, Android TV, phones and tablets:** Google Play has a beta until it goes public.
+  Join [the testers' group](https://groups.google.com/g/pleatview-testers), then [the test](https://play.google.com/apps/testing/com.hustlesman.pleatview), and install PleatView from
+  Google Play.
+- **No store, or a TV the stores don't offer it on:** install the free **Downloader** app,
+  open it, enter **`pleatview.hustlesman.com/apk`** and choose *Install*. Android asks once
+  to allow installs from Downloader.
+
+Google Play's version and the download update each other; Amazon signs its version itself,
+so moving between it and the download means uninstalling first (Home Assistant then asks for
+the new PIN, and keeps the settings).
 
 On an Android phone or tablet, open the same address in its browser and install the
 download; Android asks once to allow installs from the browser. For a wall-mounted tablet,
 set its screen lock to None or Swipe: with a PIN, pattern or password, Home Assistant can't
 wake it or show PleatView over the lock screen.
 
-The link always serves the newest signed release from
-[GitHub Releases](https://github.com/Hustlesman/pleatview/releases). Google Play and Amazon
-Appstore listings are on the [roadmap](ROADMAP.md). Android 7.0 or newer; see
+The download always serves the newest signed release from
+[GitHub Releases](https://github.com/Hustlesman/pleatview/releases). Android 7.0 or newer; see
 [Tested on](#tested-on) for the devices.
 
 **On a Raspberry Pi or a Linux mini PC** (beta): PleatView for Linux runs on a Raspberry Pi
