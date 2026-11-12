@@ -71,8 +71,9 @@ class PleatViewClient:
         return str(self._base)
 
     async def get_info(self) -> dict[str, Any]:
-        """Return device identity; works without pairing."""
-        return await self._request("GET", "/api/info", auth=False)
+        """Return device identity; works without pairing. With the token when there is one: a screen
+        asked without it takes it for someone about to pair, and shows its PIN (PleatView Light)."""
+        return await self._request("GET", "/api/info")
 
     async def pair(self, pin: str, client: str) -> str:
         """Exchange the PIN shown on the TV for an API token."""
