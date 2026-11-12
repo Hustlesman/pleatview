@@ -59,6 +59,14 @@ async def test_state_follows_the_tv(hass: HomeAssistant, fake_tv: FakeTV) -> Non
     # Signed camera and media links stay out of the history.
     assert {"media_content_id", "url"} <= state.state_info["unrecorded_attributes"]
 
+    # Behind another app it's off, unless a camera shows in a corner over that app.
+    await fake_tv.push(media=None, foreground=False)
+    await _wait_for(lambda: hass.states.get(ENTITY).state == "off")
+    await fake_tv.push(overlay={"kind": "video", "url": "http://x/cam.m3u8", "mode": "pip"})
+    await _wait_for(lambda: hass.states.get(ENTITY).state == "playing")
+    assert hass.states.get(ENTITY).attributes["media_content_type"] == "video"
+    await fake_tv.push(overlay=None, foreground=True)
+
     await fake_tv.push(media=None, power="standby")
     await _wait_for(lambda: hass.states.get(ENTITY).state == "off")
 
@@ -193,6 +201,8 @@ async def test_pleatview_services(hass: HomeAssistant, fake_tv: FakeTV) -> None:
     assert hls["mode"] == "pip"
     assert hls["duration"] == 30
     assert hls["url"].startswith(f"{HA_URL}/api/hls/abc/master_playlist.m3u8")
+    # The picture stream, for a TV that can't play the video beside another app's.
+    assert hls["fallback_url"].startswith(f"{HA_URL}/api/camera_proxy_stream/camera.door?authSig=")
     assert mjpeg["command"] == "show_image"
     assert mjpeg["url"].startswith(f"{HA_URL}/api/camera_proxy_stream/camera.door?authSig=")
     assert notify["image_url"].startswith(f"{HA_URL}/api/camera_proxy/camera.door?authSig=")

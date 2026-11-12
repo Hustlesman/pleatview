@@ -21,7 +21,9 @@ Raspberry Pi ([PleatView for Linux](linux/README.md)). Made by Hustlesman.
   from network loss, Home Assistant restarts and WebView crashes on its own.
 - **Casting from Home Assistant.** The TV is a `media_player`: play media from the media
   browser, camera streams, TTS announcements, internet radio, images and web pages.
-  Video can play full screen or as picture-in-picture over the dashboard.
+  Video can play full screen or as picture-in-picture over the dashboard, and a camera or
+  video in picture-in-picture also over other apps: the door camera in a corner while a
+  film plays on, with its sound and the remote left to the film.
 - **Notifications.** `notify.send_message` shows a card on the TV, optionally with a
   camera snapshot or an animated picture, even over other apps when allowed.
 - **Any web dashboard.** Webpage dashboards (Grafana, UniFi, OpenSearch…) open directly,
@@ -98,7 +100,8 @@ adb shell appops set com.hustlesman.pleatview SYSTEM_ALERT_WINDOW allow
 ```
 
 This lets Home Assistant bring PleatView to the front (Android blocks background starts
-otherwise), show notifications over other apps, and open PleatView at boot.
+otherwise), show notifications and picture-in-picture cameras over other apps, and open
+PleatView at boot.
 
 </details>
 
@@ -410,7 +413,10 @@ back to the local debug key. The app bundle for Google Play is
   notifications only show while PleatView is open.
 - `turn_on` can't reliably wake a TV that is fully asleep. Wake the panel with HDMI-CEC
   or the Android TV Remote integration first.
-- Picture-in-picture video shows only inside PleatView, not over other apps.
+- Over another app, a picture-in-picture camera or video is muted, and can't be moved
+  or closed with the remote: it closes after its `duration`, with `media_player.media_stop`,
+  or when PleatView comes to the front. A TV that can't decode a second video beside the
+  other app's shows the camera's picture stream instead, at a few frames a second.
 - Kiosk mode styles Home Assistant's frontend from the outside, so frontend releases can
   break it. It covers the 2026 layout and the older Material drawer.
 - Self-signed HTTPS certificates are rejected. Use the internal `http://` URL or a
