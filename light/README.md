@@ -3,7 +3,8 @@
 For screens on computers too small for a browser, such as a Raspberry Pi Zero 2 W (512 MB).
 Home Assistant renders the dashboards ([Render on Home Assistant](../docs/render-on-home-assistant.md))
 and PleatView Light only plays that stream, full screen, with mpv and the board's video
-decoder. Media and notifications from Home Assistant play on top.
+decoder, and the dashboards' sound through HDMI. Media and notifications from Home Assistant
+play on top.
 
 It's paired and controlled like any PleatView screen: Home Assistant finds it, you enter the
 PIN it shows, and in its options you choose a renderer under *Render on Home Assistant*.

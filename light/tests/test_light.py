@@ -106,18 +106,20 @@ class Screens(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(saved[-1].rev, "1")
         self.assertEqual(screen.state["url"], "http://ha:8123/a")
         self.assertEqual(screen.state["dashboard"], "/a")
-        self.assertIn(("play", "http://ha:8123/s/index.m3u8", {"live": True}), player.calls)
+        self.assertIn(("play", "http://ha:8123/s/index.m3u8", {"live": True, "volume": 1.0}), player.calls)
         await screen.command({"command": "next_dashboard"})
         self.assertEqual(screen.state["dashboard"], "/b")
         await screen.command({"command": "show_dashboard", "path": "/c", "duration": 0.05})
         self.assertEqual(screen.state["dashboard"], "/c")
         await asyncio.sleep(0.1)
         self.assertEqual(screen.state["dashboard"], "/a")  # home again
-        await screen.command({"command": "play_media", "url": "http://x/clip.mp4", "title": "Clip"})
+        await screen.command({"command": "set_volume", "level": 0.5})
+        await screen.command({"command": "play_media", "url": "http://x/clip.mp4", "title": "Clip", "volume": 0.2})
         self.assertEqual(screen.state["media"]["title"], "Clip")
         await screen.on_player({"event": "end-file", "reason": "eof"})
         self.assertIsNone(screen.state["media"])
-        self.assertEqual(player.calls[-2][:2], ("play", "http://ha:8123/s/index.m3u8"))
+        # Back to the stream, and its sound at the screen's volume, not the clip's.
+        self.assertEqual(player.calls[-2], ("play", "http://ha:8123/s/index.m3u8", {"live": True, "volume": 0.5}))
         await screen.command({"command": "turn_off"})
         self.assertEqual((screen.state["power"], player.calls[-1]), ("standby", ("blank",)))
         with self.assertRaises(ValueError):
@@ -145,7 +147,7 @@ class Playlists(unittest.IsolatedAsyncioTestCase):
             self.assertTrue(screen.state["view"] == "dashboard")
             self.assertEqual(player.calls[-1][:2], ("play", "http://c/play/t/m/a/play.mp4"))  # not cached: streamed
             await screen.on_player({"event": "end-file", "reason": "eof"})
-            self.assertEqual(player.calls[-1], ("play", str(cache.path(items[1]["url"])), {"image_seconds": 5}))
+            self.assertEqual(player.calls[-1], ("play", str(cache.path(items[1]["url"])), {"image_seconds": 5, "volume": 1.0}))
             await screen.command({"command": "show_dashboard", "path": "/other"})
             await asyncio.sleep(0.05)
             plays = [c for c in player.calls if c[0] == "play"]

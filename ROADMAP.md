@@ -60,7 +60,7 @@ Done so far: v1.0.17 is published as a signed release with build attestations (v
 casting, cameras, notifications, sign-ins, standby, updates, and recovery from a Home Assistant
 restart and from a frozen page. Phone and tablet emulators add touch, turning the screen and the lock screen, for 24. A Fire TV Stick and a Chromecast HD pass the automated checks,
 and both ran a 42-hour soak test without a crash. A security review on 2 Nov fixed what it
-found, and no dependency has a known vulnerability. 68 app tests, 52 integration tests, 13
+found, and no dependency has a known vulnerability. 68 app tests, 52 integration tests, 20
 renderer tests, 53 console tests and 7 PleatView Light tests pass. Since 1.0.14, Home Assistant
 can render a TV's dashboards and stream them to it, which a Home Assistant OS app does too; since
 1.0.17, on renderers paired by name, also on other machines, and for PleatView Light on the
@@ -229,9 +229,10 @@ to the network.
 - [x] **The console drives renderers too** (12 Nov): paired from the console, chosen per screen,
       so PleatView Light works on sites without Home Assistant
 - [ ] **One stream for several TVs** showing the same dashboard at the same size, rendered once
-- [ ] **Notifications, cameras and sound in the stream**, so a screen that only plays the
+- [x] **Notifications, cameras and sound in the stream**, so a screen that only plays the
       stream (the light client) gets them too (12 Nov: notifications and cameras, drawn by
-      the renderer; checked on a Raspberry Pi Zero 2 W. Sound still to do)
+      the renderer, and the pages' sound, in step with the picture to within a frame; checked
+      on a Raspberry Pi Zero 2 W)
 - [ ] **A sizing guide**, measured: what a wall of four camera sub-streams costs the renderer,
       and the hardware for eight such walls
 

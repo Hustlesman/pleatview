@@ -97,7 +97,8 @@ class Screen:
             return
         if config.render_stream:
             self.playing = "stream"
-            await self.player.play(config.render_stream, live=True)
+            # The stream has the dashboards' sound, at the screen's volume (not a clip's own).
+            await self.player.play(config.render_stream, live=True, volume=self.state["volume"])
             if time.monotonic() >= self.pin_until:
                 await self.player.clear_text()
         else:
@@ -120,7 +121,8 @@ class Screen:
         source = self.cache.source(item["url"]) if self.cache else item["url"]
         if time.monotonic() >= self.pin_until:
             await self.player.clear_text()
-        await self.player.play(source, image_seconds=item["seconds"] if item["kind"] == "image" else None)
+        await self.player.play(source, image_seconds=item["seconds"] if item["kind"] == "image" else None,
+                               volume=self.state["volume"])
 
     async def _playlist_next(self, failed: bool) -> None:
         items = self.config.home_playlist

@@ -1,4 +1,5 @@
-"""One TV's screen on the renderer: an X display, Chromium on it, and ffmpeg encoding it to HLS."""
+"""One TV's screen on the renderer: an X display, Chromium on it, and ffmpeg encoding it and its
+sound to HLS."""
 
 from __future__ import annotations
 
@@ -16,7 +17,7 @@ from urllib.parse import urlsplit
 
 import aiohttp
 
-from . import actions, page
+from . import actions, page, sound
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -27,6 +28,8 @@ PLAYLIST_SEGMENTS = 6
 FPS = 30
 # Quality of the hardware encoder (lower is better): about 4 to 8 Mbit/s for a wall of videos at 1080p.
 VAAPI_QP = 26
+# The sound: AAC, which every TV plays.
+AUDIO_ARGS = ["-c:a", "aac", "-b:a", "128k"]
 _displays = itertools.count(10)
 # The user that Xvfb and Chromium run as, when the renderer itself runs as root.
 UNPRIVILEGED = os.environ.get("RENDER_USER", "render")
@@ -78,7 +81,25 @@ def encoder_args(encoder: str, screen: Screen) -> list[str]:
     ]
 
 
-def chromium_args(screen: Screen, profile: Path, port: int) -> list[str]:
+def ffmpeg_args(encoder: str, screen: Screen, display: str, folder: Path, with_sound: bool) -> list[str]:
+    """The display, and the sound on standard input (sound.py), to HLS segments in folder."""
+    sound_in = [*sound.FFMPEG_INPUT, "-i", "pipe:0"] if with_sound else []
+    sound_out = ["-map", "0:v", "-map", "1:a", *AUDIO_ARGS] if with_sound else []
+    return [
+        "-loglevel", "error", "-nostdin",
+        *(["-vaapi_device", "/dev/dri/renderD128"] if encoder == "vaapi" else []),
+        # The picture waits for the sound that goes with it.
+        *(["-itsoffset", str(sound.DELAY)] if with_sound else []),
+        "-f", "x11grab", "-framerate", str(FPS), "-video_size", f"{screen.width}x{screen.height}",
+        "-draw_mouse", "0", "-i", display, *sound_in,
+        *encoder_args(encoder, screen), *sound_out,
+        "-f", "hls", "-hls_time", str(SEGMENT_SECONDS), "-hls_list_size", str(PLAYLIST_SEGMENTS),
+        "-hls_flags", "delete_segments+independent_segments+omit_endlist+temp_file",
+        "-hls_segment_filename", str(folder / "s%d.ts"), str(folder / "index.m3u8"),
+    ]
+
+
+def chromium_args(screen: Screen, profile: Path, port: int, alsa_device: str | None = None) -> list[str]:
     return [
         # Chromium's own sandbox needs privileges a container doesn't have; it runs as an
         # unprivileged user instead (see _spawn).
@@ -92,7 +113,8 @@ def chromium_args(screen: Screen, profile: Path, port: int) -> list[str]:
         "--disable-features=Translate,MediaRouter,DialMediaRouteProvider",
         "--hide-scrollbars",
         "--disable-dev-shm-usage",  # a Home Assistant add-on gets a small /dev/shm
-        "--mute-audio",  # the stream is video only
+        # The page's sound goes into the stream (sound.py), or nowhere.
+        f"--alsa-output-device={alsa_device}" if alsa_device else "--mute-audio",
         "--autoplay-policy=no-user-gesture-required",
         "--password-store=basic",
         # WebGL (3D maps, Windy) drawn by Mesa on the processor (llvmpipe, through the display's
@@ -135,6 +157,7 @@ class Session:
         self.overlays: dict[str, tuple[dict[str, Any], float]] = {}
         self._overlay_task: asyncio.Task[None] | None = None
         self._steps_task: asyncio.Task[None] | None = None
+        self._sound: sound.Sound | None = None
 
     @property
     def playlist(self) -> Path:
@@ -225,22 +248,35 @@ class Session:
         ))
         await _wait_for(lambda: Path(f"/tmp/.X11-unix/X{self.display}").exists(), 10)
         env = {**os.environ, "DISPLAY": display}
-        self._procs.append(await _spawn("chromium", *chromium_args(screen, profile, self.port), env=env))
+        env.pop("PULSE_SERVER", None)  # Chromium would play there instead of into the stream
+        self._sound = self._open_sound(profile / "sound")
+        device = sound.alsa_device(self._sound.fifo) if self._sound else None
+        self._procs.append(await _spawn("chromium", *chromium_args(screen, profile, self.port, device), env=env))
         self._cdp = await Cdp.connect(self.port)
         self._cdp.on_event = self._on_event
         await self._cdp.call("Page.enable")
         await self._install_script()
         await self._cdp.call("Page.navigate", url=screen.page[0])
         self._procs.append(await _spawn(
-            "ffmpeg", "-loglevel", "error", "-nostdin",
-            *(["-vaapi_device", "/dev/dri/renderD128"] if self.encoder == "vaapi" else []),
-            "-f", "x11grab", "-framerate", str(FPS), "-video_size", f"{screen.width}x{screen.height}",
-            "-draw_mouse", "0", "-i", display,
-            *encoder_args(self.encoder, screen),
-            "-f", "hls", "-hls_time", str(SEGMENT_SECONDS), "-hls_list_size", str(PLAYLIST_SEGMENTS),
-            "-hls_flags", "delete_segments+independent_segments+omit_endlist+temp_file",
-            "-hls_segment_filename", str(self.folder / "s%d.ts"), str(self.playlist),
+            "ffmpeg", *ffmpeg_args(self.encoder, screen, display, self.folder, with_sound=self._sound is not None),
+            stdin=self._sound.ffmpeg_input if self._sound else None,
         ))
+        if self._sound:
+            self._sound.start()
+
+    def _open_sound(self, fifo: Path) -> sound.Sound | None:
+        """The pipe Chromium plays into; without one, the stream is silent."""
+        if not sound.alsa_device(fifo):
+            _LOGGER.warning("%s: no sound: %s can't be passed to Chromium", self.key, fifo)
+            return None
+        result = sound.Sound(fifo)
+        try:
+            result.open(UNPRIVILEGED if UNPRIVILEGED and os.geteuid() == 0 else None)
+        except OSError as err:
+            _LOGGER.warning("%s: no sound (%s)", self.key, err)
+            asyncio.ensure_future(result.stop())
+            return None
+        return result
 
     async def overlay(self, item: dict[str, Any] | None, kind: str = "") -> None:
         """Shows a notification or a camera on top of the page for its seconds (None clears)."""
@@ -346,18 +382,21 @@ class Session:
                     proc.kill()
                     await proc.wait()
         self._procs.clear()
+        if self._sound:
+            await self._sound.stop()
+            self._sound = None
         Path(f"/tmp/.X11-unix/X{self.display}").unlink(missing_ok=True)
         Path(f"/tmp/.X{self.display}-lock").unlink(missing_ok=True)
 
 
-async def _spawn(program: str, *args: str, env: dict[str, str] | None = None) -> asyncio.subprocess.Process:
+async def _spawn(program: str, *args: str, env: dict[str, str] | None = None, stdin: int | None = None) -> asyncio.subprocess.Process:
     command = [program, *args]
     if program in ("Xvfb", "chromium") and UNPRIVILEGED and os.geteuid() == 0:
         # What shows web pages runs without root; only ffmpeg keeps the GPU it encodes with.
         command = ["setpriv", f"--reuid={UNPRIVILEGED}", f"--regid={UNPRIVILEGED}", "--init-groups", "--", *command]
         env = {**(env or os.environ), "HOME": f"/home/{UNPRIVILEGED}"}
     return await asyncio.create_subprocess_exec(
-        *command, env=env, stdin=asyncio.subprocess.DEVNULL,
+        *command, env=env, stdin=asyncio.subprocess.DEVNULL if stdin is None else stdin,
         stdout=asyncio.subprocess.DEVNULL, stderr=None if program == "ffmpeg" else asyncio.subprocess.DEVNULL,
     )
 
