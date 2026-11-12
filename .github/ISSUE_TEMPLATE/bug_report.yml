@@ -33,7 +33,6 @@ body:
         - Linux app (Raspberry Pi, mini PC)
         - PleatView Light
         - PleatView Renderer
-        - PleatView Console
         - Home Assistant integration only
     validations:
       required: true
