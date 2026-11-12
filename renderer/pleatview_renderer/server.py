@@ -220,13 +220,9 @@ def create_app(root: Path, encoder: str, max_sessions: int = 4, *, pairing: Pair
         if not KEY.match(key):
             raise web.HTTPNotFound()
         try:
-            body = await request.json()
-        except ValueError:
-            raise web.HTTPBadRequest(text="expected a JSON object") from None
-        try:
-            screen = parse_screen(body)
-        except ValueError as err:  # the request's own mistake, said in words Home Assistant logs
-            raise web.HTTPBadRequest(text=str(err)) from None
+            screen = parse_screen(await request.json())
+        except ValueError as err:
+            raise web.HTTPBadRequest(text=str(err)) from err
         session = sessions.get(key)
         if session is None:
             if len(sessions) >= max_sessions:
@@ -245,12 +241,9 @@ def create_app(root: Path, encoder: str, max_sessions: int = 4, *, pairing: Pair
             raise web.HTTPNotFound()
         try:
             body = await request.json()
-        except ValueError:
-            raise web.HTTPBadRequest(text="expected a JSON object") from None
-        try:
             item = parse_overlay(body)
-        except ValueError as err:  # the request's own mistake, said in words Home Assistant logs
-            raise web.HTTPBadRequest(text=str(err)) from None
+        except ValueError as err:
+            raise web.HTTPBadRequest(text=str(err)) from err
         await session.overlay(item, kind=str(body.get("clear") or "") if item is None else "")
         return web.json_response({})
 
