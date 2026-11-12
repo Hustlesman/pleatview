@@ -267,8 +267,11 @@ const single = document.getElementById("single");
 if (single) {
   const CAMERAS = { "front-door": ["front_door", "Front door"], driveway: ["driveway", "Driveway"],
     garden: ["garden", "Back garden"], "living-room": ["living_room", "Living room"] };
+  const PICTURES = { "front-door": "front-door.webp", driveway: "driveway.webp", garden: "garden.webp",
+    "living-room": "living-room.webp" };
+  // Only the cameras above, by their own names: not "constructor" or other inherited ones.
   const id = new URLSearchParams(location.search).get("id");
-  const camera = CAMERAS[id] ? id : "front-door";
-  single.querySelector("img").src = `${camera}.webp`;
+  const camera = Object.prototype.hasOwnProperty.call(CAMERAS, id) ? id : "front-door";
+  single.querySelector("img").src = PICTURES[camera];
   single.querySelector(".label").textContent = t(...CAMERAS[camera]);
 }

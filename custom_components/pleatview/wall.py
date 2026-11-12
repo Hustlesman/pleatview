@@ -8,6 +8,7 @@ themselves, which come from YouTube's privacy-enhanced mode.
 
 from __future__ import annotations
 
+import html
 import math
 import re
 
@@ -27,7 +28,7 @@ shows how to put a wall on a TV.</p>"""
 
 def video_ids(value: str) -> list[str]:
     """The valid video IDs in a comma-separated list, at most MAX_STREAMS."""
-    return [part for part in (p.strip() for p in value.split(",")) if VIDEO_ID.match(part)][:MAX_STREAMS]
+    return [part for part in (p.strip() for p in value.split(",")) if VIDEO_ID.fullmatch(part)][:MAX_STREAMS]
 
 
 def wall_html(ids: list[str]) -> str:
@@ -40,11 +41,12 @@ def wall_html(ids: list[str]) -> str:
         rows = math.ceil(len(ids) / columns)
         # Home Assistant sends no referrer (Referrer-Policy: no-referrer), and YouTube won't
         # play without one (error 153): each player asks for one of its own.
+        # IDs are checked already (VIDEO_ID); escaped all the same, so the page never depends on it.
         body = "".join(
             f'<iframe src="https://www.youtube-nocookie.com/embed/{video}?autoplay=1&amp;mute=1&amp;controls=0'
             f'&amp;playsinline=1&amp;rel=0&amp;loop=1&amp;playlist={video}" allow="autoplay; encrypted-media"'
             ' referrerpolicy="strict-origin-when-cross-origin"></iframe>'
-            for video in ids
+            for video in (html.escape(i, quote=True) for i in ids)
         )
         style = (
             "html,body{margin:0;height:100%;background:#000;overflow:hidden}"
