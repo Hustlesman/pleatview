@@ -255,6 +255,23 @@ class StepsTest(unittest.TestCase):
             server.parse_screen({"url": "https://a.example/#pleatview=fly:1"})
         self.assertEqual(server.parse_screen({"url": self.MAP}).page[0], "https://map.example/live?x=1")
 
+    def test_the_steps_are_the_apps_steps(self) -> None:
+        examples = Path(__file__).resolve().parents[2] / "tests" / "fixtures" / "page-steps.json"
+        if not examples.exists():
+            self.skipTest("the repository's examples aren't here")
+        data = json.loads(examples.read_text())
+        for example in data["valid"]:
+            page, steps = actions.split(example["address"])
+            self.assertEqual(page, example["page"], example["address"])
+            expected = [actions.Step(s["kind"], s.get("text", ""), tuple(float(n) for n in s.get("numbers", ())), s.get("css", ""))
+                        for s in example["steps"]]
+            self.assertEqual(list(steps), expected, example["address"])
+        for address in data["invalid"]:
+            with self.assertRaises(ValueError, msg=address):
+                actions.split(address)
+        android = Path(__file__).resolve().parents[2] / "android/app/src/main/assets/find.js"
+        self.assertEqual((Path(actions.__file__).parent / "find.js").read_text(), android.read_text())
+
     def test_the_steps_move_the_mouse(self) -> None:
         class Browser:
             def __init__(self) -> None:
@@ -265,18 +282,20 @@ class StepsTest(unittest.TestCase):
                 if method == "Runtime.evaluate":
                     if params["expression"] == "[innerWidth, innerHeight]":
                         return {"result": {"value": [1000, 500]}}
-                    return {"result": {"value": [10, 20] if '"collapse"' in params["expression"] else None}}
+                    found = {'"Collapse"': [10, 20, 1000, 500], '"#ok"': [30, 40, 1000, 500], '"#bad("': "bad selector"}
+                    return {"result": {"value": next((v for k, v in found.items() if k in params["expression"]), None)}}
                 return {}
 
         browser = Browser()
-        steps = actions.parse("click:Collapse;click:Missing;drag:50,50,10,50;rightdrag:50,50,50,40;scroll:20,40,-100")
+        steps = actions.parse("click:Collapse;click:Missing;click:css=#ok;click:css=#bad(;drag:50,50,10,50;rightdrag:50,50,50,40;scroll:20,40,-100")
         with mock.patch.object(actions, "FIND_SECONDS", 0), mock.patch.object(actions, "PAUSE", 0):
             asyncio.run(actions.perform(browser, steps))
         mouse = [p for m, p in browser.calls if m == "Input.dispatchMouseEvent"]
         presses = [p for p in mouse if p["type"] == "mousePressed"]
-        self.assertEqual([(p["x"], p["y"], p["button"]) for p in presses], [(10, 20, "left"), (500, 250, "left"), (500, 250, "right")])
+        self.assertEqual([(p["x"], p["y"], p["button"]) for p in presses],
+                         [(10, 20, "left"), (30, 40, "left"), (500, 250, "left"), (500, 250, "right")])
         released = [p for p in mouse if p["type"] == "mouseReleased"]
-        self.assertEqual([(p["x"], p["y"]) for p in released], [(10, 20), (100, 250), (500, 200)])
+        self.assertEqual([(p["x"], p["y"]) for p in released], [(10, 20), (30, 40), (100, 250), (500, 200)])
         drag = [p for p in mouse if p["type"] == "mouseMoved" and p.get("buttons") == 1]
         self.assertEqual(len(drag), actions.DRAG_MOVES)
         wheel = [p for p in mouse if p["type"] == "mouseWheel"]

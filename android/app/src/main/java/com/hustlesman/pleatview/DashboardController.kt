@@ -55,6 +55,9 @@ class DashboardController(
     private val main = Handler(Looper.getMainLooper())
     private var config = Config()
     private var webView: WebView? = null
+
+    // The page's steps (#pleatview=…), taken after each load of its site.
+    private var steps: PageSteps.Runner? = null
     private var scriptHandler: ScriptHandler? = null
     private var scriptTemplate: String? = null
     private var zoomHandler: ScriptHandler? = null
@@ -158,7 +161,9 @@ class DashboardController(
         val path = Config.pathOf(url)
         // A file such as /local/streams.html isn't a frontend route: the frontend would show
         // its default dashboard instead, so it gets a real page load.
-        if (ready && !failed && config.isHaUrl(url) && config.isHaUrl(view.url) && Config.isFrontendPath(path)) {
+        if (ready && !failed && config.isHaUrl(url) && config.isHaUrl(view.url) && Config.isFrontendPath(path) &&
+            !url.contains("#" + PageSteps.PARAM) && !url.contains("&" + PageSteps.PARAM)
+        ) {
             view.evaluateJavascript("window.__pleatview&&window.__pleatview.navigate(${JSONObject.quote(path)})", null)
             currentUrl = url
             view.clearHistory()
@@ -268,6 +273,7 @@ class DashboardController(
         container.addView(view, FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT))
         webView = view
         signInFlow.attach(view)
+        steps = PageSteps.Runner(view, main)
         view.requestFocus()
     }
 
@@ -286,6 +292,8 @@ class DashboardController(
             it.destroy()
         }
         webView = null
+        steps?.stop()
+        steps = null
     }
 
     @SuppressLint("SetJavaScriptEnabled")
@@ -410,7 +418,8 @@ class DashboardController(
             wall.hide()
             rendered.hide()
             view.visibility = View.VISIBLE
-            view.loadUrl(url)
+            // The page's own address; its steps follow once it loads.
+            view.loadUrl(steps?.open(url) ?: url)
         }
         publishLocation(null)
     }
@@ -647,6 +656,7 @@ class DashboardController(
 
         override fun onPageFinished(view: WebView, url: String?) {
             if (view !== webView || url == BLANK) return
+            steps?.loaded(url)
             signInFlow.onPageLoaded()
             signInFlow.onPageShown(url, finished = true)
             if (!listenerMode && config.isHaUrl(url)) {

@@ -8,6 +8,7 @@ itself on the network. The checks follow the Android ones in run.py where they a
     tools/e2e/linux.py                         # Home Assistant stable
     tools/e2e/linux.py --ha-version 2025.1.4   # any Home Assistant image tag
     tools/e2e/linux.py --keep                  # leave the containers running afterwards
+    tools/e2e/linux.py --only steps            # after pairing, only the checks whose name contains "steps"
 
 Screenshots, logs and a summary go to tools/e2e/out/<time>-linux/. Exit status 0 means
 every check passed.
@@ -30,7 +31,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import run as e2e  # noqa: E402 - the Android harness: Home Assistant, the test site, the report
 from run import (  # noqa: E402
-    HA_CONTAINER, HA_PORT, KIOSK_PROBE, MEDIA_PORT, ROOT, SITE_PASSWORD, SITE_USER, TEST_GIF, TEST_PAGE,
+    HA_CONTAINER, HA_PORT, KIOSK_PROBE, MEDIA_PORT, ROOT, SITE_PASSWORD, SITE_USER, STEPS, TEST_GIF, TEST_PAGE,
     TEST_VIDEO, HomeAssistant, QuietFiles, QuietServer, Report, SkipCheck, http, run, set_options, wait_for,
     ws_call,
 )
@@ -322,6 +323,42 @@ def checks(r: LinuxRun, report: Report) -> None:
             ha.call("pleatview", "home", {"entity_id": entity["id"]})
         return f"{r.page_url} opened directly"
 
+    def page_steps():
+        site = r.media_server
+        created = ws_call(r, {"type": "lovelace/dashboards/create", "url_path": "dashboard-pleatview-steps",
+                              "title": "E2E steps", "mode": "storage", "show_in_sidebar": True})
+        if not created.get("success"):
+            raise AssertionError(f"couldn't create a Webpage dashboard: {created}")
+        expected = ["steps: consent Reject all", "steps: promo closed", "steps: map dragged", "steps: scrolled down"]
+        try:
+            site.events.clear()
+            ws_call(r, {"type": "lovelace/config/save", "url_path": "dashboard-pleatview-steps",
+                        "config": {"strategy": {"type": "iframe", "url": f"{r.site}/steps/#pleatview={STEPS}"}}})
+            wait_for("the new dashboard among the screen's sources",
+                     lambda: "E2E steps" in (state()["attributes"].get("source_list") or []), timeout=20)
+            seen = lambda: [e for e in site.events if e.startswith("steps: ")]  # noqa: E731
+
+            def took_steps(how: str) -> None:
+                try:
+                    wait_for(f"the page's steps ({how})", lambda: len(seen()) >= len(expected), timeout=60)
+                except TimeoutError:
+                    notes = [e for e in site.events if e.startswith("note: ")]
+                    raise AssertionError(f"{how}: the page saw only {seen()}; expected {expected}; {notes}") from None
+                if seen() != expected:
+                    raise AssertionError(f"{how}: the page saw {seen()}; expected {expected}, in that order")
+
+            ha.call("pleatview", "show_dashboard", {"entity_id": entity["id"], "path": "/dashboard-pleatview-steps"})
+            took_steps("a Webpage dashboard")
+            report.screenshot("07-page-steps")
+            site.events.clear()
+            ha.call("pleatview", "show_url", {"entity_id": entity["id"], "url": f"{r.site}/steps/#pleatview={STEPS}"})
+            took_steps("show_url")
+        finally:
+            ws_call(r, {"type": "lovelace/dashboards/delete", "dashboard_id": created["result"]["id"]})
+            ha.call("pleatview", "home", {"entity_id": entity["id"]})
+        return ("a cookie banner cleared by its text, a pop-up closed by CSS, a map dragged and the page scrolled, "
+                "on a Webpage dashboard and with show_url")
+
     def sign_ins():
         site = r.media_server
         created = ws_call(r, {"type": "lovelace/dashboards/create", "url_path": "dashboard-pleatview-signin",
@@ -480,6 +517,7 @@ def checks(r: LinuxRun, report: Report) -> None:
         ("Camera in picture-in-picture", camera),
         ("show_dashboard and home", dashboards),
         ("Webpage dashboard opens the site directly", webpage),
+        ("Page steps: clicks on text and CSS, a drag, a scroll", page_steps),
         ("Sign-ins: password prompt and login form", sign_ins),
         ("Rotation waits for a dashboard's duration", rotation_waits),
         ("Menu: address, PIN and dashboards", menu),
@@ -487,6 +525,8 @@ def checks(r: LinuxRun, report: Report) -> None:
         ("Reconnects after Home Assistant restarts", ha_restart),
         ("One-press pairing: Enter on the screen instead of the PIN", one_press),
     ):
+        if r.args.only and r.args.only.lower() not in name.lower():
+            continue
         report.check(name, fn)
 
 
@@ -494,6 +534,7 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     parser.add_argument("--ha-version", default="stable", help="throwaway Home Assistant image tag (default: stable)")
     parser.add_argument("--keep", action="store_true", help="leave the containers running")
+    parser.add_argument("--only", metavar="TEXT", help="after pairing, run only the checks whose name contains TEXT")
     args = parser.parse_args()
     r = LinuxRun(args)
     out = ROOT / "tools/e2e/out" / (datetime.now().strftime("%Y%m%d-%H%M%S") + "-linux")

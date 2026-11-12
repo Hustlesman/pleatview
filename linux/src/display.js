@@ -10,6 +10,7 @@ import { isFrontendPath, pathOf } from "./config.js";
 import { displayPower } from "./power.js";
 import { rotateDisplay } from "./rotation.js";
 import { SignInFlow } from "./signins.js";
+import { Stepper } from "./steps.js";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const CALLBACK_NAME = /^[A-Za-z_$][A-Za-z0-9_$]{0,63}$/;
@@ -39,6 +40,7 @@ export class Display {
     this.setup = setup;
     this.quit = quit;
     this.pageScript = readFileSync(join(assets, "pleatview.js"), "utf8");
+    this.findScript = readFileSync(join(assets, "find.js"), "utf8");
     this.uiRegions = { full: true, rects: [] };
     this.retryAttempt = 0;
     this.forcedAuth = [];
@@ -56,6 +58,8 @@ export class Display {
     const { bounds } = screen.getPrimaryDisplay();
     this.window = new BaseWindow({ ...bounds, frame: false, kiosk: true, fullscreen: true, backgroundColor: "#0f1417", title: "PleatView" });
     this.dashboard = this.view(join(here, "preload-dashboard.cjs"), "persist:dashboard");
+    // The page's steps (#pleatview=…), taken after each load of its site.
+    this.dashboardSteps = new Stepper({ webContents: this.dashboard.webContents, size: () => this.dashboard.getBounds() }, this.findScript);
     this.ui = this.view(join(here, "preload-ui.cjs"), undefined, { backgroundThrottling: false });
     this.ui.setBackgroundColor("#00000000");
     this.window.contentView.addChildView(this.dashboard);
@@ -559,13 +563,15 @@ export class Display {
       return;
     }
     if (this.signInFlow) this.signInFlow.target = url;
+    // The page's own address; the steps it carries follow once it loads.
+    const page = this.dashboardSteps.open(url);
     const load = () => {
       this.signInFlow?.onNavigate();
-      wc.loadURL(url).catch(() => {});
+      wc.loadURL(page).catch(() => {});
     };
-    if (config.isHaUrl(url) && config.isHaUrl(wc.getURL()) && !wc.isLoading() && isFrontendPath(pathOf(url))) {
-      const js = `window.__pleatview?(window.__pleatview.navigate(${JSON.stringify(pathOf(url))}),true):false`;
-      wc.executeJavaScript(js).then((done) => done || load(), load);
+    if (config.isHaUrl(page) && config.isHaUrl(wc.getURL()) && !wc.isLoading() && isFrontendPath(pathOf(page))) {
+      const js = `window.__pleatview?(window.__pleatview.navigate(${JSON.stringify(pathOf(page))}),true):false`;
+      wc.executeJavaScript(js).then((done) => (done ? this.dashboardSteps.list.length && this.dashboardSteps.take() : load()), load);
     } else {
       load();
     }
@@ -576,10 +582,12 @@ export class Display {
     if (!this.web) {
       this.web = this.view(undefined, "persist:dashboard");
       this.window.contentView.addChildView(this.web, 1); // above the dashboard, below PleatView's layer
+      const web = this.web;
+      this.webSteps = new Stepper({ webContents: web.webContents, size: () => web.getBounds() }, this.findScript);
     }
     this.webLayout = command.layout;
     this.web.setBounds(this.webBounds(command.layout));
-    this.web.webContents.loadURL(command.url).catch(() => {});
+    this.web.webContents.loadURL(this.webSteps.open(command.url)).catch(() => {});
     clearTimeout(this.timers.web);
     if (command.duration) this.timers.web = setTimeout(() => this.closeOverlays(), command.duration * 1000);
   }
@@ -604,6 +612,8 @@ export class Display {
   closeOverlays() {
     clearTimeout(this.timers.web);
     if (this.web) {
+      this.webSteps.stop();
+      this.webSteps = null;
       this.window.contentView.removeChildView(this.web);
       this.web.webContents.close();
       this.web = null;

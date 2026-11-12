@@ -346,6 +346,46 @@ LOGIN_FORM = """<!doctype html><html><head><title>Sign in</title></head><body st
 """
 
 
+# A page for page steps (#pleatview=…): a cookie banner drawn late, a pop-up whose close
+# button has no text (only CSS finds it), a map to drag and a long page to scroll. It tells
+# the test site what happened, and only for real input (isTrusted), as a hand would make.
+STEPS_PAGE = """<!doctype html><html><head><meta name="viewport" content="width=device-width"><title>Steps</title>
+<style>body{font:28px sans-serif;margin:0;height:4000px;background:#123;color:#fff}
+#map{position:fixed;left:10%;top:55%;width:80%;height:30%;background:#264;touch-action:none}
+#consent{position:fixed;left:10%;right:10%;top:20%;background:#fff;color:#000;padding:24px;z-index:2}
+#consent button{font:inherit;margin-right:16px}
+#promo{position:fixed;right:4%;top:4%;background:#fc0;color:#000;padding:12px;z-index:3}
+.close{display:inline-block;width:48px;height:48px;background:#000;margin-left:12px;vertical-align:middle;cursor:pointer}</style>
+</head><body><p style="margin:24px">Page steps</p><div id="map">Map</div><script>
+const tell = (what) => fetch('/steps/event?' + encodeURIComponent(what));
+const note = (what) => fetch('/steps/note?' + encodeURIComponent(what));
+setTimeout(() => {
+  document.body.insertAdjacentHTML('beforeend',
+    '<div id="consent"><p>This site uses cookies.</p><button>Accept all</button><button>Reject all</button></div>' +
+    '<div id="promo">Sale!<span class="close" title=""></span></div>');
+  for (const b of document.querySelectorAll('#consent button')) b.onclick = (e) => {
+    if (e.isTrusted) tell('consent ' + b.textContent);
+    document.getElementById('consent').remove();
+  };
+  document.querySelector('#promo .close').onclick = (e) => {
+    if (e.isTrusted) tell('promo closed');
+    document.getElementById('promo').remove();
+  };
+}, 1500);
+let from = null;
+const map = document.getElementById('map');
+map.onpointerdown = (e) => { note(`down ${e.pointerType} ${e.button} ${e.isTrusted}`); if (e.isTrusted) from = e.clientX; };
+map.onpointerup = (e) => { note(`up ${e.pointerType} ${e.button} ${Math.round(e.clientX - (from ?? e.clientX))}`); if (from !== null && e.clientX - from > 100) tell('map dragged'); from = null; };
+let moves = 0;
+map.onpointermove = (e) => { if (moves++ === 0) note(`first move ${e.pointerType} buttons ${e.buttons}`); };
+let told = false;
+addEventListener('wheel', (e) => { if (e.isTrusted && e.deltaY > 0 && !told) { told = true; tell('scrolled down'); } });
+</script></body></html>
+"""
+# The steps for it: wait, a click on text, a click on CSS, a drag and a scroll.
+STEPS = "wait:1;click:Reject%20all;click:css=%23promo%20.close;drag:30,70,70,70;scroll:50,40,600"
+
+
 class QuietFiles(SimpleHTTPRequestHandler):
     """The test video and page, plus pages behind a password prompt and a login form."""
 
@@ -372,6 +412,12 @@ class QuietFiles(SimpleHTTPRequestHandler):
                 site.events.append("form ok")
                 return self._page("<p>Signed in with a form</p>")
             return self._page(LOGIN_FORM, raw=True)
+        if self.path.startswith("/steps/"):
+            if self.path.startswith(("/steps/event?", "/steps/note?")):
+                kind = "steps" if self.path.startswith("/steps/event?") else "note"
+                site.events.append(f"{kind}: " + urllib.parse.unquote(self.path.split("?", 1)[1]))
+                return self._page("")
+            return self._page(STEPS_PAGE, raw=True)
         return super().do_GET()
 
     def do_POST(self) -> None:  # noqa: N802 - name from the base class
@@ -1086,6 +1132,44 @@ def checks(r: Run, report: Report, apk: Path) -> None:
             ha.call("pleatview", "home", {"entity_id": entity["id"]})
         return f"{r.page_url} opened directly"
 
+    def page_steps():
+        # Steps in the page's address (#pleatview=…): a click on text clears a cookie banner,
+        # one on CSS closes a pop-up, then a drag and a scroll, as real input.
+        site = r.media_server
+        created = ws_call(r, {"type": "lovelace/dashboards/create", "url_path": "dashboard-pleatview-steps",
+                              "title": "E2E steps", "mode": "storage", "show_in_sidebar": True})
+        if not created.get("success"):
+            raise AssertionError(f"couldn't create a Webpage dashboard: {created}")
+        expected = ["steps: consent Reject all", "steps: promo closed", "steps: map dragged", "steps: scrolled down"]
+        try:
+            site.events.clear()
+            ws_call(r, {"type": "lovelace/config/save", "url_path": "dashboard-pleatview-steps",
+                        "config": {"strategy": {"type": "iframe", "url": f"{r.site}/steps/#pleatview={STEPS}"}}})
+            wait_for("the new dashboard among the TV's sources",
+                     lambda: "E2E steps" in (state()["attributes"].get("source_list") or []), timeout=20)
+            seen = lambda: [e for e in site.events if e.startswith("steps: ")]  # noqa: E731
+
+            def took_steps(how: str) -> None:
+                try:
+                    wait_for(f"the page's steps ({how})", lambda: len(seen()) >= len(expected), timeout=60)
+                except TimeoutError:
+                    notes = [e for e in site.events if e.startswith("note: ")]
+                    raise AssertionError(f"{how}: the page saw only {seen()}; expected {expected}; {notes}") from None
+                if seen() != expected:
+                    raise AssertionError(f"{how}: the page saw {seen()}; expected {expected}, in that order")
+
+            ha.call("pleatview", "show_dashboard", {"entity_id": entity["id"], "path": "/dashboard-pleatview-steps"})
+            took_steps("a Webpage dashboard")
+            report.screenshot("07-page-steps")
+            site.events.clear()
+            ha.call("pleatview", "show_url", {"entity_id": entity["id"], "url": f"{r.site}/steps/#pleatview={STEPS}"})
+            took_steps("show_url")
+        finally:
+            ws_call(r, {"type": "lovelace/dashboards/delete", "dashboard_id": created["result"]["id"]})
+            ha.call("pleatview", "home", {"entity_id": entity["id"]})
+        return ("a cookie banner cleared by its text, a pop-up closed by CSS, a map dragged and the page scrolled, "
+                "on a Webpage dashboard and with show_url")
+
     def sign_ins():
         site = r.media_server
         created = ws_call(r, {"type": "lovelace/dashboards/create", "url_path": "dashboard-pleatview-signin",
@@ -1556,6 +1640,7 @@ def checks(r: Run, report: Report, apk: Path) -> None:
         ("Over another app: a card shows, then PleatView comes back", comes_back),
         ("Over another app: a camera and a video in picture-in-picture", pip_over_other_apps),
         ("Webpage dashboard opens the site directly", webpage),
+        ("Page steps: clicks on text and CSS, a drag, a scroll", page_steps),
         ("Sign-ins: entered from a phone, then saved", sign_ins),
         ("turn_off and turn_on", standby),
         ("Recovers after a Home Assistant restart", ha_restart),

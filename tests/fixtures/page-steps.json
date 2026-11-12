@@ -1,0 +1,25 @@
+{
+  "_about": "Page steps (#pleatview=...) and what each address gives: the page to open and its steps. The renderer, the Android app and the Linux app each parse these the same way (their tests read this file).",
+  "valid": [
+    {"address": "https://example.com/", "page": "https://example.com/", "steps": []},
+    {"address": "https://example.com/#tab=2", "page": "https://example.com/#tab=2", "steps": []},
+    {"address": "https://livethreatmap.radware.com/#pleatview=wait:5;click:Collapse;wait:2;drag:80,65,45,43;wait:2;click:Reject all",
+     "page": "https://livethreatmap.radware.com/",
+     "steps": [{"kind": "wait", "numbers": [5]}, {"kind": "click", "text": "Collapse"}, {"kind": "wait", "numbers": [2]},
+               {"kind": "drag", "numbers": [80, 65, 45, 43]}, {"kind": "wait", "numbers": [2]}, {"kind": "click", "text": "Reject all"}]},
+    {"address": "https://news.example/#x=1&pleatview=click:css=%23consent%20.accept;scroll:50,50,-300;click:50,20",
+     "page": "https://news.example/#x=1",
+     "steps": [{"kind": "click", "css": "#consent .accept"}, {"kind": "scroll", "numbers": [50, 50, -300]}, {"kind": "click", "numbers": [50, 20]}]},
+    {"address": "https://a.example/#pleatview=click:css=div[role=dialog] button, .close;rightdrag:50,60,50,50;",
+     "page": "https://a.example/",
+     "steps": [{"kind": "click", "css": "div[role=dialog] button, .close"}, {"kind": "rightdrag", "numbers": [50, 60, 50, 50]}]}
+  ],
+  "invalid": [
+    "https://a.example/#pleatview=wait:61",
+    "https://a.example/#pleatview=click:",
+    "https://a.example/#pleatview=click:css=",
+    "https://a.example/#pleatview=drag:1,2,3",
+    "https://a.example/#pleatview=scroll:50,50,9000",
+    "https://a.example/#pleatview=dance:1"
+  ]
+}

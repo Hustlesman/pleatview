@@ -31,6 +31,7 @@ class WebOverlay(
 ) {
     private val main = Handler(Looper.getMainLooper())
     private var webView: WebView? = null
+    private var steps: PageSteps.Runner? = null // the page's steps (#pleatview=…)
     private val closeRunnable = Runnable { close() }
     private val demoPages = Demo.Pages(activity)
 
@@ -45,8 +46,11 @@ class WebOverlay(
         Layouts.apply(container, command.layout)
         container.visibility = View.VISIBLE
         when (command.kind) {
-            Command.WebKind.IMAGE -> view.loadDataWithBaseURL(null, imagePage(command.url), "text/html", "utf-8", null)
-            Command.WebKind.PAGE -> view.loadUrl(command.url)
+            Command.WebKind.IMAGE -> {
+                steps?.clear()
+                view.loadDataWithBaseURL(null, imagePage(command.url), "text/html", "utf-8", null)
+            }
+            Command.WebKind.PAGE -> view.loadUrl(steps?.open(command.url) ?: command.url)
         }
         val fullscreen = command.layout.mode == Command.Mode.FULLSCREEN
         view.isFocusable = fullscreen
@@ -67,6 +71,8 @@ class WebOverlay(
         if (current == null && webView == null) return
         current = null
         container.visibility = View.GONE
+        steps?.clear()
+        steps = null
         webView?.let {
             container.removeView(it)
             it.destroy()
@@ -104,12 +110,18 @@ class WebOverlay(
                 return scheme != "http" && scheme != "https"
             }
 
+            override fun onPageFinished(view: WebView, url: String?) {
+                if (view === webView) steps?.loaded(url)
+            }
+
             // The demo's camera comes from the app itself.
             override fun shouldInterceptRequest(view: WebView, request: WebResourceRequest): WebResourceResponse? =
                 demoPages.serve(request.url)
 
             override fun onRenderProcessGone(view: WebView, detail: RenderProcessGoneDetail): Boolean {
                 if (view === webView) {
+                    steps?.clear()
+                    steps = null
                     webView = null
                     container.removeView(view)
                     view.destroy()
@@ -126,6 +138,7 @@ class WebOverlay(
         }
         container.addView(view, FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT))
         webView = view
+        steps = PageSteps.Runner(view, main)
         return view
     }
 

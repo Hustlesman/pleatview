@@ -31,7 +31,9 @@ Raspberry Pi ([PleatView for Linux](linux/README.md)). Made by Hustlesman.
   stronger one (alarm, siren or bell). Each TV's settings pick its tones.
 - **Any web dashboard.** Webpage dashboards (Grafana, UniFi, OpenSearch…) open directly,
   zoomed to fit. When one asks for a password, the TV shows a QR code: sign in on your
-  phone, and the TV keeps the sign-in, encrypted, on the TV only.
+  phone, and the TV keeps the sign-in, encrypted, on the TV only. Steps in the page's address
+  press buttons once it loads, by their text or a CSS selector, to clear a cookie banner or
+  close a pop-up, then drag a map or scroll ([page steps](docs/page-steps.md)).
 - **Small.** The release APK is about 2.3 MB (the demo's video and photos are 0.9 MB of
   it), with no Google Play services and no cloud. Everything stays on your LAN.
 - **A demo, no server needed.** *Try the demo* on the setup screen shows a sample home and
@@ -198,6 +200,12 @@ TV opens the site itself rather than inside Home Assistant's frame, so sites tha
 frames or need their own sign-in cookie still load, and the zoom applies to them as well.
 A page of your own in `/config/www`, such as `/local/clock.html`, opens the same way
 (from 1.0.12), without Home Assistant's frontend running underneath.
+
+**Page steps** (from 1.0.19) do what a hand would after a page loads: add them to the
+Webpage dashboard's address, or `pleatview.show_url`'s, after `#pleatview=`. A click finds
+a button by its text or a CSS selector, so `#pleatview=click:Reject all;click:css=#promo .close`
+refuses a cookie banner and closes a pop-up whose button is only an icon. Waits, clicks at a
+place, drags and scrolls string along, for side bars and maps. See [page steps](docs/page-steps.md).
 
 **A wall of YouTube live streams** is a page your Home Assistant serves (from 1.0.15),
 `/api/pleatview/wall?v=ID,ID,…`, as a Webpage dashboard. The TV app shows it itself, each row
