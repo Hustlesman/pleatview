@@ -15,6 +15,7 @@ import socket
 from . import VERSION
 from .api import Api
 from .config import Config
+from .connect import Connection
 from .mdns import Responder, local_address
 from .pairing import Pairing
 from .player import Player
@@ -120,11 +121,17 @@ async def main() -> None:
                     size=screen_size(), cache=cache)
     pairing.on_changed = lambda: asyncio.ensure_future(screen.pin_changed())
     api = Api(screen, pairing, info)
+    # Protocol v2: the connection out to a controller anywhere, once one is given.
+    connection = Connection(folder, info=info, route=api.route, state=lambda: screen.state,
+                            subscribe=screen.subscribe, unsubscribe=screen.listeners.discard,
+                            show_code=screen.show_code, write=write_private)
+    api.connection = connection
     responder = Responder(lambda: {"id": device["id"], "name": name(), "api": str(API_VERSION), "version": VERSION},
                           PORT)
 
     server = await asyncio.start_server(api.handle, "0.0.0.0", PORT)
     player.start()
+    connection.start()
     try:
         await responder.start()
     except OSError as err:
@@ -142,10 +149,34 @@ async def main() -> None:
     await stop.wait()
     await responder.announce(ttl=0)
     responder.stop()
+    await connection.stop()
     server.close()
     await player.stop()
 
 
+def connect(url: str) -> int:
+    """pleatview-light connect URL: the running screen connects out to that controller and
+    shows a code to type there (protocol v2)."""
+    import urllib.error
+    import urllib.request
+    request = urllib.request.Request(f"http://127.0.0.1:{PORT}/api/connect", method="POST",
+                                     data=json.dumps({"url": url}).encode(),
+                                     headers={"Content-Type": "application/json"})
+    try:
+        urllib.request.urlopen(request, timeout=5).close()
+    except urllib.error.HTTPError as err:
+        print(json.loads(err.read() or b"{}").get("error", err))
+        return 1
+    except OSError as err:
+        print(f"PleatView Light isn't running here: {err}")
+        return 1
+    print("The screen now shows a code. Add the screen in the controller with it.")
+    return 0
+
+
 if __name__ == "__main__":
+    import sys
+    if sys.argv[1:2] == ["connect"] and len(sys.argv) == 3:
+        sys.exit(connect(sys.argv[2]))
     logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s: %(message)s")
     asyncio.run(main())
