@@ -7,19 +7,42 @@ Server-Sent Events with a ping every 20 seconds.
 from __future__ import annotations
 
 import asyncio
+import ipaddress
 import json
 import logging
 import re
 from typing import Any, Awaitable, Callable
 
 from .pairing import Pairing
+
+# Requests name the screen by its address, not another site's name: a web page elsewhere that
+# points its own name at the screen (DNS rebinding) is refused (docs/protocol.md).
+LOCAL_SUFFIXES = (".local", ".lan", ".home", ".home.arpa", ".internal")
+
+
+def host_allowed(value: str) -> bool:
+    host = value.strip().lower()
+    if not host:
+        return True  # HTTP/1.0 clients send none; browsers always do
+    if host.startswith("["):
+        host = host[1:host.find("]")] if "]" in host else host[1:]
+    elif host.count(":") == 1:
+        host = host.rsplit(":", 1)[0]
+    try:
+        ipaddress.ip_address(host)
+        return True
+    except ValueError:
+        pass
+    host = host.rstrip(".")
+    return host == "localhost" or "." not in host or host.endswith(LOCAL_SUFFIXES)
 from .screen import Screen
 
 _LOGGER = logging.getLogger(__name__)
 
 MAX_BODY = 256 * 1024
 REASONS = {200: "OK", 202: "Accepted", 400: "Bad Request", 401: "Unauthorized", 403: "Forbidden", 404: "Not Found",
-           405: "Method Not Allowed", 409: "Conflict", 413: "Payload Too Large", 429: "Too Many Requests"}
+           405: "Method Not Allowed", 409: "Conflict", 413: "Payload Too Large", 421: "Misdirected Request",
+           429: "Too Many Requests"}
 
 
 class Api:
@@ -43,6 +66,8 @@ class Api:
         lines = head.decode("latin-1").split("\r\n")
         method, path, _ = (lines[0].split(" ") + ["", ""])[:3]
         headers = {k.strip().lower(): v.strip() for k, _, v in (line.partition(":") for line in lines[1:] if line)}
+        if not host_allowed(headers.get("host", "")):
+            return await self._send(writer, 421, {"error": "misdirected"})
         length = int(headers.get("content-length") or 0)
         if length > MAX_BODY:
             return await self._send(writer, 413, {"error": "too_large"})

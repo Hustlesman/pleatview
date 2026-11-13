@@ -76,6 +76,7 @@ export class Pairing {
         this.failures = 0;
         this.lockedUntil = now + LOCKOUT_MS;
         this.rotatePin();
+        console.warn(`PleatView: pairing locked for ${LOCKOUT_MS / 1000} s after ${MAX_FAILURES} wrong PINs; the PIN changed`);
       }
       return { result: "invalid_pin" };
     }

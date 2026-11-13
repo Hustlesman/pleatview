@@ -4,6 +4,7 @@ import org.json.JSONArray
 import org.json.JSONObject
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -281,5 +282,14 @@ class ApiTest {
         assertEquals(202, request("POST", "/api/connect", """{"url":"$url","pin":"${pairing.pin}"}""").status)
         assertEquals(Triple(url, null, null), backend.enrolments.last())
         assertEquals(202, request("POST", "/api/connect", """{"url":"$url"}""", pair()).status) // or a paired client
+    }
+
+    @Test
+    fun `only the screen's own names - no DNS rebinding`() {
+        for (host in listOf(null, "", "192.168.1.20", "192.168.1.20:8765", "[fe80::1]:8765", "[::1]", "localhost:8765", "tv",
+            "tv.local", "tv.lan:8765", "tv.home.arpa", "tv.internal", "TV.LOCAL.")) assertTrue(host.toString(), hostAllowed(host))
+        for (host in listOf("rebind.evil.example", "rebind.evil.example:8765", "192.168.1.20.nip.io", "localhost.evil.example")) {
+            assertFalse(host, hostAllowed(host))
+        }
     }
 }

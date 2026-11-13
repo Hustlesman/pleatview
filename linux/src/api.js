@@ -1,6 +1,7 @@
 // The local control API, as in the Android app (Api.kt and HttpServer.kt). The wire format
 // is documented in docs/protocol.md; the Home Assistant integration is its client.
 import { createServer } from "node:http";
+import { isIP } from "node:net";
 import { BadCommand, parseCommand } from "./command.js";
 
 export const API_VERSION = 1;
@@ -87,10 +88,25 @@ export function createCalls(backend, pairing) {
   };
 }
 
+// Requests name the screen by its address, not another site's name: a web page elsewhere that
+// points its own name at the screen (DNS rebinding) is refused (docs/protocol.md).
+const LOCAL_SUFFIXES = [".local", ".lan", ".home", ".home.arpa", ".internal"];
+
+export function hostAllowed(value) {
+  let host = String(value ?? "").trim().toLowerCase();
+  if (!host) return true; // HTTP/1.0 clients send none; browsers always do
+  if (host.startsWith("[")) host = host.slice(1, host.includes("]") ? host.indexOf("]") : undefined);
+  else if ((host.match(/:/g) || []).length === 1) host = host.slice(0, host.lastIndexOf(":"));
+  if (isIP(host)) return true;
+  host = host.replace(/\.$/, "");
+  return host === "localhost" || !host.includes(".") || LOCAL_SUFFIXES.some((suffix) => host.endsWith(suffix));
+}
+
 export function createApi(backend, pairing, { local = (req) => LOOPBACK.has(req.socket.remoteAddress ?? "") } = {}) {
   let openStreams = 0;
 
   async function route(req, res) {
+    if (!hostAllowed(req.headers.host)) throw new HttpError(421, "misdirected");
     const url = new URL(req.url ?? "/", "http://screen");
     const path = url.pathname.replace(/\/+$/, "") || "/";
     switch (path) {

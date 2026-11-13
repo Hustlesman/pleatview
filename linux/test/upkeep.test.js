@@ -3,7 +3,7 @@ import { mkdirSync, mkdtempSync, readdirSync, rmSync, writeFileSync } from "node
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "node:test";
-import { createCalls } from "../src/api.js";
+import { createCalls, hostAllowed } from "../src/api.js";
 import { BadCommand, parseCommand } from "../src/command.js";
 import { Helper, RecentLog, checks, diagnostics, newer, redact } from "../src/upkeep.js";
 
@@ -84,4 +84,12 @@ test("protocol v2's diagnostics call, and refusals from upkeep's commands", asyn
   assert.deepEqual(await call("diagnostics", {}), { uptime: 5 });
   await assert.rejects(call("command", { command: "update", version: "1.0.20" }), /not_supported/);
   assert.deepEqual(await call("command", { command: "restart", what: "app" }), { ok: true });
+});
+
+test("only the screen's own names: no DNS rebinding", () => {
+  for (const host of [undefined, "", "192.168.1.20", "192.168.1.20:8765", "[fe80::1]:8765", "[::1]", "localhost:8765", "rpi5",
+    "rpi5.local", "tv.lan:8765", "tv.home.arpa", "tv.internal", "RPI5.LOCAL."]) assert.ok(hostAllowed(host), String(host));
+  for (const host of ["rebind.evil.example", "rebind.evil.example:8765", "192.168.1.20.nip.io", "localhost.evil.example"]) {
+    assert.ok(!hostAllowed(host), host);
+  }
 });

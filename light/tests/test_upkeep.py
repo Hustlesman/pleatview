@@ -16,7 +16,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from pleatview_light import upkeep  # noqa: E402
-from pleatview_light.api import Api  # noqa: E402
+from pleatview_light.api import Api, host_allowed  # noqa: E402
 from pleatview_light.config import Config  # noqa: E402
 from pleatview_light.pairing import Pairing  # noqa: E402
 from pleatview_light.screen import Screen  # noqa: E402
@@ -45,6 +45,15 @@ class Log(unittest.TestCase):
         self.assertTrue(upkeep.newer("1.1.0", "1.0.99"))
         self.assertFalse(upkeep.newer("1.0.19", "1.0.19"))
         self.assertFalse(upkeep.newer("1.0.9", "1.0.10"))
+
+
+class HostNames(unittest.TestCase):
+    def test_only_the_screens_own_names(self) -> None:
+        for host in ("", "192.168.1.20", "192.168.1.20:8765", "[fe80::1]:8765", "[::1]", "localhost:8765", "pizero",
+                     "pizero.local", "tv.lan:8765", "tv.home.arpa", "tv.internal", "PIZERO.LOCAL."):
+            self.assertTrue(host_allowed(host), host)
+        for host in ("rebind.evil.example", "rebind.evil.example:8765", "192.168.1.20.nip.io", "localhost.evil.example"):
+            self.assertFalse(host_allowed(host), host)
 
 
 class Diagnostics(unittest.IsolatedAsyncioTestCase):
