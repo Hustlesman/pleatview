@@ -257,9 +257,10 @@ and policies live in the controller.
       PleatView meets it, with a threat model for remote management and a check against the
       EU Cyber Resilience Act's essential requirements. A self-assessment that anyone can
       verify, not a certificate, with its gaps listed
-- [ ] **Protocol v2** ([design](docs/protocol-v2.md)): screens connect out over TLS 1.3,
-      enrol with a code and a key pair (P-256), and prove the key on every connection; built
-      with M4
+- [ ] **Protocol v2** ([specification](docs/protocol-v2.md)): screens connect out over TLS
+      1.3, enrol with a token after pairing or with a code from anywhere, and prove their key
+      (P-256) on every connection. Being built: the Android and Linux apps and PleatView Light
+      first, Home Assistant with M4
 
 **Exit:** a screen on another network is paired, controlled and removed through a ZTNA
 connector and over the open internet, with no open port at the screen's end, and the
