@@ -18,7 +18,7 @@ from .screen import Screen
 _LOGGER = logging.getLogger(__name__)
 
 MAX_BODY = 256 * 1024
-REASONS = {200: "OK", 400: "Bad Request", 401: "Unauthorized", 403: "Forbidden", 404: "Not Found",
+REASONS = {200: "OK", 202: "Accepted", 400: "Bad Request", 401: "Unauthorized", 403: "Forbidden", 404: "Not Found",
            405: "Method Not Allowed", 409: "Conflict", 413: "Payload Too Large", 429: "Too Many Requests"}
 
 
@@ -27,6 +27,7 @@ class Api:
         self.screen = screen
         self.pairing = pairing
         self.info = info
+        self.connection: Any = None  # protocol v2's connection out (connect.py), once started
 
     async def handle(self, reader: asyncio.StreamReader, writer: asyncio.StreamWriter) -> None:
         try:
@@ -55,17 +56,27 @@ class Api:
             body = json.loads(raw) if raw else {}
         except ValueError:
             return await self._send(writer, 400, {"error": "invalid_json"})
-        status, reply = await self.route(method, path, body if isinstance(body, dict) else None, token)
+        peer = (writer.get_extra_info("peername") or ("",))[0]
+        status, reply = await self.route(method, path, body if isinstance(body, dict) else None, token,
+                                         local=peer in ("127.0.0.1", "::1"))
         await self._send(writer, status, reply)
 
     async def route(self, method: str, path: str, body: dict[str, Any] | None,
-                    token: str | None) -> tuple[int, dict[str, Any]]:
+                    token: str | None, *, trusted: bool = False, local: bool = False) -> tuple[int, dict[str, Any]]:
+        """One v1 call. `trusted`: it came over the controller's signed connection (protocol v2)."""
         if body is None:
             return 400, {"error": "body must be a JSON object"}
         if (method, path) == ("GET", "/api/info"):
-            if not self.pairing.valid(token):
+            if not trusted and not self.pairing.valid(token):
                 await self.screen.pin_requested()
             return 200, {**self.info(), "paired": self.pairing.paired}
+        if (method, path) == ("POST", "/api/connect") and local and self.connection:
+            # Someone on this computer (pleatview-light connect URL): connect out and show a code.
+            try:
+                self.connection.enrol(str(body.get("url", "")))
+            except ValueError as err:
+                return 400, {"error": str(err)}
+            return 202, {}
         if (method, path) == ("POST", "/api/pair"):
             result = self.pairing.pair(body.get("pin"), body.get("client"))
             if result["result"] == "paired":
@@ -78,8 +89,19 @@ class Api:
             if not isinstance(nonce, str) or not re.fullmatch(r"[0-9a-fA-F]{32,128}", nonce):
                 return 400, {"error": "nonce must be 32 to 128 hex digits"}
             return 200, {"proofs": self.pairing.prove(nonce)}
-        if not self.pairing.valid(token):
+        if not trusted and not self.pairing.valid(token):
             return 401, {"error": "unauthorized"}
+        if (method, path) == ("POST", "/api/enrol") and not trusted and self.connection:
+            # A controller paired over v1 moves this screen to v2 (docs/protocol-v2.md).
+            url, token_v2, pin = body.get("url"), body.get("token"), body.get("fingerprint")
+            if not isinstance(url, str) or not isinstance(token_v2, str) or not token_v2 or (
+                    pin is not None and not isinstance(pin, str)):
+                return 400, {"error": "url and token are required"}
+            try:
+                self.connection.enrol(url, token_v2, pin)
+            except ValueError as err:
+                return 400, {"error": str(err)}
+            return 202, {}
         if (method, path) == ("POST", "/api/unpair"):
             self.pairing.revoke(token or "")
             return 200, {}

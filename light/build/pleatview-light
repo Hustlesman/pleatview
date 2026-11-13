@@ -4,6 +4,8 @@
 #   sudo pleatview-light enable [USER]   start it with the computer, as USER (default: you)
 #   sudo pleatview-light disable         stop starting it
 #   pleatview-light pin                  show the screen's pairing PIN (also on screen)
+#   pleatview-light connect URL          connect out to a controller at URL (wss://…) and
+#                                        show the code to add the screen there with
 #
 # It takes over the screen's display (no desktop needed) and port 8765.
 set -eu
@@ -11,7 +13,7 @@ set -eu
 unit=/etc/systemd/system/pleatview-light.service
 
 usage() {
-  sed -n '2,8p' "$0" | sed 's/^# \{0,1\}//'
+  sed -n '2,10p' "$0" | sed 's/^# \{0,1\}//'
   exit 2
 }
 
@@ -73,6 +75,7 @@ disable() {
 case "${1:-}" in
   enable) shift; enable "$@" ;;
   disable) disable ;;
+  connect) shift; [ $# -eq 1 ] || usage; cd /usr/share/pleatview-light && exec /usr/bin/python3 -m pleatview_light connect "$1" ;;
   pin) journalctl -u pleatview-light -n 200 --no-pager -o cat 2>/dev/null | grep -o 'PIN [0-9 ]*' | tail -1 || echo "Not running." ;;
   *) usage ;;
 esac

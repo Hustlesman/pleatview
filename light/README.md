@@ -23,6 +23,12 @@ It starts with the computer and takes over the screen; `sudo pleatview-light dis
 undoes that. On a computer that ran the PleatView Linux app, it keeps that app's identity
 and pairings, so Home Assistant carries on without pairing again.
 
+**A controller elsewhere** ([protocol v2](../docs/protocol-v2.md)): with
+`pleatview-light connect wss://controller.example/api/pleatview/v2`, the screen connects out
+to that controller and shows a code to add it there with. No port has to be open to the
+screen. A controller on the local network that pairs with the PIN moves the screen to v2 by
+itself.
+
 ## Settings
 
 In `/etc/default/pleatview-light`, then `sudo systemctl restart pleatview-light`:
@@ -36,4 +42,5 @@ In `/etc/default/pleatview-light`, then `sudo systemctl restart pleatview-light`
 A screen hung in portrait or upside down needs no setting here: choose *Screen mounted* in
 its settings in Home Assistant, and the renderer sends the picture already turned.
 
-Only Python's standard library and mpv: nothing else is installed.
+Only Python's standard library, `python3-cryptography` (for its key) and mpv: nothing else
+is installed.

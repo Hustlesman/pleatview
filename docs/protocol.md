@@ -22,6 +22,7 @@ Each request uses its own connection (`Connection: close`). Request bodies need 
 | `POST /api/signin` | bearer or PIN | Username and password for the page waiting for one (see [Sign-ins](#sign-ins)) |
 | `GET /api/signins` | bearer | `{"sign_ins": [{"kind": "form", "site": "…", "username": "…"}]}`, never passwords |
 | `DELETE /api/signins` | bearer | `{"site": "…"}` forgets that site's sign-ins, `{}` all → `{"forgotten": 2}` |
+| `POST /api/enrol` | bearer | `{"url": "wss://…/api/pleatview/v2", "token": "…", "fingerprint"?: "…"}` → `202`: connect out to that controller and enrol with the one-time token ([protocol v2](protocol-v2.md); apps with `protocol_v2`) |
 
 **Approving on the screen** (1.0.18 and later, Android and Linux): instead of the PIN, a
 client asks with `POST /api/pair/request`, and the screen shows who asks (its name and
@@ -115,7 +116,8 @@ Events stream that sends the full snapshot on connect and after every change
   them to the screen (PleatView Light, 1.0.18 and later). `rotation`: the app takes
   `rotation` (1.0.18 and later): the Linux app turns its whole picture, and reports its turned
   size; PleatView Light turns its own text, its stream coming turned from the renderer, as
-  for any app with `stream_overlays`.
+  for any app with `stream_overlays`. `protocol_v2`: the app connects out to a controller
+  over [protocol v2](protocol-v2.md) once one gives it an address (PleatView Light first).
 
 ## Commands
 

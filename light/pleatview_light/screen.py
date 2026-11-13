@@ -22,7 +22,7 @@ _LOGGER = logging.getLogger(__name__)
 # stream_overlays: Home Assistant draws notifications and cameras into the rendered stream.
 # rotation: Home Assistant sends how the screen is mounted; the renderer turns the stream, and
 # this screen its own text.
-FEATURES = ["render_stream", "home_without_ha", "home_playlist", "stream_overlays", "rotation"]
+FEATURES = ["render_stream", "home_without_ha", "home_playlist", "stream_overlays", "rotation", "protocol_v2"]
 STREAM_RETRY = 2.0
 PIN_SHOWN = 120  # seconds the PIN stays up after someone starts pairing
 
@@ -49,6 +49,7 @@ class Screen:
         self.media: dict[str, Any] | None = None
         self.standby = False
         self.pin_until = 0.0
+        self.enrol_code: tuple[str, str] | None = None
         self.playing: str | None = None  # "stream", "playlist" or "media"
         self.playlist_index = 0
         self.playlist_failures = 0
@@ -142,10 +143,23 @@ class Screen:
             await self.show()
 
     def setup_text(self) -> str:
+        if self.enrol_code:
+            code, host = self.enrol_code
+            return (f"PleatView\n\nConnecting to {host}\nAdd this screen there with its code:\n\n"
+                    f"Code  {code}")
         s = self.setup()
         pin = f"{s['pin'][:3]} {s['pin'][3:]}"
         return (f"PleatView\n\nIn Home Assistant: Settings → Devices & services → PleatView\n"
                 f"{s['name']} · {s['address']}:{s['port']}\n\nPIN  {pin}")
+
+    async def show_code(self, code: str | None, host: str) -> None:
+        """Protocol v2: the code to type into the controller, until it lets this screen in."""
+        self.enrol_code = (code, host) if code else None
+        if code:
+            self.pin_until = time.monotonic() + 600  # a code lasts ten minutes
+        else:
+            self.pin_until = 0.0
+        await self.show()
 
     async def pin_requested(self) -> None:
         """Someone asked who this screen is, which comes before pairing: show the PIN a while."""
