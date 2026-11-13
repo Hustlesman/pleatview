@@ -153,12 +153,18 @@ export function connect(address, { subprotocol, pin = null, timeoutMs = 15000 })
   if (url.protocol !== "wss:") return Promise.reject(new Error("only wss:// addresses"));
   const host = url.hostname.replace(/^\[|\]$/g, "");
   return new Promise((resolve, reject) => {
-    const options = { host, port: Number(url.port) || 443, minVersion: "TLSv1.2", ALPNProtocols: ["http/1.1"] };
+    // The system's authorities and the host name decide, unless the controller's own certificate
+    // is pinned: then its SHA-256 is checked below, before a single byte is sent, which a
+    // self-signed certificate can't pass any other way in Node.
+    const options = {
+      host,
+      port: Number(url.port) || 443,
+      minVersion: "TLSv1.2",
+      ALPNProtocols: ["http/1.1"],
+      rejectUnauthorized: !pin,
+      ...(pin ? { checkServerIdentity: () => undefined } : {}),
+    };
     if (!/^[\d.:]+$/.test(host)) options.servername = host;
-    if (pin) {
-      options.rejectUnauthorized = false; // the pin below decides instead
-      options.checkServerIdentity = () => undefined;
-    }
     const socket = tlsConnect(options);
     const fail = (error) => {
       socket.destroy();
