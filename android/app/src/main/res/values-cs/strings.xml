@@ -4,6 +4,8 @@
     <string name="setup_tagline">Ovládací panely a média z Home Assistant na této obrazovce</string>
     <string name="setup_step_discover">V Home Assistant otevřete Nastavení → Zařízení a služby. Toto zařízení by se tam mělo objevit jako zjištěné zařízení PleatView. Pokud ne, přidejte integraci PleatView s touto adresou:</string>
     <string name="setup_step_pin">Když Home Assistant požádá o PIN, zadejte:</string>
+    <!-- Protocol v2: a controller elsewhere waits for this code. %1$s: its host. -->
+    <string name="setup_step_code">Připojování k %1$s. Přidejte tam tuto obrazovku tímto kódem:</string>
     <string name="setup_manual">Nemáte integraci? Naskenujte kód nebo otevřete %1$s v telefonu.</string>
     <string name="setup_qr_caption">Naskenujte telefonem a přidejte toto zařízení do Home Assistant bez psaní</string>
     <string name="setup_device">%1$s · v%2$s · Nápověda: pleatview.hustlesman.com</string>

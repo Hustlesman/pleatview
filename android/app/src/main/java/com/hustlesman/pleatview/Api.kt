@@ -32,6 +32,13 @@ class Api(
 
         /** Someone asked to pair without the PIN: ask the person at the screen. */
         fun approvalRequested()
+
+        /**
+         * Protocol v2: connect out to the controller at [url], with a one-time [token] from one
+         * paired over v1, or to show a code. [fingerprint] pins its own certificate.
+         * @throws IllegalArgumentException for an address or fingerprint that can't be.
+         */
+        fun enrol(url: String, token: String?, fingerprint: String?): Unit = throw IllegalArgumentException("not supported")
     }
 
     private val openStreams = AtomicInteger()
@@ -72,6 +79,8 @@ class Api(
                         }
                         else -> HttpResponse.error(405, "method not allowed")
                     }
+                    // A controller paired over v1 moves this screen to protocol v2 (docs/protocol-v2.md).
+                    "/api/enrol" -> post(request) { enrol(request) }
                     "/api/unpair" -> post(request) {
                         pairing.revoke(request.bearerToken().orEmpty())
                         ok()
@@ -79,6 +88,52 @@ class Api(
                     else -> HttpResponse.error(404, "not found")
                 }
             }
+        }
+    }
+
+    /**
+     * Protocol v2's calls (docs/protocol-v2.md): v1's endpoints for a controller that proved who
+     * it is over its own connection, so no token. The response is what v1 would answer.
+     */
+    fun call(method: String, params: JSONObject): HttpResponse {
+        val request = HttpRequest("POST", "/", emptyMap(), emptyMap(), params.toString().toByteArray(), null)
+        return try {
+            when (method) {
+                "info" -> HttpResponse.json(200, backend.info().put("paired", pairing.isPaired).put("pairing", JSONArray(listOf("pin", "approve"))))
+                "state" -> HttpResponse.json(200, backend.stateJson())
+                "command" -> command(request)
+                "config" -> HttpResponse.json(200, backend.config().toJson())
+                "set_config" -> updateConfig(request)
+                "signins" -> HttpResponse.json(200, JSONObject().put("sign_ins", backend.signIns()))
+                "forget_signins" -> HttpResponse.json(
+                    200, JSONObject().put("forgotten", backend.forgetSignIns(params.optString("site").trim().ifEmpty { null })),
+                )
+                "signin" -> {
+                    val password = params.optString("password")
+                    when {
+                        password.isEmpty() -> HttpResponse.error(400, "'password' is required")
+                        backend.submitSignIn(params.optString("username").trim(), password, params.optBoolean("remember", true)) -> ok()
+                        else -> HttpResponse.error(409, "no_sign_in_pending")
+                    }
+                }
+                else -> HttpResponse.error(400, "unknown method $method")
+            }
+        } catch (e: HttpError) {
+            HttpResponse.error(e.status, e.message ?: "bad request")
+        }
+    }
+
+    private fun enrol(request: HttpRequest): HttpResponse {
+        val body = request.jsonBody()
+        val url = body.optString("url")
+        val token = body.optString("token")
+        val fingerprint = if (body.isNull("fingerprint")) null else body.optString("fingerprint").ifEmpty { null }
+        if (url.isEmpty() || token.isEmpty()) return HttpResponse.error(400, "'url' and 'token' are required")
+        return try {
+            backend.enrol(url, token, fingerprint)
+            HttpResponse.json(202, JSONObject())
+        } catch (e: IllegalArgumentException) {
+            HttpResponse.error(400, e.message ?: "invalid")
         }
     }
 

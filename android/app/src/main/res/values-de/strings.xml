@@ -4,6 +4,8 @@
     <string name="setup_tagline">Home-Assistant-Dashboards und Medien auf diesem Bildschirm</string>
     <string name="setup_step_discover">Öffne in Home Assistant Einstellungen → Geräte &amp; Dienste. Dieses Gerät sollte dort als entdecktes PleatView-Gerät erscheinen. Falls nicht, füge die PleatView-Integration mit dieser Adresse hinzu:</string>
     <string name="setup_step_pin">Wenn Home Assistant nach einer PIN fragt, gib diese ein:</string>
+    <!-- Protocol v2: a controller elsewhere waits for this code. %1$s: its host. -->
+    <string name="setup_step_code">Verbindung mit %1$s. Füge diesen Bildschirm dort mit diesem Code hinzu:</string>
     <string name="setup_manual">Keine Integration? Scanne den Code oder öffne %1$s auf deinem Handy.</string>
     <string name="setup_qr_caption">Mit einem Handy scannen, um dieses Gerät ohne Tippen zu Home Assistant hinzuzufügen</string>
     <string name="setup_device">%1$s · v%2$s · Hilfe: pleatview.hustlesman.com</string>

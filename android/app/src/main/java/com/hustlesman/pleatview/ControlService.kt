@@ -36,8 +36,7 @@ class ControlService : Service() {
         val app = PleatApp.from(this)
         startInForeground(app.settings.port)
 
-        val api = Api(app.hub, app.pairing) { app.setupPage }
-        server = HttpServer(app.settings.port, api::handle).also {
+        server = HttpServer(app.settings.port, app.api::handle).also {
             try {
                 it.start()
             } catch (e: IOException) {
@@ -46,6 +45,8 @@ class ControlService : Service() {
         }
         advertise(app)
         app.settings.addListener(nameListener)
+        // Protocol v2: the connection out lives with the process, from here on.
+        app.connectOut?.start()
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int = START_STICKY

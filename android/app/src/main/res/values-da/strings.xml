@@ -4,6 +4,8 @@
     <string name="setup_tagline">Home Assistant-betjeningspaneler og medier på denne skærm</string>
     <string name="setup_step_discover">Åbn Indstillinger → Enheder &amp; tjenester i Home Assistant. Denne enhed bør vises der som en fundet PleatView-enhed. Hvis den ikke gør, så tilføj PleatView-integrationen med denne adresse:</string>
     <string name="setup_step_pin">Når Home Assistant beder om en pinkode, så indtast:</string>
+    <!-- Protocol v2: a controller elsewhere waits for this code. %1$s: its host. -->
+    <string name="setup_step_code">Forbinder til %1$s. Tilføj skærmen der med denne kode:</string>
     <string name="setup_manual">Ingen integration? Scan koden, eller åbn %1$s på din telefon.</string>
     <string name="setup_qr_caption">Scan med en telefon for at føje denne enhed til Home Assistant uden at skrive</string>
     <string name="setup_device">%1$s · v%2$s · Hjælp: pleatview.hustlesman.com</string>

@@ -57,6 +57,7 @@
             android:textStyle="bold" />
 
         <TextView
+            android:id="@+id/setup_pin_label"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="@string/setup_step_pin"
