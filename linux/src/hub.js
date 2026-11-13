@@ -30,7 +30,8 @@ export class Hub {
       battery: null,
       // What this app can do beyond protocol v1 (docs/protocol.md, "State").
       // rotation: Home Assistant may send how the screen is mounted (config "rotation").
-      features: ["render_stream", "home_without_ha", "rotation"],
+      // protocol_v2: it connects out to a controller anywhere (docs/protocol-v2.md).
+      features: ["render_stream", "home_without_ha", "rotation", "protocol_v2"],
       screen: null,
     };
   }

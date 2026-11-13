@@ -32,6 +32,59 @@ class HttpError extends Error {
  * @param {() => void} [backend.approvalRequested] someone asked to pair without the PIN
  * @param {import("./pairing.js").Pairing} pairing
  */
+/** A refused call made over protocol v2's connection, with v1's reason. */
+export class CallError extends Error {}
+
+/**
+ * Protocol v2's calls (docs/protocol-v2.md): v1's endpoints without HTTP, for a controller
+ * that already proved who it is over its connection. Throws CallError with v1's reason.
+ */
+export function createCalls(backend, pairing) {
+  return async (method, params) => {
+    switch (method) {
+      case "info":
+        return { ...backend.info(), paired: pairing.isPaired, pairing: ["pin", "approve"] };
+      case "state":
+        return JSON.parse(backend.stateJson());
+      case "command": {
+        let command;
+        try {
+          command = parseCommand(params);
+        } catch (e) {
+          if (e instanceof BadCommand) throw new CallError(e.message);
+          throw e;
+        }
+        backend.dispatch(command);
+        return { ok: true };
+      }
+      case "config":
+        return backend.config().toJson();
+      case "set_config":
+        try {
+          return backend.updateConfig(params).toJson();
+        } catch (e) {
+          if (e instanceof RangeError) throw new CallError(e.message);
+          throw e;
+        }
+      case "signins":
+        return { sign_ins: backend.signIns() };
+      case "forget_signins": {
+        const site = params.site;
+        return { forgotten: backend.forgetSignIns(typeof site === "string" && site.trim() ? site.trim() : null) };
+      }
+      case "signin": {
+        const password = typeof params.password === "string" ? params.password : "";
+        if (!password) throw new CallError("'password' is required");
+        const username = typeof params.username === "string" ? params.username.trim() : "";
+        if (!backend.submitSignIn(username, password, params.remember !== false)) throw new CallError("no_sign_in_pending");
+        return { ok: true };
+      }
+      default:
+        throw new CallError(`unknown method ${method}`);
+    }
+  };
+}
+
 export function createApi(backend, pairing) {
   let openStreams = 0;
 
@@ -67,6 +120,20 @@ export function createApi(backend, pairing) {
       // The phone that scanned the sign-in code has the PIN instead of a token.
       case "/api/signin":
         return post(req, async () => signIn(req, res, await body(req)));
+      // Someone on this computer (pleatview connect URL): connect out to that controller and
+      // show a code to add the screen there with (protocol v2).
+      case "/api/connect":
+        return post(req, async () => {
+          if (!LOOPBACK.has(req.socket.remoteAddress ?? "") || !backend.connectOut) throw new HttpError(403, "only from this computer");
+          const url = (await body(req)).url;
+          try {
+            backend.connectOut(typeof url === "string" ? url : "");
+          } catch (e) {
+            if (e instanceof RangeError) throw new HttpError(400, e.message);
+            throw e;
+          }
+          json(res, 202, {});
+        });
     }
     if (path.startsWith("/api/pair/request/")) {
       return get(req, () => {
@@ -115,6 +182,23 @@ export function createApi(backend, pairing) {
           return json(res, 200, { forgotten: backend.forgetSignIns(typeof site === "string" && site.trim() ? site.trim() : null) });
         }
         throw new HttpError(405, "method not allowed");
+      // A controller paired over v1 moves this screen to protocol v2 (docs/protocol-v2.md).
+      case "/api/enrol":
+        return post(req, async () => {
+          const request = await body(req);
+          const { url, token, fingerprint } = request;
+          if (typeof url !== "string" || typeof token !== "string" || !token || (fingerprint != null && typeof fingerprint !== "string")) {
+            throw new HttpError(400, "'url' and 'token' are required");
+          }
+          if (!backend.enrol) throw new HttpError(404, "not found");
+          try {
+            backend.enrol(url, token, fingerprint ?? null);
+          } catch (e) {
+            if (e instanceof RangeError) throw new HttpError(400, e.message);
+            throw e;
+          }
+          json(res, 202, {});
+        });
       case "/api/unpair":
         return post(req, () => {
           pairing.revoke(bearer(req) ?? "");
@@ -220,6 +304,8 @@ async function body(req) {
   if (value === null || typeof value !== "object" || Array.isArray(value)) throw new HttpError(400, "expected a JSON object");
   return value;
 }
+
+const LOOPBACK = new Set(["127.0.0.1", "::1", "::ffff:127.0.0.1"]);
 
 const HEADERS = { "Cache-Control": "no-store", "X-Content-Type-Options": "nosniff", Connection: "close" };
 

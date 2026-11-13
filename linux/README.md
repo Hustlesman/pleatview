@@ -43,6 +43,12 @@ Then start it with the computer:
 Assistant, open Settings → Devices & services, where the screen appears as a discovered
 PleatView device.
 
+**A controller elsewhere** ([protocol v2](../docs/protocol-v2.md)): with
+`pleatview-kiosk connect wss://controller.example/api/pleatview/v2`, run on the screen's
+computer, PleatView connects out to that controller and shows a code to add it there with.
+No port has to be open to the screen. A controller on the local network that pairs with
+the PIN moves the screen to v2 by itself.
+
 On the screen, Escape, the menu key or a right-click (a long press on a touch screen)
 opens the menu.
 

@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { after, before, test } from "node:test";
-import { createApi } from "../src/api.js";
+import { CallError, createApi, createCalls } from "../src/api.js";
 import { Config } from "../src/config.js";
 import { Pairing } from "../src/pairing.js";
 
@@ -20,7 +20,13 @@ const backend = {
   signIns: () => [{ kind: "form", site: "http://grafana.lan", username: "kiosk" }],
   forgetSignIns: (site) => (site ? 1 : 2),
   setupPage: () => Buffer.from("<!doctype html><title>Setup</title>"),
+  enrol: (url, token, fingerprint) => {
+    if (!url.startsWith("wss://")) throw new RangeError("a controller's address is wss://host[:port]/api/pleatview/v2");
+    enrolments.push({ url, token, fingerprint });
+  },
+  connectOut: (url) => enrolments.push({ url }),
 };
+const enrolments = [];
 const server = createApi(backend, pairing);
 let base;
 
@@ -138,4 +144,28 @@ test("pairing approved on the screen", async () => {
   const done = await call("GET", `/api/pair/request/${asked.body.request}`);
   assert.equal(done.body.state, "approved");
   assert.equal((await call("GET", "/api/state", null, done.body.token)).status, 200);
+});
+
+test("protocol v2: a paired controller moves the screen over; this computer gives it an address", async () => {
+  const token = await paired();
+  assert.equal((await call("POST", "/api/enrol", { url: "wss://c.example/api/pleatview/v2", token: "t" })).status, 401);
+  assert.equal((await call("POST", "/api/enrol", { url: "wss://c.example/api/pleatview/v2" }, token)).status, 400);
+  assert.equal((await call("POST", "/api/enrol", { url: "https://c.example/", token: "t" }, token)).status, 400);
+  const moved = await call("POST", "/api/enrol", { url: "wss://c.example/api/pleatview/v2", token: "t", fingerprint: "ab".repeat(32) }, token);
+  assert.equal(moved.status, 202);
+  assert.deepEqual(enrolments.at(-1), { url: "wss://c.example/api/pleatview/v2", token: "t", fingerprint: "ab".repeat(32) });
+  // The tests reach the API over loopback, which is what lets /api/connect through.
+  assert.equal((await call("POST", "/api/connect", { url: "wss://c.example/api/pleatview/v2" })).status, 202);
+  assert.deepEqual(enrolments.at(-1), { url: "wss://c.example/api/pleatview/v2" });
+});
+
+test("protocol v2's calls are v1's, without HTTP", async () => {
+  const calls = createCalls(backend, pairing);
+  assert.equal((await calls("info")).name, "Kitchen screen");
+  assert.deepEqual(await calls("command", { command: "notify", message: "Hi" }), { ok: true });
+  assert.equal(commands.at(-1).name, "notify");
+  await assert.rejects(calls("command", { command: "explode" }), (e) => e instanceof CallError && /explode/.test(e.message));
+  await assert.rejects(calls("set_config", { zoom: 9999 }), CallError);
+  assert.deepEqual(await calls("forget_signins", {}), { forgotten: 2 });
+  await assert.rejects(calls("pair", {}), /unknown method pair/);
 });

@@ -45,7 +45,9 @@ new MutationObserver(regionsChanged).observe(screenEl, { subtree: true, childLis
 function showSetupInfo(info) {
   if (!info) return;
   $("setup-address").textContent = info.address ? `Host  ${info.address}\nPort  ${info.port}` : "Not connected to a network";
-  $("setup-pin").textContent = info.pin.replace(/(\d{3})(\d{3})/, "$1 $2");
+  // Protocol v2: while a controller elsewhere waits for this screen's code, the code instead.
+  $("setup-pin-label").textContent = info.enrol ? `Connecting to ${info.enrol.host}. Add this screen there with its code` : "When Home Assistant asks for a PIN, enter";
+  $("setup-pin").textContent = info.enrol ? info.enrol.code : info.pin.replace(/(\d{3})(\d{3})/, "$1 $2");
   $("setup-manual").textContent = `No integration? Scan the code, or open http://${info.address}:${info.port} on your phone.`;
   $("setup-device").textContent = `${info.name} · v${info.version} · Help: pleatview.hustlesman.com`;
   $("setup-qr").innerHTML = info.qr || "";
