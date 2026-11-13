@@ -5,8 +5,9 @@ import { existsSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import QRCode from "qrcode";
-import { API_VERSION, createApi } from "./api.js";
+import { API_VERSION, createApi, createCalls } from "./api.js";
 import { Config } from "./config.js";
+import { Connection } from "./connect.js";
 import { defaultName, deviceId, hardware, lanAddress } from "./device.js";
 import { Display } from "./display.js";
 import { Hub } from "./hub.js";
@@ -48,6 +49,8 @@ const pairing = new Pairing({
 });
 
 const name = () => config.deviceName || defaultName();
+// Protocol v2: the code to type into a controller while it hasn't let this screen in yet.
+let enrolCode = null;
 
 /** What the setup screen and the menu show. The QR code opens the phone page with the PIN filled in. */
 function setupInfo() {
@@ -61,7 +64,7 @@ function setupInfo() {
       display?.refreshSetup();
     });
   }
-  return { name: name(), address, port: PORT, pin: pairing.pin, version, qr: qr.svg };
+  return { name: name(), address, port: PORT, pin: pairing.pin, version, qr: qr.svg, enrol: enrolCode };
 }
 
 function updateConfig(update) {
@@ -79,22 +82,35 @@ function announce() {
   advertiser.announce({ id, name: name(), port: PORT, api: API_VERSION, version }).catch((e) => console.warn("PleatView: mDNS:", e.message));
 }
 
-const api = createApi(
-  {
-    info: () => ({ id, name: name(), manufacturer, model, app_version: version, api_version: API_VERSION }),
-    stateJson: () => hub.stateJson(),
-    onState: (listener) => hub.onState(listener),
-    dispatch: (command) => hub.dispatch(command),
-    config: () => config,
-    updateConfig,
-    submitSignIn: (username, password, remember) => display?.signInFlow?.apply(username, password, remember) ?? false,
-    signIns: () => signIns.describe(),
-    forgetSignIns: (site) => (display ? display.forgetSignIns(site) : signIns.forget(site)),
-    setupPage: () => readFileSync(join(assets, "setup.html")),
-    approvalRequested: () => display?.showApproval(),
+const info = () => ({ id, name: name(), manufacturer, model, app_version: version, api_version: API_VERSION });
+const backend = {
+  info,
+  stateJson: () => hub.stateJson(),
+  onState: (listener) => hub.onState(listener),
+  dispatch: (command) => hub.dispatch(command),
+  config: () => config,
+  updateConfig,
+  submitSignIn: (username, password, remember) => display?.signInFlow?.apply(username, password, remember) ?? false,
+  signIns: () => signIns.describe(),
+  forgetSignIns: (site) => (display ? display.forgetSignIns(site) : signIns.forget(site)),
+  setupPage: () => readFileSync(join(assets, "setup.html")),
+  approvalRequested: () => display?.showApproval(),
+  enrol: (url, token, fingerprint) => connection.enrol(url, token, fingerprint),
+  connectOut: (url) => connection.enrol(url),
+};
+const api = createApi(backend, pairing);
+// Protocol v2: one connection out to a controller anywhere, once one is given.
+const connection = new Connection({
+  store,
+  info,
+  call: createCalls(backend, pairing),
+  stateJson: () => hub.stateJson(),
+  onState: (listener) => hub.onState(listener),
+  showCode: (code, host) => {
+    enrolCode = code ? { code, host } : null;
+    display?.refreshSetup();
   },
-  pairing,
-);
+});
 
 let display = null;
 
@@ -106,9 +122,11 @@ app.whenReady().then(() => {
   api.listen(PORT, "0.0.0.0", () => console.log(`PleatView ${version}: control API on port ${PORT}`));
   api.on("error", (e) => console.error(`PleatView: can't listen on port ${PORT}: ${e.message}`));
   announce();
+  connection.start();
 });
 
 app.on("before-quit", () => {
+  connection.stop();
   api.close();
   advertiser.shutdown();
 });

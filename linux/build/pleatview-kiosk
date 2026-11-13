@@ -5,12 +5,14 @@
 #                                        cage, a kiosk compositor, on the first console, as USER
 #   pleatview-kiosk autostart            a desktop (Ubuntu, Raspberry Pi OS): open it when you log in
 #   sudo pleatview-kiosk disable         undo either
+#   pleatview-kiosk connect URL          connect out to a controller at URL (wss://…) and show
+#                                        the code to add this screen there with
 set -eu
 
 unit=/etc/systemd/system/pleatview-kiosk.service
 
 usage() {
-  sed -n '2,8p' "$0" | sed 's/^# \{0,1\}//'
+  sed -n '2,10p' "$0" | sed 's/^# \{0,1\}//'
   exit 2
 }
 
@@ -88,8 +90,26 @@ disable() {
   echo "PleatView no longer starts with the computer."
 }
 
+# The running app does it (protocol v2); its control API takes this from this computer only.
+connect() {
+  [ -n "${1:-}" ] || usage
+  python3 - "$1" "${PLEATVIEW_PORT:-8765}" <<'PY'
+import json, sys, urllib.error, urllib.request
+request = urllib.request.Request(f"http://127.0.0.1:{sys.argv[2]}/api/connect", method="POST",
+                                 data=json.dumps({"url": sys.argv[1]}).encode(), headers={"Content-Type": "application/json"})
+try:
+    urllib.request.urlopen(request, timeout=5).close()
+except urllib.error.HTTPError as err:
+    sys.exit(json.loads(err.read() or b"{}").get("error", str(err)))
+except OSError as err:
+    sys.exit(f"PleatView isn't running here: {err}")
+print("The screen now shows a code. Add the screen in the controller with it.")
+PY
+}
+
 case "${1:-}" in
   enable) shift; enable "${1:-}" ;;
+  connect) shift; connect "${1:-}" ;;
   autostart) autostart ;;
   disable) disable ;;
   *) usage ;;
