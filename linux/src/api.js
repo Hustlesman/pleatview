@@ -85,7 +85,7 @@ export function createCalls(backend, pairing) {
   };
 }
 
-export function createApi(backend, pairing) {
+export function createApi(backend, pairing, { local = (req) => LOOPBACK.has(req.socket.remoteAddress ?? "") } = {}) {
   let openStreams = 0;
 
   async function route(req, res) {
@@ -120,12 +120,18 @@ export function createApi(backend, pairing) {
       // The phone that scanned the sign-in code has the PIN instead of a token.
       case "/api/signin":
         return post(req, async () => signIn(req, res, await body(req)));
-      // Someone on this computer (pleatview connect URL): connect out to that controller and
-      // show a code to add the screen there with (protocol v2).
+      // Connect out to a controller elsewhere, which then shows a code to add the screen there
+      // with (protocol v2): from this computer (pleatview-kiosk connect URL), from the phone
+      // page with the PIN, or from a paired client.
       case "/api/connect":
         return post(req, async () => {
-          if (!LOOPBACK.has(req.socket.remoteAddress ?? "") || !backend.connectOut) throw new HttpError(403, "only from this computer");
-          const url = (await body(req)).url;
+          const request = await body(req);
+          if (!backend.connectOut) throw new HttpError(404, "not found");
+          if (!local(req) && !pairing.isValid(bearer(req))) {
+            const result = pairing.verify(typeof request.pin === "string" ? request.pin : "");
+            if (result.result !== "verified") refused(result);
+          }
+          const url = request.url;
           try {
             backend.connectOut(typeof url === "string" ? url : "");
           } catch (e) {

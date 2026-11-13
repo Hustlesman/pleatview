@@ -74,6 +74,20 @@
     </ol>
     <p class="note" data-t="start_manual">Not listed? Choose <em>Add integration → PleatView</em> with host <strong id="start-host"></strong> and port <strong id="start-port"></strong>.</p>
     <p class="note"><span data-t="start_no_integration">No PleatView integration in Home Assistant?</span> <a href="#" id="setup-here" data-t="start_here">Set up this TV here instead</a>.</p>
+    <p class="note"><span data-t="start_elsewhere">Managed from a controller on another network?</span> <a href="#" id="connect-elsewhere" data-t="start_connect">Connect this TV to it</a>.</p>
+  </section>
+
+  <section id="connect" hidden>
+    <h2 data-t="connect_title">Connect to a controller elsewhere</h2>
+    <p class="note" data-t="connect_note">The TV connects out to it over an encrypted connection, so nothing has to be opened on this network. It then shows a code: type that code into the controller.</p>
+    <form id="connect-form">
+      <label><span data-t="connect_address">The controller's address</span>
+        <input id="connect-address" type="text" inputmode="url" autocapitalize="none" spellcheck="false" placeholder="controller.example.com" required>
+      </label>
+      <button data-t="connect_submit">Connect</button>
+      <p class="error" id="connect-error"></p>
+    </form>
+    <p class="ok" id="connect-done" data-t="connect_done" hidden>The TV now shows a code. Type it into the controller to add the TV there.</p>
   </section>
 
   <section id="pair" hidden>
@@ -225,6 +239,14 @@ const TRANSLATIONS = {
     saved: "Uloženo",
     test_message: "Zde se zobrazují oznámení z Home Assistant.",
     cant_reach: "Televize není dostupná.",
+    start_elsewhere: "Spravujete ji z ovládacího systému v jiné síti?",
+    start_connect: "Připojte k němu tuto televizi",
+    connect_title: "Připojení k ovládacímu systému jinde",
+    connect_note: "Televize se k němu připojí šifrovaným spojením, takže v této síti není potřeba nic otevírat. Pak zobrazí kód: zadejte ho do ovládacího systému.",
+    connect_address: "Adresa ovládacího systému",
+    connect_submit: "Připojit",
+    connect_done: "Televize teď zobrazuje kód. Zadejte ho do ovládacího systému a přidejte tak televizi.",
+    connect_bad_address: "K této adrese se televize připojit nemůže.",
   },
   da: {
     connecting: "Forbinder…",
@@ -295,6 +317,14 @@ const TRANSLATIONS = {
     saved: "Gemt",
     test_message: "Notifikationer fra Home Assistant vises her.",
     cant_reach: "Kan ikke nå tv'et.",
+    start_elsewhere: "Styres det fra et styringssystem på et andet netværk?",
+    start_connect: "Forbind tv'et til det",
+    connect_title: "Forbind til et styringssystem et andet sted",
+    connect_note: "Tv'et forbinder sig til det via en krypteret forbindelse, så intet skal åbnes på dette netværk. Derefter viser det en kode: indtast koden i styringssystemet.",
+    connect_address: "Styringssystemets adresse",
+    connect_submit: "Forbind",
+    connect_done: "Tv'et viser nu en kode. Indtast den i styringssystemet for at tilføje tv'et dér.",
+    connect_bad_address: "Det er ikke en adresse, tv'et kan forbinde til.",
   },
   de: {
     connecting: "Verbinde …",
@@ -365,6 +395,14 @@ const TRANSLATIONS = {
     saved: "Gespeichert",
     test_message: "Hier erscheinen Benachrichtigungen aus Home Assistant.",
     cant_reach: "Der Fernseher ist nicht erreichbar.",
+    start_elsewhere: "Wird er von einer Steuerung in einem anderen Netzwerk verwaltet?",
+    start_connect: "Verbinde diesen Fernseher damit",
+    connect_title: "Mit einer Steuerung woanders verbinden",
+    connect_note: "Der Fernseher verbindet sich verschlüsselt mit ihr, daher muss in diesem Netzwerk nichts geöffnet werden. Danach zeigt er einen Code: Gib diesen Code in der Steuerung ein.",
+    connect_address: "Adresse der Steuerung",
+    connect_submit: "Verbinden",
+    connect_done: "Der Fernseher zeigt jetzt einen Code. Gib ihn in der Steuerung ein, um den Fernseher dort hinzuzufügen.",
+    connect_bad_address: "Mit dieser Adresse kann sich der Fernseher nicht verbinden.",
   },
   es: {
     connecting: "Conectando…",
@@ -435,6 +473,14 @@ const TRANSLATIONS = {
     saved: "Guardado",
     test_message: "Las notificaciones de Home Assistant aparecen aquí.",
     cant_reach: "No se puede conectar con la TV.",
+    start_elsewhere: "¿La gestionas desde un controlador en otra red?",
+    start_connect: "Conecta esta TV a él",
+    connect_title: "Conectar a un controlador en otro lugar",
+    connect_note: "La TV se conecta a él con una conexión cifrada, así que no hay que abrir nada en esta red. Después muestra un código: introdúcelo en el controlador.",
+    connect_address: "Dirección del controlador",
+    connect_submit: "Conectar",
+    connect_done: "La TV muestra ahora un código. Introdúcelo en el controlador para añadir la TV allí.",
+    connect_bad_address: "La TV no puede conectarse a esa dirección.",
   },
   fr: {
     connecting: "Connexion…",
@@ -505,6 +551,14 @@ const TRANSLATIONS = {
     saved: "Enregistré",
     test_message: "Les notifications de Home Assistant s'affichent ici.",
     cant_reach: "Le téléviseur est injoignable.",
+    start_elsewhere: "Géré depuis un contrôleur sur un autre réseau ?",
+    start_connect: "Connectez-y ce téléviseur",
+    connect_title: "Se connecter à un contrôleur ailleurs",
+    connect_note: "Le téléviseur s'y connecte par une connexion chiffrée : rien n'est à ouvrir sur ce réseau. Il affiche ensuite un code : saisissez-le dans le contrôleur.",
+    connect_address: "Adresse du contrôleur",
+    connect_submit: "Connecter",
+    connect_done: "Le téléviseur affiche maintenant un code. Saisissez-le dans le contrôleur pour y ajouter le téléviseur.",
+    connect_bad_address: "Le téléviseur ne peut pas se connecter à cette adresse.",
   },
   it: {
     connecting: "Connessione…",
@@ -575,6 +629,14 @@ const TRANSLATIONS = {
     saved: "Salvato",
     test_message: "Le notifiche di Home Assistant compaiono qui.",
     cant_reach: "La TV non è raggiungibile.",
+    start_elsewhere: "La gestisci da un controller su un'altra rete?",
+    start_connect: "Collega questa TV al controller",
+    connect_title: "Collegarsi a un controller altrove",
+    connect_note: "La TV si collega al controller con una connessione cifrata, quindi su questa rete non c'è niente da aprire. Poi mostra un codice: inseriscilo nel controller.",
+    connect_address: "Indirizzo del controller",
+    connect_submit: "Collega",
+    connect_done: "Ora la TV mostra un codice. Inseriscilo nel controller per aggiungere lì la TV.",
+    connect_bad_address: "La TV non può collegarsi a questo indirizzo.",
   },
   nl: {
     connecting: "Verbinden…",
@@ -645,6 +707,14 @@ const TRANSLATIONS = {
     saved: "Opgeslagen",
     test_message: "Meldingen van Home Assistant verschijnen hier.",
     cant_reach: "De tv is niet bereikbaar.",
+    start_elsewhere: "Beheer je hem vanaf een controller op een ander netwerk?",
+    start_connect: "Verbind deze tv ermee",
+    connect_title: "Verbinden met een controller elders",
+    connect_note: "De tv maakt zelf een versleutelde verbinding met de controller, dus op dit netwerk hoeft niets open te staan. Daarna toont hij een code: voer die in bij de controller.",
+    connect_address: "Adres van de controller",
+    connect_submit: "Verbinden",
+    connect_done: "De tv toont nu een code. Voer die in bij de controller om de tv daar toe te voegen.",
+    connect_bad_address: "Met dat adres kan de tv geen verbinding maken.",
   },
   pl: {
     connecting: "Łączenie…",
@@ -715,6 +785,14 @@ const TRANSLATIONS = {
     saved: "Zapisano",
     test_message: "Tutaj pojawiają się powiadomienia z Home Assistant.",
     cant_reach: "Brak połączenia z telewizorem.",
+    start_elsewhere: "Zarządzasz nim z kontrolera w innej sieci?",
+    start_connect: "Połącz z nim ten telewizor",
+    connect_title: "Połącz z kontrolerem w innym miejscu",
+    connect_note: "Telewizor sam łączy się z kontrolerem przez szyfrowane połączenie, więc w tej sieci nie trzeba niczego otwierać. Potem wyświetla kod: wpisz go w kontrolerze.",
+    connect_address: "Adres kontrolera",
+    connect_submit: "Połącz",
+    connect_done: "Telewizor wyświetla teraz kod. Wpisz go w kontrolerze, aby tam dodać telewizor.",
+    connect_bad_address: "Telewizor nie może połączyć się z tym adresem.",
   },
   pt: {
     connecting: "Conectando…",
@@ -785,6 +863,14 @@ const TRANSLATIONS = {
     saved: "Salvo",
     test_message: "As notificações do Home Assistant aparecem aqui.",
     cant_reach: "Não foi possível conectar à TV.",
+    start_elsewhere: "Gerencia a TV por um controlador em outra rede?",
+    start_connect: "Conecte esta TV a ele",
+    connect_title: "Conectar a um controlador em outro lugar",
+    connect_note: "A TV se conecta a ele por uma conexão criptografada, então nada precisa ser aberto nesta rede. Depois ela mostra um código: digite esse código no controlador.",
+    connect_address: "Endereço do controlador",
+    connect_submit: "Conectar",
+    connect_done: "A TV agora mostra um código. Digite-o no controlador para adicionar a TV lá.",
+    connect_bad_address: "A TV não consegue se conectar a esse endereço.",
   },
   sv: {
     connecting: "Ansluter…",
@@ -855,6 +941,14 @@ const TRANSLATIONS = {
     saved: "Sparat",
     test_message: "Aviseringar från Home Assistant visas här.",
     cant_reach: "Kan inte nå tv:n.",
+    start_elsewhere: "Hanteras den från ett styrsystem i ett annat nätverk?",
+    start_connect: "Anslut tv:n till det",
+    connect_title: "Anslut till ett styrsystem någon annanstans",
+    connect_note: "Tv:n ansluter själv till det med en krypterad anslutning, så inget behöver öppnas i det här nätverket. Sedan visar den en kod: ange koden i styrsystemet.",
+    connect_address: "Styrsystemets adress",
+    connect_submit: "Anslut",
+    connect_done: "Tv:n visar nu en kod. Ange den i styrsystemet för att lägga till tv:n där.",
+    connect_bad_address: "Tv:n kan inte ansluta till den adressen.",
   },
 };
 </script>
@@ -986,6 +1080,50 @@ $("#copy-pin").addEventListener("click", () => {
   const copied = document.execCommand("copy");
   field.remove();
   $("#copy-pin").textContent = copied ? t("copied", "Copied") : t("copy", "Copy");
+});
+
+// A controller elsewhere (protocol v2): its address as people type it (controller.example.com,
+// https://… or wss://…), as the TV connects to it.
+function controllerAddress(typed) {
+  let text = typed.trim();
+  if (!/^[a-z][a-z0-9+.-]*:\/\//i.test(text)) text = "wss://" + text;
+  const url = new URL(text);
+  if (!["wss:", "https:"].includes(url.protocol) || !url.hostname) throw new Error("bad_address");
+  return `wss://${url.host}/api/pleatview/v2`;
+}
+
+$("#connect-elsewhere").addEventListener("click", (event) => {
+  event.preventDefault();
+  $("#start").hidden = true;
+  $("#connect").hidden = false;
+  $("#connect-address").focus();
+});
+
+$("#connect-form").addEventListener("submit", async (event) => {
+  event.preventDefault();
+  $("#connect-error").textContent = "";
+  const headers = { "Content-Type": "application/json" };
+  if (token) headers.Authorization = "Bearer " + token;
+  const messages = {
+    bad_address: t("connect_bad_address", "That isn't an address the TV can connect to."),
+    invalid_pin: t("signin_invalid_pin", "This code has expired. Scan the code on the TV again."),
+    too_many_attempts: t("signin_too_many", "Too many attempts. Wait a minute, then scan the code on the TV again."),
+  };
+  try {
+    let url;
+    try {
+      url = controllerAddress($("#connect-address").value);
+    } catch {
+      throw new Error("bad_address");
+    }
+    const response = await fetch("/api/connect", { method: "POST", headers, body: JSON.stringify({ url, pin: scannedPin }) });
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(result.error || response.statusText);
+    $("#connect-form").hidden = true;
+    $("#connect-done").hidden = false;
+  } catch (error) {
+    $("#connect-error").textContent = messages[error.message] || error.message;
+  }
 });
 
 $("#setup-here").addEventListener("click", (event) => {

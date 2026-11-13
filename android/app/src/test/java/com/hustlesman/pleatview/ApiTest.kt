@@ -272,4 +272,14 @@ class ApiTest {
         assertEquals(400, api.call("pair", JSONObject()).status)
         assertEquals("unknown method pair", JSONObject(String(api.call("pair", JSONObject()).body)).getString("error"))
     }
+
+    @Test
+    fun `protocol v2 - the phone page connects the TV to a controller elsewhere with the PIN`() {
+        val url = "wss://c.example/api/pleatview/v2"
+        assertEquals(403, request("POST", "/api/connect", """{"url":"$url","pin":"000000"}""").status)
+        assertEquals(400, request("POST", "/api/connect", """{"url":"https://c.example/","pin":"${pairing.pin}"}""").status)
+        assertEquals(202, request("POST", "/api/connect", """{"url":"$url","pin":"${pairing.pin}"}""").status)
+        assertEquals(Triple(url, null, null), backend.enrolments.last())
+        assertEquals(202, request("POST", "/api/connect", """{"url":"$url"}""", pair()).status) // or a paired client
+    }
 }

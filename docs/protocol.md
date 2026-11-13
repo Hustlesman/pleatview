@@ -22,6 +22,7 @@ Each request uses its own connection (`Connection: close`). Request bodies need 
 | `POST /api/signin` | bearer or PIN | Username and password for the page waiting for one (see [Sign-ins](#sign-ins)) |
 | `GET /api/signins` | bearer | `{"sign_ins": [{"kind": "form", "site": "…", "username": "…"}]}`, never passwords |
 | `DELETE /api/signins` | bearer | `{"site": "…"}` forgets that site's sign-ins, `{}` all → `{"forgotten": 2}` |
+| `POST /api/connect` | bearer, PIN, or this computer | `{"url": "wss://…/api/pleatview/v2", "pin"?: "123456"}` → `202`: connect out to that controller and show the code it hands out, to type there ([protocol v2](protocol-v2.md); the phone page's *Connect this TV to it*) |
 | `POST /api/enrol` | bearer | `{"url": "wss://…/api/pleatview/v2", "token": "…", "fingerprint"?: "…"}` → `202`: connect out to that controller and enrol with the one-time token ([protocol v2](protocol-v2.md); apps with `protocol_v2`) |
 
 **Approving on the screen** (1.0.18 and later, Android and Linux): instead of the PIN, a

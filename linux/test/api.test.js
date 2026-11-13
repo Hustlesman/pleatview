@@ -169,3 +169,21 @@ test("protocol v2's calls are v1's, without HTTP", async () => {
   assert.deepEqual(await calls("forget_signins", {}), { forgotten: 2 });
   await assert.rejects(calls("pair", {}), /unknown method pair/);
 });
+
+test("protocol v2: from another computer, connecting out needs the PIN or a paired client", async () => {
+  const remote = createApi(backend, pairing, { local: () => false });
+  await new Promise((resolve) => remote.listen(0, "127.0.0.1", resolve));
+  const at = `http://127.0.0.1:${remote.address().port}/api/connect`;
+  const post = (body, token) => fetch(at, { method: "POST", body: JSON.stringify(body),
+    headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) } });
+  try {
+    const url = "wss://c.example/api/pleatview/v2";
+    assert.equal((await post({ url })).status, 403);
+    assert.equal((await post({ url, pin: "000000" })).status, 403);
+    assert.equal((await post({ url, pin: pairing.pin })).status, 202);
+    assert.deepEqual(enrolments.at(-1), { url });
+    assert.equal((await post({ url }, await paired())).status, 202);
+  } finally {
+    remote.close();
+  }
+});

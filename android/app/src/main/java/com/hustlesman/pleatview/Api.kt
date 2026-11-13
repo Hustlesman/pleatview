@@ -58,6 +58,9 @@ class Api(
             "/api/verify" -> post(request) { verify(request) }
             // The phone that scanned the TV's sign-in code has its PIN instead of a token.
             "/api/signin" -> post(request) { signIn(request) }
+            // The phone page (with the PIN), or a paired client: connect out to a controller
+            // elsewhere, which then shows a code to add the TV there with (protocol v2).
+            "/api/connect" -> post(request) { connect(request) }
             else -> {
                 if (path.startsWith("/api/pair/request/")) return get(request) { approvalState(path.substringAfterLast('/')) }
                 if (!path.startsWith("/api/")) return HttpResponse.error(404, "not found")
@@ -123,6 +126,30 @@ class Api(
         }
     }
 
+    private fun connect(request: HttpRequest): HttpResponse {
+        val body = request.jsonBody()
+        pinOrToken(request, body)?.let { return it }
+        val url = body.optString("url")
+        if (url.isEmpty()) return HttpResponse.error(400, "'url' is required")
+        return try {
+            backend.enrol(url, null, null)
+            HttpResponse.json(202, JSONObject())
+        } catch (e: IllegalArgumentException) {
+            HttpResponse.error(400, e.message ?: "invalid")
+        }
+    }
+
+    /** Null when the request has a paired token or the right PIN; otherwise the refusal. */
+    private fun pinOrToken(request: HttpRequest, body: JSONObject): HttpResponse? {
+        if (pairing.isValid(request.bearerToken())) return null
+        return when (val result = pairing.verify(body.optString("pin"))) {
+            Pairing.Result.Verified -> null
+            is Pairing.Result.LockedOut ->
+                HttpResponse.error(429, "too_many_attempts", mapOf("retry_after" to result.retryAfterSeconds))
+            else -> HttpResponse.error(403, "invalid_pin")
+        }
+    }
+
     private fun enrol(request: HttpRequest): HttpResponse {
         val body = request.jsonBody()
         val url = body.optString("url")
@@ -174,14 +201,7 @@ class Api(
 
     private fun signIn(request: HttpRequest): HttpResponse {
         val body = request.jsonBody()
-        if (!pairing.isValid(request.bearerToken())) {
-            when (val result = pairing.verify(body.optString("pin"))) {
-                Pairing.Result.Verified -> Unit
-                is Pairing.Result.LockedOut ->
-                    return HttpResponse.error(429, "too_many_attempts", mapOf("retry_after" to result.retryAfterSeconds))
-                else -> return HttpResponse.error(403, "invalid_pin")
-            }
-        }
+        pinOrToken(request, body)?.let { return it }
         val password = body.optString("password")
         if (password.isEmpty()) return HttpResponse.error(400, "'password' is required")
         val accepted = backend.submitSignIn(body.optString("username").trim(), password, body.optBoolean("remember", true))
