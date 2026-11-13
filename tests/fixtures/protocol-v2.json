@@ -1,0 +1,75 @@
+{
+  "_about": "Protocol v2 (docs/protocol-v2.md): what every implementation must agree on. The key is made for these tests only.",
+  "key": {
+    "private_pem": "-----BEGIN PRIVATE KEY-----\nMIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQg3pl3CHMyHn1NxPL/\nn/A2AZ3fLc2AJpUSIXuVPXT62C+hRANCAAS4ZfdMR5xDP+LfMb9V9eXVdMErdY7N\nhuG0fcUfNtpDJ2Gh7zj/r/5mIzplESmkrRfmvhXPhZ2QIasK5QThkdy0\n-----END PRIVATE KEY-----\n",
+    "public": "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEuGX3TEecQz/i3zG/VfXl1XTBK3WOzYbhtH3FHzbaQydhoe84/6/+ZiM6ZREppK0X5r4Vz4WdkCGrCuUE4ZHctA==",
+    "id": "93a247abf83c16cc1e9119f06d67d9fc9dcad91720994e0da979aeecc06e543c"
+  },
+  "addresses": [
+    {
+      "given": "wss://controller.example/api/pleatview/v2",
+      "address": "wss://controller.example/api/pleatview/v2"
+    },
+    {
+      "given": "WSS://Controller.Example:443/api/pleatview/v2",
+      "address": "wss://controller.example/api/pleatview/v2"
+    },
+    {
+      "given": "wss://10.0.0.5:8443/api/pleatview/v2",
+      "address": "wss://10.0.0.5:8443/api/pleatview/v2"
+    },
+    {
+      "given": "wss://[fd00::5]:8443/api/pleatview/v2",
+      "address": "wss://[fd00::5]:8443/api/pleatview/v2"
+    }
+  ],
+  "signed": {
+    "address": "wss://controller.example/api/pleatview/v2",
+    "nonce": "6b1f0c3a9d2e4f5867a8b9c0d1e2f30415263748596a7b8c9d0e1f2031425364",
+    "text": "pleatview-v2\nwss://controller.example/api/pleatview/v2\n6b1f0c3a9d2e4f5867a8b9c0d1e2f30415263748596a7b8c9d0e1f2031425364"
+  },
+  "signatures": [
+    {
+      "address": "wss://controller.example/api/pleatview/v2",
+      "nonce": "6b1f0c3a9d2e4f5867a8b9c0d1e2f30415263748596a7b8c9d0e1f2031425364",
+      "signature": "MEYCIQCLGF++jFHEHNVRrkxXwLyDH8Lh413nVqa5EfvvpkR4sQIhAJd9E1IhNgJfCDHU0EoRMWntSbyGCuiOqETOrj329kFE",
+      "valid": true
+    },
+    {
+      "address": "wss://controller.example/api/pleatview/v2",
+      "nonce": "6b1f0c3a9d2e4f5867a8b9c0d1e2f30415263748596a7b8c9d0e1f2031425364",
+      "signature": "MEQCIEEKUBKJhAGY45tEzRPQJ6posUoFIUz3zFnk6Xv1PWRwAiAgsEBoNXdy7CfAIHlGamourkQtyrSVmBfMHleIS/RTDQ==",
+      "valid": false,
+      "why": "made for another controller's address"
+    }
+  ],
+  "codes": {
+    "alphabet": "23456789ABCDEFGHJKMNPQRSTUVWXYZ",
+    "_about": "A code is two groups of four from the alphabet. What people type is read in upper case, without spaces or dashes, then grouped.",
+    "typed": [
+      {
+        "typed": "K7RM-W2XD",
+        "code": "K7RM-W2XD"
+      },
+      {
+        "typed": "k7rm w2xd",
+        "code": "K7RM-W2XD"
+      },
+      {
+        "typed": " k7rmw2xd ",
+        "code": "K7RM-W2XD"
+      },
+      {
+        "typed": "2345-zzzz",
+        "code": "2345-ZZZZ"
+      }
+    ],
+    "invalid": [
+      "K7RM-W2X0",
+      "I1OL-2345",
+      "K7RM-W2XDA",
+      "K7RM-W2X",
+      ""
+    ]
+  }
+}
