@@ -58,6 +58,12 @@ class ApiTest {
             state = json
             listeners.forEach { it(json) }
         }
+
+        val enrolments = CopyOnWriteArrayList<Triple<String, String?, String?>>()
+        override fun enrol(url: String, token: String?, fingerprint: String?) {
+            require(url.startsWith("wss://")) { "a controller's address is wss://host[:port]/api/pleatview/v2" }
+            enrolments += Triple(url, token, fingerprint)
+        }
     }
 
     private class MemoryStore : Pairing.Store {
@@ -70,7 +76,8 @@ class ApiTest {
 
     private val backend = FakeBackend()
     private val pairing = Pairing(MemoryStore())
-    private val server = HttpServer(0, Api(backend, pairing) { "<html>setup</html>".toByteArray() }::handle)
+    private val api = Api(backend, pairing) { "<html>setup</html>".toByteArray() }
+    private val server = HttpServer(0, api::handle)
     private lateinit var base: String
 
     @Before
@@ -242,5 +249,27 @@ class ApiTest {
         assertEquals("http://grafana.lan:3000", backend.forgotten)
         request("DELETE", "/api/signins", token = token)
         assertEquals(null, backend.forgotten)
+    }
+
+    @Test
+    fun `protocol v2 - a paired controller moves the screen over`() {
+        val url = "wss://c.example/api/pleatview/v2"
+        assertEquals(401, request("POST", "/api/enrol", """{"url":"$url","token":"t"}""").status)
+        val token = pair()
+        assertEquals(400, request("POST", "/api/enrol", """{"url":"$url"}""", token).status)
+        assertEquals(400, request("POST", "/api/enrol", """{"url":"https://c.example/","token":"t"}""", token).status)
+        assertEquals(202, request("POST", "/api/enrol", """{"url":"$url","token":"t","fingerprint":"${"ab".repeat(32)}"}""", token).status)
+        assertEquals(Triple(url, "t", "ab".repeat(32)), backend.enrolments.last())
+    }
+
+    @Test
+    fun `protocol v2's calls are v1's, without a token`() {
+        assertEquals("Test TV", JSONObject(String(api.call("info", JSONObject()).body)).getString("name"))
+        val ok = api.call("command", JSONObject().put("command", "home"))
+        assertEquals(200, ok.status)
+        assertEquals(Command.Home, backend.commands.last())
+        assertEquals(400, api.call("command", JSONObject().put("command", "explode")).status)
+        assertEquals(400, api.call("pair", JSONObject()).status)
+        assertEquals("unknown method pair", JSONObject(String(api.call("pair", JSONObject()).body)).getString("error"))
     }
 }

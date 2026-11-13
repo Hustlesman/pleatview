@@ -156,6 +156,18 @@ class Hub(
 
     override fun forgetSignIns(site: String?): Int = signIns.forget(site)
 
+    /** Protocol v2's connection out; set by PleatApp. */
+    var enrolOut: ((String, String?, String?) -> Unit)? = null
+
+    override fun enrol(url: String, token: String?, fingerprint: String?) {
+        (enrolOut ?: throw IllegalArgumentException("not available")).invoke(url, token, fingerprint)
+    }
+
+    /** The code to show for a controller elsewhere came or went: the setup screen shows it. */
+    fun codeChanged() {
+        main.post { display?.onPairingChanged() }
+    }
+
     override fun approvalRequested() {
         main.post {
             val display = display
@@ -307,7 +319,8 @@ class StateModel {
         const val VIEW_DASHBOARD = "dashboard"
 
         /** What this app can do beyond protocol version 1, so Home Assistant only asks for that. */
-        val FEATURES = listOf("render_stream", "home_without_ha", "home_playlist")
+        // protocol_v2: it connects out to a controller anywhere (docs/protocol-v2.md).
+        val FEATURES = listOf("render_stream", "home_without_ha", "home_playlist", "protocol_v2")
     }
 }
 

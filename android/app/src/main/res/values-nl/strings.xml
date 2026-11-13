@@ -4,6 +4,8 @@
     <string name="setup_tagline">Home Assistant-dashboards en media op dit scherm</string>
     <string name="setup_step_discover">Open in Home Assistant Instellingen → Apparaten en diensten. Dit apparaat zou daar als ontdekt PleatView-apparaat moeten verschijnen. Zo niet, voeg dan de PleatView-integratie toe met dit adres:</string>
     <string name="setup_step_pin">Als Home Assistant om een pincode vraagt, voer dan in:</string>
+    <!-- Protocol v2: a controller elsewhere waits for this code. %1$s: its host. -->
+    <string name="setup_step_code">Verbinden met %1$s. Voeg dit scherm daar toe met deze code:</string>
     <string name="setup_manual">Geen integratie? Scan de code, of open %1$s op je telefoon.</string>
     <string name="setup_qr_caption">Scan met een telefoon om dit apparaat zonder typen aan Home Assistant toe te voegen</string>
     <string name="setup_device">%1$s · v%2$s · Hulp: pleatview.hustlesman.com</string>

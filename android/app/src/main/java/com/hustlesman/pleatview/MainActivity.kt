@@ -447,7 +447,11 @@ class MainActivity : Activity(), Hub.Display, DashboardController.Callbacks, Med
             if (ip == null) getString(R.string.setup_no_network)
             // One line on wide screens; a phone's is too narrow for both.
             else "Host  $ip" + (if (isWide) "     " else "\n") + "Port  $port"
-        findViewById<TextView>(R.id.setup_pin).text = formatPin(app.pairing.pin)
+        // Protocol v2: while a controller elsewhere waits for this screen's code, the code instead.
+        val code = app.connectOut?.code
+        findViewById<TextView>(R.id.setup_pin_label).text =
+            if (code != null) getString(R.string.setup_step_code, code.second) else getString(R.string.setup_step_pin)
+        findViewById<TextView>(R.id.setup_pin).text = code?.first ?: formatPin(app.pairing.pin)
         val qr = findViewById<ImageView>(R.id.setup_qr)
         if (ip != null) {
             val url = SetupCode.url(ip, port, app.pairing.pin)
