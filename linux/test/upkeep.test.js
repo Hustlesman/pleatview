@@ -63,7 +63,7 @@ test("diagnostics: what it reports, and the home check", async (t) => {
   log.add("INFO", ["a line"]);
   const report = await diagnostics({ home: "http://127.0.0.1:9/", log, dataDir: dir });
   for (const key of ["uptime", "app_uptime", "os", "kernel", "load", "processors", "memory", "storage", "temperature",
-    "power_warning", "network", "gateway", "checks", "log"]) assert.ok(key in report, key);
+    "power_warning", "throttled", "network", "gateway", "checks", "log"]) assert.ok(key in report, key);
   assert.ok(report.storage.total > 0);
   assert.equal(report.log.length, 1);
   const byName = Object.fromEntries(report.checks.map((c) => [c.check, c]));

@@ -54,7 +54,7 @@ class Diagnostics(unittest.IsolatedAsyncioTestCase):
         with tempfile.TemporaryDirectory() as tmp:
             report = await upkeep.diagnostics(home="http://127.0.0.1:9/", log=log, data=Path(tmp))
         for key in ("uptime", "app_uptime", "os", "kernel", "load", "processors", "memory", "storage",
-                    "temperature", "power_warning", "network", "gateway", "checks", "log"):
+                    "temperature", "power_warning", "throttled", "network", "gateway", "checks", "log"):
             self.assertIn(key, report)
         self.assertGreater(report["storage"]["total"], 0)
         self.assertEqual(report["log"], ["a line"])
@@ -63,6 +63,12 @@ class Diagnostics(unittest.IsolatedAsyncioTestCase):
         self.assertFalse(checks["home"]["ok"])  # nothing listens on port 9
         self.assertEqual(checks["home"]["target"], "127.0.0.1:9")
         json.dumps(report)
+
+    def test_the_boards_throttled_bits(self) -> None:
+        self.assertEqual(upkeep._power(0x0), (False, False))
+        self.assertEqual(upkeep._power(0xE0000), (False, True))  # slowed down by heat since it started
+        self.assertEqual(upkeep._power(0x50005), (True, True))
+        self.assertEqual(upkeep._power(0x10000), (True, False))
 
     async def test_no_home_check_without_a_home_page(self) -> None:
         checks = await upkeep.checks(None)

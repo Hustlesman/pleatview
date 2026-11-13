@@ -141,12 +141,37 @@ function temperature() {
   return null;
 }
 
-/** Raspberry Pi firmware: the voltage is too low now (bit 0), or has been since it started (bit 16). */
-function powerWarning() {
-  const text = read("/sys/devices/platform/soc/soc:firmware/get_throttled");
-  if (text === null) return null;
-  const value = Number.parseInt(text.trim(), 16);
-  return Number.isNaN(value) ? null : Boolean(value & 0x10001);
+const UNDER_VOLTAGE = 0x10001; // now (bit 0), or since it started (bit 16)
+const SLOWED = 0x60006; // its processor capped or throttled, now or since it started (bits 1, 2, 17, 18)
+
+/** Raspberry Pi firmware's throttled bits: from sysfs on older kernels, else vcgencmd (the app's user is in the video group). */
+async function throttledBits() {
+  let text = read("/sys/devices/platform/soc/soc:firmware/get_throttled");
+  if (text === null) {
+    text = await new Promise((resolve) => {
+      execFile("vcgencmd", ["get_throttled"], { timeout: 2000 }, (error, stdout) => resolve(error ? null : stdout));
+    });
+  }
+  if (!text) return null;
+  const value = Number.parseInt(text.trim().split("=").pop(), 16);
+  return Number.isNaN(value) ? null : value;
+}
+
+/** [power_warning, throttled]; a board that only says whether its voltage is low now (the rpi_volt sensor) gives the first. */
+function power(bits) {
+  if (bits !== null) return [Boolean(bits & UNDER_VOLTAGE), Boolean(bits & SLOWED)];
+  let sensors = [];
+  try {
+    sensors = readdirSync("/sys/class/hwmon");
+  } catch {
+    return [null, null];
+  }
+  for (const sensor of sensors) {
+    if ((read(`/sys/class/hwmon/${sensor}/name`) ?? "").trim() !== "rpi_volt") continue;
+    const alarm = (read(`/sys/class/hwmon/${sensor}/in0_lcrit_alarm`) ?? "").trim();
+    return [alarm ? alarm === "1" : null, null];
+  }
+  return [null, null];
 }
 
 export function gateway() {
@@ -240,6 +265,7 @@ export async function diagnostics({ home, log, dataDir }) {
   } catch {
     storage = null;
   }
+  const [powerWarning, throttled] = power(await throttledBits());
   return {
     uptime: Math.round(uptime()),
     app_uptime: Math.round(process.uptime()),
@@ -250,7 +276,8 @@ export async function diagnostics({ home, log, dataDir }) {
     memory: memory(),
     storage,
     temperature: temperature(),
-    power_warning: powerWarning(),
+    power_warning: powerWarning,
+    throttled,
     network: network(),
     gateway: gateway(),
     checks: await checks(home),
