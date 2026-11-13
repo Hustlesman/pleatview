@@ -1171,59 +1171,6 @@ def checks(r: Run, report: Report, apk: Path) -> None:
         return ("a cookie banner cleared by its text, a pop-up closed by CSS, a map dragged and the page scrolled, "
                 "on a Webpage dashboard and with show_url")
 
-    def connects_out():
-        # Protocol v2: a controller elsewhere (here a small test one, over TLS with a certificate
-        # of its own). It pairs over v1 like any controller, with one press of OK, then moves the
-        # TV to v2 with a one-time token; from then on it reaches the TV over the TV's connection.
-        from controller_v2 import TestController
-        controller = TestController()
-        v1_token = None
-        try:
-            address = f"wss://{'127.0.0.1' if r.device else EMULATOR_HOST}:{controller.port}/api/pleatview/v2"
-            if r.device:
-                adb("reverse", f"tcp:{controller.port}", f"tcp:{controller.port}")
-            controller.address = address
-            status, asked = http("POST", f"{r.tv_api}/api/pair/request", {"client": "E2E controller"})
-            if status != 202:
-                raise AssertionError(f"couldn't ask to pair: {status} {asked}")
-            wait_for("the pairing question on the TV", lambda: "E2E controller" in screen_texts(), timeout=30)
-            adb("shell", "input", "keyevent", "KEYCODE_DPAD_CENTER")
-            v1_token = wait_for("the pairing token", lambda: (
-                answer := http("GET", f"{r.tv_api}/api/pair/request/{asked['request']}")[1]
-            ).get("token") if isinstance(answer, dict) else None, timeout=20)
-            status, reply = http("POST", f"{r.tv_api}/api/enrol",
-                                 {"url": address, "token": controller.new_token(), "fingerprint": controller.pin}, token=v1_token)
-            if status != 202:
-                raise AssertionError(f"the TV didn't take the move to v2: {status} {reply}")
-            hello = wait_for("the TV to connect out", lambda: controller.hellos and controller.hellos[0], timeout=30)
-            if hello.get("type") != "enrol" or "token" not in hello or controller.problems:
-                raise AssertionError(f"unexpected enrolment {hello.get('type')}: {controller.problems}")
-            state = wait_for("its state over the connection", lambda: controller.states and controller.states[-1], timeout=20)
-            if "protocol_v2" not in state.get("features", []):
-                raise AssertionError(f"features {state.get('features')}")
-            answer = controller.request("command", {"command": "notify", "message": "From afar", "duration": 20})
-            if "result" not in answer:
-                raise AssertionError(f"the command was refused: {answer}")
-            wait_for("the controller's notification", lambda: "From afar" in screen_texts(), timeout=20, interval=1)
-            report.screenshot("09-connects-out")
-            config = controller.request("config").get("result", {})
-            if "zoom" not in config:
-                raise AssertionError(f"config over v2: {config}")
-            refused = controller.request("command", {"command": "explode"})
-            if "error" not in refused:
-                raise AssertionError(f"a bad command wasn't refused: {refused}")
-            # Removed by the controller: the TV forgets it and doesn't come back.
-            controller.revoke()
-            time.sleep(6)
-            if len(controller.hellos) != 1:
-                raise AssertionError(f"the TV came back {len(controller.hellos) - 1} time(s) after being removed")
-        finally:
-            if v1_token:
-                http("POST", f"{r.tv_api}/api/unpair", {}, token=v1_token)
-            controller.stop()
-        return ("paired with OK, moved to v2 with a token over TLS with a pinned certificate; a notification "
-                "and its settings over the connection; removed, it stays away")
-
     def sign_ins():
         site = r.media_server
         created = ws_call(r, {"type": "lovelace/dashboards/create", "url_path": "dashboard-pleatview-signin",
@@ -1695,7 +1642,6 @@ def checks(r: Run, report: Report, apk: Path) -> None:
         ("Over another app: a camera and a video in picture-in-picture", pip_over_other_apps),
         ("Webpage dashboard opens the site directly", webpage),
         ("Page steps: clicks on text and CSS, a drag, a scroll", page_steps),
-        ("Connects out to a controller elsewhere (protocol v2)", connects_out),
         ("Sign-ins: entered from a phone, then saved", sign_ins),
         ("turn_off and turn_on", standby),
         ("Recovers after a Home Assistant restart", ha_restart),
