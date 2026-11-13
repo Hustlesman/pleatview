@@ -20,7 +20,7 @@ checks, the website and releases run on their own.
 
 **Principle: a thin agent.** The apps on the screens stay small: they show pages, play
 media, report their state and keep their own keys. Everything else lives on the controller
-side, in Home Assistant's integration, the renderer or the console: rendering, schedules,
+side, in Home Assistant's integration or the renderer: rendering, schedules,
 policies, credentials and logs. A feature goes into the screen's app only when it can't
 work anywhere else, such as decoding video or the screen's power. Cheap screens keep up,
 and there's one place to fix and to audit.
@@ -37,7 +37,6 @@ Last updated 13 November 2026. **Current milestone: M1** (M0 finished early).
 | [M2](#m2--public-beta) Public beta, Google Play closed test, phones and tablets | Fri 4 Dec 2026 | M1, 12 beta testers | In progress |
 | [R1](#r1--rendering-for-many-screens) Rendering for many screens: several renderers, chosen per TV | To be scheduled | — | Not started |
 | [S1](#s1--secure-remote-management) Secure remote management: over the internet, a VPN or zero-trust access | To be scheduled | M3's encryption, M4's protocol v2 | Not started |
-| [C1](#c1--pleatview-console) PleatView Console: many sites, without Home Assistant (commercial, developed separately) | No date yet | M4, S1 | In progress |
 | [M3](#m3--google-play-and-amazon-appstore) Google Play and Amazon Appstore | Fri 15 Jan 2027 | M2, store reviews | In progress |
 | [M4](#m4--web-player) Web player for any TV browser | Fri 29 Jan 2027 | M3 submitted | Not started |
 | [M5](#m5--lg-and-samsung-apps) LG and Samsung apps submitted | Fri 5 Mar 2027 | M4, test TVs | Not started |
@@ -63,10 +62,9 @@ Chromecast HD pass the automated checks, and both ran a 42-hour soak test withou
 security review on 2 Nov fixed what it found. The apps, the integration, the renderer and
 PleatView Light have unit tests that run on every change. Home Assistant can
 render a TV's dashboards and stream them to it, on its own machine or on renderers elsewhere,
-also for PleatView Light on the smallest boards. PleatView Console, a commercial product in
-development, manages screens across sites and organisations without Home Assistant. The Android app, the phone page and the integration
-are translated into 10 languages besides English, chosen from where Home Assistant is used
-most.
+also for PleatView Light on the smallest boards. The Android app, the phone page and the
+integration are translated into 10 languages besides English, chosen from where Home
+Assistant is used most.
 
 ## How we stay on track
 
@@ -225,8 +223,6 @@ to the network.
       *Automatic* (the least busy renderer)
 - [x] **Load in Home Assistant:** each renderer as a device, with screens in use out of its
       maximum, processor and memory, so you can see when to add one
-- [x] **The console drives renderers too**: paired from the console, chosen per screen,
-      so PleatView Light works on sites without Home Assistant
 - [ ] **One stream for several TVs** showing the same dashboard at the same size, rendered once
 - [x] **Notifications, cameras and sound in the stream**, so a screen that only plays the
       stream (the light client) gets them too: notifications and cameras, drawn by the
@@ -268,15 +264,6 @@ and policies live in the controller.
 **Exit:** a screen on another network is paired, controlled and removed through a ZTNA
 connector and over the open internet, with no open port at the screen's end, and the
 baseline is published.
-
-## C1 — PleatView Console
-
-*No date yet.* A manager for screens across many sites and organisations, for businesses that
-don't run Home Assistant: installers, shops and offices. It's a commercial product of
-Hustlesman, developed in a private repository. It speaks the same open protocols as Home
-Assistant ([v1](docs/protocol.md), then [v2](docs/protocol-v2.md)), so the screens' apps, the
-renderer and PleatView Light, all open source here, work with either. PleatView with Home
-Assistant stays free and open source.
 
 ## M2 — Public beta
 
@@ -474,7 +461,7 @@ website and in the README.
 | A Samsung TV's browser plays one video at a time (on a 2024 model on Tizen 9, of four muted YouTube players only one started). A camera next to a playing video, or a wall of streams, may not work there | Check how many videos a Tizen app can play in M5; until then the web player shows one video at a time on Samsung TVs and says so |
 | Apple rejects an app that mostly shows web pages (App Store guideline 4.2) | Native features beyond the page (discovery, pairing, keep-awake, Guided Access); meanwhile the web player works in Safari |
 | Smart displays close the page after a while: the Nest Hub stops a cast after about 10 minutes, and an Echo Show can go back to its home screen | The integration opens or casts the player again when it stops; checked on each device before it's listed |
-| Remote management opens screens to more than the home network | Screens only connect out, each with its own key, and S1's baseline comes before the console ships |
+| Remote management opens screens to more than the home network | Screens only connect out, each with its own key, and S1's baseline comes before remote management ships |
 | One developer, many platforms | The rules above: one milestone at a time, a fixed scope, and the parking lot |
 
 ## Parking lot

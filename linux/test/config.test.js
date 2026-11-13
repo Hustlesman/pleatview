@@ -41,9 +41,9 @@ test("invalid values are rejected; stored unknown keys are ignored", () => {
 test("a home page of its own sets the app up without Home Assistant", () => {
   assert.equal(new Config().isConfigured, false);
   assert.equal(new Config().merge({ home_dashboard: "/lovelace/0" }).isConfigured, false);
-  const own = new Config().merge({ home_dashboard: "https://console.example/screen" });
+  const own = new Config().merge({ home_dashboard: "https://signage.example/screen" });
   assert.equal(own.isConfigured, true);
-  assert.equal(own.resolve(own.homePath), "https://console.example/screen");
+  assert.equal(own.resolve(own.homePath), "https://signage.example/screen");
 });
 
 test("a rendered dashboard stream is kept, must be a web address, and can be turned off", () => {

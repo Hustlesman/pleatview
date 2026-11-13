@@ -86,8 +86,8 @@ export class Config {
     Object.freeze(this);
   }
 
-  /** Set up: Home Assistant's address, or a home page of its own from another controller
-   *  (PleatView Console), which leaves the setup screen without Home Assistant. */
+  /** Set up: Home Assistant's address, or a home page of its own from another controller,
+   *  which leaves the setup screen without Home Assistant. */
   get isConfigured() {
     return this.haUrl !== "" || isHttpUrl(this.homeDashboard);
   }

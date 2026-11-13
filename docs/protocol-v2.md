@@ -2,11 +2,11 @@
 
 Status: a design for [S1](../ROADMAP.md#s1--secure-remote-management) and the web player
 ([M4](../ROADMAP.md#m4--web-player)), November 2026. It's built with M4,
-so Home Assistant and the console get it in the same app version.
+so Home Assistant and other controllers get it in the same app version.
 
 ## Why
 
-In [protocol v1](protocol.md) the controller (Home Assistant, PleatView Console) connects to
+In [protocol v1](protocol.md) the controller (such as Home Assistant) connects to
 the screen, which listens on port 8765 on the local network. That can't work for screens
 behind NAT, on another site, in a car, or in a browser (the web player, LG and Samsung
 apps), and it means the screen listens for anyone on its network. In v2 the screen connects
@@ -65,7 +65,7 @@ revocation, logs, policies and certificates live in the controller.
 Screens keep v1 on the local network for setup and for controllers that only speak v1.
 Once enrolled with a v2 controller, a screen can turn its v1 server off (a setting the
 controller sets). Home Assistant's integration serves `/api/pleatview/v2` itself, so the
-same app works with Home Assistant and with the console.
+same app works with Home Assistant and with other controllers.
 
 ## Decisions
 
@@ -74,4 +74,4 @@ same app works with Home Assistant and with the console.
 - **PleatView Light** signs with `python3-cryptography` from Debian.
 - **The controller's certificate:** one the screen's system trusts, or one pinned at
   enrolment.
-- **Home Assistant and the console together,** with M4.
+- **Home Assistant and other controllers together,** with M4.

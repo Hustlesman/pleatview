@@ -91,7 +91,7 @@ class Configs(unittest.TestCase):
         for bad in ({"nope": 1}, {"render_stream": "file:///x"}, {"zoom": 5}, {"kiosk": "x"}):
             with self.assertRaises(ValueError):
                 Config().merge(bad)
-        self.assertTrue(Config().merge({"home_dashboard": "https://console.example/p"}).configured)
+        self.assertTrue(Config().merge({"home_dashboard": "https://signage.example/p"}).configured)
         self.assertEqual(Config.load({**config.stored(), "rev": "kept"}).rev, "kept")
 
 
@@ -139,13 +139,13 @@ class Playlists(unittest.IsolatedAsyncioTestCase):
             cache = MediaCache(Path(tmp))
             screen, player, _ = make_screen()
             screen.cache = cache
-            items = [{"url": "http://c/play/t/m/a/play.mp4", "kind": "video"},
-                     {"url": "http://c/play/t/m/b/play.png", "kind": "image", "seconds": 5}]
+            items = [{"url": "http://media.example/a.mp4", "kind": "video"},
+                     {"url": "http://media.example/b.png", "kind": "image", "seconds": 5}]
             cache.path(items[1]["url"]).write_bytes(b"png")  # the picture is cached, the video not yet
             cache.keep = lambda items: None  # no downloads in tests
             await screen.configure({"home_playlist": items, "render_stream": "http://ha/s.m3u8"})
             self.assertTrue(screen.state["view"] == "dashboard")
-            self.assertEqual(player.calls[-1][:2], ("play", "http://c/play/t/m/a/play.mp4"))  # not cached: streamed
+            self.assertEqual(player.calls[-1][:2], ("play", "http://media.example/a.mp4"))  # not cached: streamed
             await screen.on_player({"event": "end-file", "reason": "eof"})
             self.assertEqual(player.calls[-1], ("play", str(cache.path(items[1]["url"])), {"image_seconds": 5, "volume": 1.0}))
             await screen.command({"command": "show_dashboard", "path": "/other"})

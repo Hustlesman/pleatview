@@ -31,9 +31,9 @@ import java.io.File
 import java.util.concurrent.Executors
 
 /**
- * A home page that is a playlist of media (`home_playlist`, from PleatView Console): pictures
+ * A home page that is a playlist of media (`home_playlist`, from another controller): pictures
  * for their seconds, videos and sounds to the end, in order, again and again. Every item is
- * kept in the app's own cache as well, so the list plays on while the network or the console
+ * kept in the app's own cache as well, so the list plays on while the network or the controller
  * is gone, and after a restart.
  */
 @OptIn(UnstableApi::class)

@@ -419,7 +419,7 @@ def main() -> None:
     identity = {"id": identity["id"], "name": env.get("NAME") or socket.gethostname()}
 
     def pin_changed() -> None:
-        _LOGGER.info("To pair this renderer with Home Assistant or PleatView Console, use the PIN %s %s",
+        _LOGGER.info("To pair this renderer with Home Assistant, use the PIN %s %s",
                      pairing.pin[:3], pairing.pin[3:])
 
     tokens = state / "tokens.json"
@@ -431,7 +431,7 @@ def main() -> None:
     context = None
     cert, key = env.get("TLS_CERT"), env.get("TLS_KEY")
     # On the network the renderer serves HTTPS, with a certificate it makes for itself unless
-    # it's given one; Home Assistant and the console pin it when pairing. TLS=off turns it off.
+    # it's given one; the controller pins it when pairing. TLS=off turns it off.
     if not (cert and key) and require_token and env.get("TLS", "auto") != "off":
         cert, key = str(state / "cert.pem"), str(state / "key.pem")
         make_certificate(Path(cert), Path(key))

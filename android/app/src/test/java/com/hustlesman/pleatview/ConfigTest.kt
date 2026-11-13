@@ -21,17 +21,17 @@ class ConfigTest {
     fun `a home page of its own sets the app up without Home Assistant`() {
         assertFalse(Config().isConfigured)
         assertFalse(Config().merge(JSONObject().put("home_dashboard", "/lovelace/0")).isConfigured)
-        val own = Config().merge(JSONObject().put("home_dashboard", "https://console.example/screen"))
+        val own = Config().merge(JSONObject().put("home_dashboard", "https://signage.example/screen"))
         assertTrue(own.isConfigured)
-        assertEquals("https://console.example/screen", own.resolve(own.homePath))
+        assertEquals("https://signage.example/screen", own.resolve(own.homePath))
         assertFalse(own.isHaUrl(own.resolve(own.homePath)))
     }
 
     @Test
     fun `a home playlist is checked, kept and sets the app up`() {
         val items = JSONArray()
-            .put(JSONObject().put("url", "http://console:8791/play/t/m/a/play.mp4").put("kind", "video"))
-            .put(JSONObject().put("url", "http://console:8791/play/t/m/b/play.png").put("kind", "image").put("seconds", 7))
+            .put(JSONObject().put("url", "http://media.example/a.mp4").put("kind", "video"))
+            .put(JSONObject().put("url", "http://media.example/b.png").put("kind", "image").put("seconds", 7))
         val config = Config().merge(JSONObject().put("home_playlist", items))
         assertTrue(config.isConfigured)
         assertEquals(listOf("video", "image"), config.homePlaylist.map { it.kind })
