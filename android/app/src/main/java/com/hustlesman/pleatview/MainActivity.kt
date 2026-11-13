@@ -237,6 +237,7 @@ class MainActivity : Activity(), Hub.Display, DashboardController.Callbacks, Med
             Command.TurnOff -> enterStandby()
             Command.NextDashboard -> cycleDashboard(+1)
             Command.PreviousDashboard -> cycleDashboard(-1)
+            Command.RestartApp -> Unit // the Hub does it
         }
     }
 

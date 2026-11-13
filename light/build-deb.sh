@@ -11,6 +11,9 @@ chmod 755 "$root"
 mkdir -p "$root/DEBIAN" "$root/usr/share/pleatview-light/pleatview_light" "$root/usr/bin" "$root/usr/share/doc/pleatview-light"
 cp "$here"/pleatview_light/*.py "$root/usr/share/pleatview-light/pleatview_light/"
 install -m 755 "$here/build/pleatview-light" "$root/usr/bin/pleatview-light"
+# The helper that restarts and updates on a controller's request, shared with the Linux app.
+install -m 755 "$here/../linux/build/pleatview-helper" "$root/usr/share/pleatview-light/helper"
+install -m 644 "$here/../linux/build/release-cert.pem" "$root/usr/share/pleatview-light/release-cert.pem"
 cp "$here/README.md" "$root/usr/share/doc/pleatview-light/"
 cp "$here/../LICENSE" "$root/usr/share/doc/pleatview-light/copyright"
 cat >"$root/DEBIAN/control" <<CONTROL

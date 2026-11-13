@@ -57,6 +57,15 @@
             </intent-filter>
         </activity>
 
+        <!-- Starts the app again when its controller asks (Upkeep.kt), from a process of its own. -->
+        <activity
+            android:name=".RestartActivity"
+            android:excludeFromRecents="true"
+            android:exported="false"
+            android:noHistory="true"
+            android:process=":restart"
+            android:theme="@android:style/Theme.Translucent.NoTitleBar" />
+
         <!-- connectedDevice: Home Assistant controls the TV over the local network. -->
         <service
             android:name=".ControlService"

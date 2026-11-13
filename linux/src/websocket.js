@@ -202,6 +202,10 @@ export function connect(address, { subprotocol, pin = null, timeoutMs = 15000 })
           const at = line.indexOf(":");
           return [line.slice(0, at).trim().toLowerCase(), line.slice(at + 1).trim()];
         }));
+        // Busy, or restarting: it says when to come back (docs/protocol-v2.md, "Closing").
+        if (/^HTTP\/1\.1 503\b/.test(lines[0]) && /^\d+$/.test(headers["retry-after"] ?? "")) {
+          return fail(Object.assign(new Error("busy"), { retryAfter: Number(headers["retry-after"]) }));
+        }
         if (!/^HTTP\/1\.1 101\b/.test(lines[0]) || headers["sec-websocket-accept"] !== acceptKey(key)) {
           return fail(new Error(`not a WebSocket: ${lines[0]}`));
         }

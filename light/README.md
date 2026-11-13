@@ -20,7 +20,10 @@ sudo pleatview-light enable
 ```
 
 It starts with the computer and takes over the screen; `sudo pleatview-light disable`
-undoes that. On a computer that ran the PleatView Linux app, it keeps that app's identity
+undoes that. It also lets a controller restart the computer and update PleatView Light to
+a newer release ([Upkeep](../docs/protocol.md#upkeep)), through a small helper that runs as
+root, takes nothing but those two requests, and installs only releases signed with
+PleatView's release key, never an older one. On a computer that ran the PleatView Linux app, it keeps that app's identity
 and pairings, so Home Assistant carries on without pairing again.
 
 **A controller elsewhere** ([protocol v2](../docs/protocol-v2.md)): with

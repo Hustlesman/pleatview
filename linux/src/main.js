@@ -15,6 +15,12 @@ import { Advertiser } from "./mdns.js";
 import { Pairing } from "./pairing.js";
 import { SignIns } from "./signins.js";
 import { Store } from "./store.js";
+import { BadCommand } from "./command.js";
+import { Helper, RecentLog, diagnostics, newer } from "./upkeep.js";
+
+// The last lines the app logged, for a controller's diagnostics (upkeep.js).
+const recentLog = new RecentLog().capture();
+const started = Math.floor(Date.now() / 1000);
 
 const here = dirname(fileURLToPath(import.meta.url));
 const PORT = Number(process.env.PLEATVIEW_PORT) || 8765;
@@ -33,7 +39,9 @@ const id = deviceId(store);
 const version = app.getVersion();
 const { manufacturer, model } = hardware();
 let config = Config.fromJson(store.readJson("config.json", {}));
-const hub = new Hub({ appVersion: version });
+// Restarting the computer and updating go through the package's helper, where it's set up.
+const helper = new Helper();
+const hub = new Hub({ appVersion: version, features: helper.ready ? ["restart_device", "update"] : [] });
 // Sign-ins for dashboards behind a password: on this screen only, encrypted (signins.js).
 const signIns = new SignIns(store);
 const advertiser = new Advertiser();
@@ -83,11 +91,61 @@ function announce() {
 }
 
 const info = () => ({ id, name: name(), manufacturer, model, app_version: version, api_version: API_VERSION });
+
+/** Starts the app again: systemd does it for the kiosk (pleatview-kiosk enable), Electron otherwise. */
+function startAgain() {
+  console.log("PleatView: starting again");
+  if (!process.env.INVOCATION_ID) app.relaunch();
+  app.quit();
+}
+
+/** Upkeep's commands (docs/protocol.md, "Upkeep"); everything else goes to the display. */
+function dispatch(command) {
+  if (command.name === "restart" && command.what === "app") {
+    console.log("PleatView: starting again, as the controller asked");
+    setTimeout(startAgain, 1000); // once the answer is out
+    return;
+  }
+  if (command.name === "restart" || command.name === "update") {
+    if (!helper.ready) throw new BadCommand("not_supported");
+    if (command.name === "restart") {
+      console.log("PleatView: restarting the computer, as the controller asked");
+      return helper.restartDevice();
+    }
+    if (!newer(command.version, version)) throw new BadCommand(`${version} is installed, and only newer versions are`);
+    console.log(`PleatView: updating to ${command.version}, as the controller asked`);
+    helper.update(command.version);
+    hub.update({ update: { version: command.version, state: "waiting", error: null, at: Math.floor(Date.now() / 1000) } });
+    return;
+  }
+  hub.dispatch(command);
+}
+
+/** Reports how the helper's update goes, and starts the new version once it's in. */
+function followUpdates() {
+  const status = helper.status();
+  if (status && JSON.stringify(status) !== JSON.stringify(hub.state.update)) hub.update({ update: status });
+  if (status?.state === "installed" && (status.at ?? 0) >= started && newer(status.version, version)) {
+    console.log(`PleatView: version ${status.version} is installed; starting it`);
+    clearInterval(following);
+    setTimeout(startAgain, 1000);
+  }
+}
+const following = setInterval(followUpdates, 5000);
+followUpdates();
+
+/** The home page's address, for the checks: Home Assistant's, or a full web address. */
+function homeAddress() {
+  if (config.renderStream && /^https?:/.test(config.renderStream)) return config.renderStream;
+  if (config.haUrl) return config.haUrl;
+  return /^https?:/.test(config.homeDashboard ?? "") ? config.homeDashboard : null;
+}
 const backend = {
   info,
   stateJson: () => hub.stateJson(),
   onState: (listener) => hub.onState(listener),
-  dispatch: (command) => hub.dispatch(command),
+  dispatch,
+  diagnostics: () => diagnostics({ home: homeAddress(), log: recentLog, dataDir: store.dir }),
   config: () => config,
   updateConfig,
   submitSignIn: (username, password, remember) => display?.signInFlow?.apply(username, password, remember) ?? false,

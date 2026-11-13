@@ -44,9 +44,19 @@ PleatView is built for a home network you trust. What it does, and what it can't
   Assistant, at an address with a secret only that TV gets. The image holds only free
   software from Debian's main archive on a pinned base; `/api/packages` lists every
   package and version.
+- **Restarts and updates on Linux** ([Upkeep](docs/protocol.md#upkeep)). Where
+  `pleatview-kiosk enable` or `pleatview-light enable` set it up, a controller can restart
+  the computer and update the app. A small helper does it as root, and takes only those two
+  requests, as names of empty files in a folder only root and the `pleatview` group can
+  write to. It never takes an address or a file from the app or the controller. It
+  installs a release only from GitHub Releases, only if `SHA256SUMS` is signed with the
+  release key below and the package matches it, and never an older version. It restarts the
+  computer at most once every two minutes of uptime.
 - **Releases** are built on GitHub from the tagged source, signed with the same key every
   time, and come with build provenance: `gh attestation verify pleatview.apk --repo
-  Hustlesman/pleatview`.
+  Hustlesman/pleatview`. That key also signs each release's `SHA256SUMS`
+  (`SHA256SUMS.sig`; its certificate is `linux/build/release-cert.pem`):
+  `openssl dgst -sha256 -verify <(openssl x509 -in release-cert.pem -pubkey -noout) -signature SHA256SUMS.sig SHA256SUMS`.
 
 ## Baseline
 

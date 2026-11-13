@@ -104,4 +104,25 @@ class CommandTest {
         assertBad("""{"command":"play_media","url":"http://x/a.mp4","mode":"sideways"}""", "mode")
         assertBad("""{"command":"mute","muted":"yes"}""", "true or false")
     }
+
+    @Test
+    fun `upkeep - the app restarts, the device and updates aren't Android's to do`() {
+        assertEquals(Command.RestartApp, Command.parse(JSONObject().put("command", "restart").put("what", "app")))
+        for (json in listOf(
+            JSONObject().put("command", "restart").put("what", "device"),
+            JSONObject().put("command", "update").put("version", "1.0.20"),
+        )) {
+            try {
+                Command.parse(json)
+                fail("expected not_supported")
+            } catch (e: BadCommand) {
+                assertEquals("not_supported", e.message)
+            }
+        }
+        try {
+            Command.parse(JSONObject().put("command", "restart"))
+            fail("expected a refusal")
+        } catch (_: BadCommand) {
+        }
+    }
 }

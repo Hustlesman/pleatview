@@ -21,7 +21,7 @@ from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import ec
 
 from . import websocket
-from .websocket import Closed
+from .websocket import Busy, Closed
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -44,7 +44,10 @@ METHODS = {
     "signins": ("GET", "/api/signins"),
     "forget_signins": ("DELETE", "/api/signins"),
     "signin": ("POST", "/api/signin"),
+    "diagnostics": ("GET", "/api/diagnostics"),
 }
+MOVE_TRIES = 3
+LONGEST_RETRY = 3600
 
 
 def address(given: str) -> str:
@@ -89,6 +92,9 @@ class Connection:
             self.controller = {}
         self.token: str | None = None  # one-time, from a controller paired over v1
         self.online = False
+        self.retry_after: int | None = None  # the controller's own wait, from `retry` or a 503
+        self.moving: dict[str, Any] | None = None  # a new address, until it lets this screen in
+        self.move_tries = 0
         self._wake = asyncio.Event()
         self._ws: websocket.WebSocket | None = None
         self._task: asyncio.Task | None = None
@@ -147,6 +153,22 @@ class Connection:
         if self._ws:
             await self._ws.close(1001)
 
+    def _move_failed(self) -> None:
+        self.move_tries += 1
+        self._moved(False)
+
+    def _moved(self, ok: bool) -> None:
+        """A move ends: kept once the new address let this screen in, given up after three tries."""
+        if ok:
+            _LOGGER.info("The controller moved to %s", self.moving["url"])
+            self._save({**self.controller, "url": self.moving["url"], "pin": self.moving.get("pin")})
+        elif self.move_tries >= MOVE_TRIES:
+            _LOGGER.warning("The controller's new address %s didn't let this screen in; staying at %s",
+                            self.moving["url"], self.controller.get("url"))
+        else:
+            return
+        self.moving = None
+
     async def run(self) -> None:
         wait = FIRST_WAIT
         while True:
@@ -154,35 +176,51 @@ class Connection:
             if not self.controller.get("url"):
                 await self._wake.wait()
                 continue
+            moving = self.moving is not None
             try:
                 await self._connect()
                 wait = FIRST_WAIT  # it ran and ended: come back soon
             except Closed as closed:
-                if closed.code in (UNKNOWN_KEY, REVOKED):
+                if moving and self.moving is not None:
+                    self._move_failed()  # whatever the new address said, the old one stands
+                    wait = FIRST_WAIT
+                elif closed.code in (UNKNOWN_KEY, REVOKED):
                     _LOGGER.info("The controller removed this screen (%s)", closed.code)
                     self.forget()
                     continue
-                if closed.code == CODE_EXPIRED:
+                elif closed.code == CODE_EXPIRED:
                     wait = FIRST_WAIT  # ask for a new code
                 elif closed.code == REPLACED:
                     _LOGGER.info("This screen connected again elsewhere; staying away")
                     await self._wake.wait()
                     continue
+            except Busy as busy:
+                self.retry_after = busy.retry_after
             except (OSError, ssl.SSLError, asyncio.TimeoutError, asyncio.IncompleteReadError, ValueError) as err:
-                _LOGGER.info("Can't reach the controller at %s: %s", self.controller.get("url"), err)
+                _LOGGER.info("Can't reach the controller at %s: %s", (self.moving or self.controller).get("url"), err)
+                if moving and self.moving is not None:
+                    self._move_failed()
             except Exception:  # noqa: BLE001 - the connection must keep coming back, whatever happened
                 _LOGGER.exception("The connection to the controller failed")
             finally:
                 self.online = False
+            if self.moving is not None and not moving:
+                pause = 0.0  # just told to move: go now
+            elif self.retry_after:
+                pause = random.uniform(1, min(self.retry_after, LONGEST_RETRY))
+                self.retry_after = None
+            else:
+                pause = wait * random.uniform(0.5, 1)
             try:
-                await asyncio.wait_for(self._wake.wait(), wait * random.uniform(0.8, 1.2))
+                await asyncio.wait_for(self._wake.wait(), pause)
             except asyncio.TimeoutError:
                 pass
             wait = min(wait * 2, LONGEST_WAIT)
 
     async def _connect(self) -> None:
-        url = self.controller["url"]
-        ws = await websocket.connect(url, subprotocol=SUBPROTOCOL, pin=self.controller.get("pin"))
+        target = self.moving or self.controller
+        url = target["url"]
+        ws = await websocket.connect(url, subprotocol=SUBPROTOCOL, pin=target.get("pin"))
         self._ws = ws
         try:
             challenge = await asyncio.wait_for(ws.receive_json(), 15)
@@ -204,6 +242,8 @@ class Connection:
                     await ws.send_json({"type": "pong"})
                 elif kind == "welcome":
                     break
+            if self.moving:
+                self._moved(True)
             if not self.controller.get("enrolled"):
                 self._save({**self.controller, "enrolled": True})
                 self.token = None
@@ -242,10 +282,34 @@ class Connection:
                     asyncio.create_task(self._answer(ws, message))
                 elif kind == "ping":
                     await ws.send_json({"type": "pong"})
+                elif kind == "retry":
+                    after = message.get("after")
+                    if isinstance(after, int) and not isinstance(after, bool) and 1 <= after <= LONGEST_RETRY:
+                        self.retry_after = after
+                elif kind == "move":
+                    self._move(message)
         finally:
             for helper in helpers:
                 helper.cancel()
             self.unsubscribe(changes)
+
+    def _move(self, message: dict[str, Any]) -> None:
+        """The controller has a new address: try it, keeping the old one until it lets us in."""
+        pin = message.get("fingerprint")
+        try:
+            url = address(str(message.get("url", "")))
+        except ValueError:
+            _LOGGER.warning("Ignoring a move to an address that isn't wss://")
+            return
+        if pin is not None and (not isinstance(pin, str) or not PIN.match(pin.lower())):
+            return
+        if url == self.controller.get("url"):
+            return
+        self.moving = {"url": url, "pin": pin.lower() if pin else None}
+        self.move_tries = 0
+        _LOGGER.info("The controller asks this screen to use %s", url)
+        if self._ws:
+            asyncio.ensure_future(self._ws.close(1000))
 
     async def _answer(self, ws: websocket.WebSocket, request: dict[str, Any]) -> None:
         call = METHODS.get(str(request.get("method")))

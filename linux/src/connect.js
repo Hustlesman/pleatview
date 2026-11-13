@@ -13,6 +13,9 @@ const PING_MS = 20_000;
 const SILENCE_MS = 60_000;
 const FIRST_WAIT_MS = 2000;
 const LONGEST_WAIT_MS = 60_000;
+const LONGEST_RETRY_S = 3600;
+export const MOVE_TRIES = 3;
+export const timing = { firstWaitMs: FIRST_WAIT_MS };
 export const CLOSE = { UNKNOWN_KEY: 4401, REVOKED: 4403, CODE_EXPIRED: 4408, REPLACED: 4409 };
 
 /** A controller's address as signatures name it: wss, host in lower case, no :443. */
@@ -52,7 +55,10 @@ export class Connection {
     this.ws = null;
     this.stopped = false;
     this.wake = null;
-    this.waitMs = FIRST_WAIT_MS;
+    this.waitMs = timing.firstWaitMs;
+    this.retryAfter = null; // the controller's own wait, from `retry` or a 503
+    this.moving = null; // a new address, until it lets this screen in
+    this.moveTries = 0;
   }
 
   loadKey() {
@@ -95,7 +101,7 @@ export class Connection {
   }
 
   restart() {
-    this.waitMs = FIRST_WAIT_MS;
+    this.waitMs = timing.firstWaitMs;
     this.ws?.close(1000);
     this.wake?.();
   }
@@ -110,30 +116,73 @@ export class Connection {
     this.wake?.();
   }
 
+  /** The controller has a new address: try it, keeping the old one until it lets us in. */
+  move(message) {
+    let url;
+    try {
+      url = address(String(message.url ?? ""));
+    } catch {
+      return console.warn("PleatView: ignoring a move to an address that isn't wss://");
+    }
+    const pin = message.fingerprint ?? null;
+    if (pin !== null && (typeof pin !== "string" || !PIN.test(pin.toLowerCase()))) return;
+    if (url === this.controller.url) return;
+    this.moving = { url, pin: pin ? pin.toLowerCase() : null };
+    this.moveTries = 0;
+    console.log(`PleatView: the controller asks this screen to use ${url}`);
+    this.ws?.close(1000);
+  }
+
+  /** A move ends: kept once the new address let this screen in, given up after three tries. */
+  moved(ok) {
+    if (ok) {
+      console.log(`PleatView: the controller moved to ${this.moving.url}`);
+      this.save({ ...this.controller, url: this.moving.url, pin: this.moving.pin });
+    } else if (++this.moveTries >= MOVE_TRIES) {
+      console.warn(`PleatView: the controller's new address ${this.moving.url} didn't let this screen in; staying at ${this.controller.url}`);
+    } else {
+      return;
+    }
+    this.moving = null;
+  }
+
   async run() {
     while (!this.stopped) {
       if (!this.controller.url) {
         await this.sleep(Infinity);
         continue;
       }
+      const moving = this.moving;
       let code = null;
       try {
         code = await this.session();
       } catch (e) {
-        console.log(`PleatView: can't reach the controller at ${this.controller.url}: ${e.message}`);
+        if (Number.isInteger(e.retryAfter)) this.retryAfter = e.retryAfter;
+        else console.log(`PleatView: can't reach the controller at ${(this.moving ?? this.controller).url}: ${e.message}`);
       }
       this.online = false;
-      if (code === CLOSE.UNKNOWN_KEY || code === CLOSE.REVOKED) {
+      if (moving && this.moving === moving) {
+        // Whatever the new address said, 4401, 4403 and 4409 included, the old one stands.
+        this.moved(false);
+        this.waitMs = timing.firstWaitMs;
+      } else if (this.moving && !moving) {
+        continue; // just told to move: go now
+      } else if (code === CLOSE.UNKNOWN_KEY || code === CLOSE.REVOKED) {
         console.log(`PleatView: the controller removed this screen (${code})`);
         this.forget();
         continue;
-      }
-      if (code === CLOSE.REPLACED) {
+      } else if (code === CLOSE.REPLACED) {
         await this.sleep(Infinity);
         continue;
+      } else if (code === CLOSE.CODE_EXPIRED) {
+        this.waitMs = timing.firstWaitMs;
       }
-      if (code === CLOSE.CODE_EXPIRED) this.waitMs = FIRST_WAIT_MS;
-      await this.sleep(this.waitMs * (0.8 + Math.random() * 0.4));
+      if (this.retryAfter) {
+        await this.sleep(1000 * (1 + Math.random() * (Math.min(this.retryAfter, LONGEST_RETRY_S) - 1)));
+        this.retryAfter = null;
+      } else {
+        await this.sleep(this.waitMs * (0.5 + Math.random() * 0.5));
+      }
       this.waitMs = Math.min(this.waitMs * 2, LONGEST_WAIT_MS);
     }
   }
@@ -151,8 +200,9 @@ export class Connection {
 
   /** One connection, from the challenge until it closes; resolves to the close code. */
   async session() {
-    const url = this.controller.url;
-    const ws = await wsConnect(url, { subprotocol: SUBPROTOCOL, pin: this.controller.pin });
+    const target = this.moving ?? this.controller;
+    const url = target.url;
+    const ws = await wsConnect(url, { subprotocol: SUBPROTOCOL, pin: target.pin });
     this.ws = ws;
     return new Promise((resolve) => {
       let welcomed = false;
@@ -180,6 +230,7 @@ export class Connection {
         if (message.type === "ping") return ws.send({ type: "pong" });
         if (message.type === "welcome" && !welcomed) {
           welcomed = true;
+          if (this.moving && this.moving.url === url) this.moved(true);
           if (!this.controller.enrolled) {
             this.save({ ...this.controller, enrolled: true });
             this.token = null;
@@ -187,7 +238,7 @@ export class Connection {
             console.log(`PleatView: enrolled with the controller at ${url}`);
           }
           this.online = true;
-          this.waitMs = FIRST_WAIT_MS;
+          this.waitMs = timing.firstWaitMs;
           ws.send({ type: "state", state: JSON.parse(this.stateJson()) });
           removeListener = this.onState((json) => {
             if (!ws.closed) ws.send({ type: "state", state: JSON.parse(json) });
@@ -199,6 +250,12 @@ export class Connection {
           return;
         }
         if (message.type === "request" && welcomed) return this.answer(ws, message);
+        if (message.type === "retry" && welcomed) {
+          const after = message.after;
+          if (Number.isInteger(after) && after >= 1 && after <= LONGEST_RETRY_S) this.retryAfter = after;
+          return;
+        }
+        if (message.type === "move" && welcomed) return this.move(message);
       });
     });
   }

@@ -120,6 +120,28 @@ jobs:
           sha256sum pleatview.apk pleatview-integration.zip pleatview_amd64.deb pleatview_arm64.deb \
             pleatview-light_all.deb > SHA256SUMS
 
+      # Screens on Linux install only releases whose checksums this key signed: the key that
+      # signs the Android app (linux/build/pleatview-helper; docs/protocol.md, "Upkeep").
+      - name: Sign the checksums
+        env:
+          KEYSTORE_BASE64: ${{ secrets.PLEATVIEW_KEYSTORE_BASE64 }}
+          PLEATVIEW_KEYSTORE_PASSWORD: ${{ secrets.PLEATVIEW_KEYSTORE_PASSWORD }}
+        run: |
+          umask 077
+          echo "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/release.p12"
+          openssl pkcs12 -in "$RUNNER_TEMP/release.p12" -passin env:PLEATVIEW_KEYSTORE_PASSWORD \
+            -nocerts -nodes -out "$RUNNER_TEMP/release-key.pem"
+          rm -f "$RUNNER_TEMP/release.p12"
+          openssl dgst -sha256 -sign "$RUNNER_TEMP/release-key.pem" -out SHA256SUMS.sig SHA256SUMS
+          rm -f "$RUNNER_TEMP/release-key.pem"
+          # The certificate the packages carry must check it, or no screen could install it.
+          openssl x509 -in linux/build/release-cert.pem -pubkey -noout > "$RUNNER_TEMP/release-public.pem"
+          openssl dgst -sha256 -verify "$RUNNER_TEMP/release-public.pem" -signature SHA256SUMS.sig SHA256SUMS
+
+      - name: Remove the signing key again
+        if: always()
+        run: rm -f "$RUNNER_TEMP/release.p12" "$RUNNER_TEMP/release-key.pem"
+
       # Signed build provenance, so anyone can check where a file came from:
       #   gh attestation verify pleatview.apk --repo Hustlesman/pleatview
       - uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
@@ -143,7 +165,7 @@ jobs:
           prerelease=""
           case "$GITHUB_REF_NAME" in *-*) prerelease="--prerelease" ;; esac
           gh release create "$GITHUB_REF_NAME" pleatview.apk pleatview-integration.zip \
-            pleatview_amd64.deb pleatview_arm64.deb pleatview-light_all.deb SHA256SUMS \
+            pleatview_amd64.deb pleatview_arm64.deb pleatview-light_all.deb SHA256SUMS SHA256SUMS.sig \
             --title "PleatView $GITHUB_REF_NAME" --generate-notes $prerelease
 
   # The website shows the latest release's version and date: deploy it again with this one.

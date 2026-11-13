@@ -63,6 +63,7 @@ class ConnectOut(
     private val removeStateListener: ((String) -> Unit) -> Unit,
     private val codeChanged: () -> Unit,
     private val connector: (String, String?) -> WebSocketClient = { url, pin -> WebSocketClient.connect(url, ProtocolV2.SUBPROTOCOL, pin) },
+    private val firstWaitMs: Long = FIRST_WAIT_MS,
 ) {
     interface Signer {
         /** Base64 of the public key's DER SubjectPublicKeyInfo. */
@@ -96,7 +97,18 @@ class ConnectOut(
     private var stopped = false
 
     @Volatile
-    private var waitMs = FIRST_WAIT_MS
+    private var waitMs = firstWaitMs
+
+    /** The controller's own wait in seconds, from `retry` or a 503. */
+    @Volatile
+    var retryAfter: Int? = null
+        private set
+
+    /** A new address and its pin, until it lets this screen in (docs/protocol-v2.md, "Moving a controller"). */
+    @Volatile
+    var moving: Pair<String, String?>? = null
+        private set
+    private var moveTries = 0
 
     private var thread: Thread? = null
 
@@ -119,7 +131,8 @@ class ConnectOut(
         require(pin == null || ProtocolV2.isHex64(pin.lowercase())) { "fingerprint is the hex of the certificate's SHA-256" }
         prefs.edit().putString(URL, ProtocolV2.address(url)).putString(PIN, pin?.lowercase()).putBoolean(ENROLLED, false).apply()
         this.token = token
-        waitMs = FIRST_WAIT_MS
+        waitMs = firstWaitMs
+        moving = null
         socket?.close(1000)
         wake.offer(Unit)
     }
@@ -136,40 +149,89 @@ class ConnectOut(
         codeChanged()
     }
 
+    /** The controller has a new address: try it, keeping the old one until it lets us in. */
+    private fun move(message: JSONObject) {
+        val address = try {
+            ProtocolV2.address(message.optString("url"))
+        } catch (e: IllegalArgumentException) {
+            Log.w(TAG, "Ignoring a move to an address that isn't wss://")
+            return
+        }
+        val pin = if (message.isNull("fingerprint")) null else message.optString("fingerprint").lowercase()
+        if (pin != null && !ProtocolV2.isHex64(pin)) return
+        if (address == url) return
+        moving = address to pin
+        moveTries = 0
+        Log.i(TAG, "The controller asks this screen to use $address")
+        socket?.close(1000)
+    }
+
+    /** A move ends: kept once the new address let this screen in, given up after three tries. */
+    private fun moved(ok: Boolean) {
+        val (address, pin) = moving ?: return
+        if (ok) {
+            Log.i(TAG, "The controller moved to $address")
+            prefs.edit().putString(URL, address).putString(PIN, pin).apply()
+        } else if (++moveTries >= MOVE_TRIES) {
+            Log.w(TAG, "The controller's new address $address didn't let this screen in; staying at $url")
+        } else {
+            return
+        }
+        moving = null
+    }
+
     private fun run() {
         while (!stopped) {
             if (url == null) {
                 wake.take()
                 continue
             }
+            val wasMoving = moving
             val closeCode = try {
                 session()
+            } catch (busy: WebSocketClient.Busy) {
+                retryAfter = busy.retryAfter
+                null
             } catch (e: Exception) {
-                Log.i(TAG, "Can't reach the controller at $url: ${e.message}")
+                Log.i(TAG, "Can't reach the controller at ${(moving?.first ?: url)}: ${e.message}")
                 null
             }
             online = false
-            when (closeCode) {
-                ProtocolV2.UNKNOWN_KEY, ProtocolV2.REVOKED -> {
+            when {
+                // Whatever the new address said, 4401, 4403 and 4409 included, the old one stands.
+                wasMoving != null && moving === wasMoving -> {
+                    moved(false)
+                    waitMs = firstWaitMs
+                }
+                moving != null && wasMoving == null -> continue // just told to move: go now
+                closeCode == ProtocolV2.UNKNOWN_KEY || closeCode == ProtocolV2.REVOKED -> {
                     Log.i(TAG, "The controller removed this screen ($closeCode)")
                     forget()
                     continue
                 }
-                ProtocolV2.REPLACED -> {
+                closeCode == ProtocolV2.REPLACED -> {
                     wake.take()
                     continue
                 }
-                ProtocolV2.CODE_EXPIRED -> waitMs = FIRST_WAIT_MS
+                closeCode == ProtocolV2.CODE_EXPIRED -> waitMs = firstWaitMs
             }
-            wake.poll((waitMs * (0.8 + Math.random() * 0.4)).toLong(), TimeUnit.MILLISECONDS)
+            val retry = retryAfter
+            val pauseMs = if (retry != null) {
+                retryAfter = null
+                (1000 * (1 + Math.random() * (minOf(retry, LONGEST_RETRY_S) - 1))).toLong()
+            } else {
+                (waitMs * (0.5 + Math.random() * 0.5)).toLong()
+            }
+            wake.poll(pauseMs, TimeUnit.MILLISECONDS)
             waitMs = minOf(waitMs * 2, LONGEST_WAIT_MS)
         }
     }
 
     /** One connection, from the challenge until it closes: its close code. */
     private fun session(): Int? {
-        val address = url ?: return null
-        val ws = connector(address, prefs.getString(PIN, null))
+        val target = moving
+        val address = target?.first ?: url ?: return null
+        val ws = connector(address, if (target != null) target.second else prefs.getString(PIN, null))
         socket = ws
         val pinger = Executors.newSingleThreadScheduledExecutor()
         val answers = Executors.newSingleThreadExecutor()
@@ -192,6 +254,7 @@ class ConnectOut(
                     "welcome" -> break
                 }
             }
+            if (target != null && moving === target) moved(true)
             if (!prefs.getBoolean(ENROLLED, false)) {
                 prefs.edit().putBoolean(ENROLLED, true).apply()
                 token = null
@@ -199,7 +262,7 @@ class ConnectOut(
             }
             setCode(null)
             online = true
-            waitMs = FIRST_WAIT_MS
+            waitMs = firstWaitMs
             ws.send(JSONObject().put("type", "state").put("state", JSONObject(stateJson())))
             val sendState: (String) -> Unit = { json ->
                 try {
@@ -226,6 +289,11 @@ class ConnectOut(
                 when (message.optString("type")) {
                     "request" -> answers.execute { answer(ws, message) }
                     "ping" -> ws.send(JSONObject().put("type", "pong"))
+                    "retry" -> {
+                        val after = message.opt("after")
+                        if (after is Int && after in 1..LONGEST_RETRY_S) retryAfter = after
+                    }
+                    "move" -> move(message)
                 }
             }
         } catch (closed: WebSocketClient.Closed) {
@@ -296,5 +364,7 @@ class ConnectOut(
         const val SILENCE_MS = 60_000L
         const val FIRST_WAIT_MS = 2_000L
         const val LONGEST_WAIT_MS = 60_000L
+        const val LONGEST_RETRY_S = 3600
+        const val MOVE_TRIES = 3
     }
 }

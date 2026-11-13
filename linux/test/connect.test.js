@@ -3,8 +3,8 @@ import { X509Certificate, createHash, createPublicKey, verify } from "node:crypt
 import { readFileSync } from "node:fs";
 import { createServer } from "node:tls";
 import { test } from "node:test";
-import { CLOSE, Connection, address, signedText } from "../src/connect.js";
-import { FrameReader, OP, acceptKey, encode } from "../src/websocket.js";
+import { CLOSE, Connection, MOVE_TRIES, address, signedText, timing } from "../src/connect.js";
+import { FrameReader, OP, acceptKey, connect as wsConnect, encode } from "../src/websocket.js";
 
 const vectors = JSON.parse(readFileSync(new URL("../../tests/fixtures/protocol-v2.json", import.meta.url), "utf8"));
 const cert = readFileSync(new URL("./fixtures/controller-cert.pem", import.meta.url));
@@ -176,4 +176,70 @@ test("a certificate other than the pinned one is refused", async (t) => {
   assert.equal(controller.hellos.length, 0);
   assert.equal(conn.online, false);
   assert.throws(() => conn.enrol(controller.url, null, "not-hex"), RangeError);
+});
+
+async function another(t, keys) {
+  const other = fakeController();
+  other.keys = keys; // the same controller, at another address
+  await new Promise((r) => other.server.listen(0, "127.0.0.1", r));
+  other.url = `wss://127.0.0.1:${other.server.address().port}/api/pleatview/v2`;
+  t.after(() => {
+    other.sockets.forEach((s) => s.destroy());
+    other.server.close();
+  });
+  return other;
+}
+
+test("a move is kept once the new address lets it in", async (t) => {
+  const { controller, conn, store } = await setUp(t);
+  conn.start();
+  conn.enrol(controller.url, "one-time", pin);
+  await until(() => conn.online);
+  const moved = await another(t, controller.keys);
+  controller.send({ type: "move", url: "https://elsewhere.example/api/pleatview/v2" });
+  controller.send({ type: "move", url: moved.url, fingerprint: pin });
+  await until(() => moved.hellos.length === 1);
+  assert.equal(moved.hellos[0].type, "auth");
+  await until(() => JSON.parse(store.files["controller.json"]).url === address(moved.url));
+  assert.equal(JSON.parse(store.files["controller.json"]).pin, pin);
+});
+
+test("a move that doesn't let it in goes back, without forgetting the controller", async (t) => {
+  timing.firstWaitMs = 50;
+  t.after(() => (timing.firstWaitMs = 2000));
+  const { controller, conn, store } = await setUp(t);
+  conn.start();
+  conn.enrol(controller.url, "one-time", pin);
+  await until(() => conn.online);
+  const refusing = await another(t, new Map());
+  refusing.closeWith = CLOSE.REVOKED;
+  controller.send({ type: "move", url: refusing.url, fingerprint: pin });
+  await until(() => refusing.hellos.length === MOVE_TRIES && controller.hellos.length === 2);
+  const kept = JSON.parse(store.files["controller.json"]);
+  assert.equal(kept.url, address(controller.url));
+  assert.equal(kept.enrolled, true);
+  assert.equal(conn.moving, null);
+});
+
+test("retry says how long to wait; out of range it's ignored", async (t) => {
+  const { controller, conn } = await setUp(t);
+  conn.start();
+  conn.enrol(controller.url, "one-time", pin);
+  await until(() => conn.online);
+  controller.send({ type: "retry", after: 7200 });
+  controller.send({ type: "retry", after: 1 });
+  await until(() => conn.retryAfter === 1);
+  controller.sockets.at(-1).destroy();
+  await until(() => controller.hellos.length === 2);
+});
+
+test("a busy controller's 503 says when to come back", async (t) => {
+  const server = createServer({ cert, key: certKey }, (socket) => {
+    socket.on("error", () => {});
+    socket.once("data", () => socket.end("HTTP/1.1 503 Service Unavailable\r\nRetry-After: 45\r\nContent-Length: 0\r\n\r\n"));
+  });
+  await new Promise((r) => server.listen(0, "127.0.0.1", r));
+  t.after(() => server.close());
+  await assert.rejects(wsConnect(`wss://127.0.0.1:${server.address().port}/api/pleatview/v2`, { subprotocol: "pleatview.v2", pin }),
+    (e) => e.retryAfter === 45);
 });

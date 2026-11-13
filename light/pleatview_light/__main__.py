@@ -11,6 +11,7 @@ import platform
 import secrets
 import signal
 import socket
+import time
 
 from . import VERSION
 from .api import Api
@@ -20,7 +21,8 @@ from .mdns import Responder, local_address
 from .pairing import Pairing
 from .player import Player
 from .playlist import MediaCache
-from .screen import Screen
+from .screen import FEATURES, Screen
+from .upkeep import Helper, RecentLog, diagnostics, newer, restart_app
 
 _LOGGER = logging.getLogger("pleatview_light")
 PORT = int(os.environ.get("PLEATVIEW_LIGHT_PORT", "8765"))
@@ -82,7 +84,12 @@ def take_over(folder: Path) -> None:
     _LOGGER.info("Took over the identity and pairings of the PleatView app in %s", old)
 
 
-async def main() -> None:
+RECENT = RecentLog()
+
+
+async def main() -> bool:
+    """Runs until stopped; True when it should start again (upkeep's restart_app)."""
+    started = time.time()
     folder = state_dir()
     take_over(folder)
     device = json.loads(read(folder / "device.json") or "{}")
@@ -117,10 +124,26 @@ async def main() -> None:
     player = Player(runtime / "pleatview-light-mpv.sock", lambda event: asyncio.ensure_future(screen.on_player(event)))
     cache_dir = Path(os.environ.get("XDG_CACHE_HOME") or Path.home() / ".cache") / "pleatview-light" / "media"
     cache = MediaCache(cache_dir)
+    helper = Helper()
+    features = FEATURES + (["restart_device", "update"] if helper.ready else [])
+    stop = asyncio.Event()
+    again = [False]
+
+    def start_again() -> None:
+        again[0] = True
+        stop.set()
+
     screen = Screen(config=config, save_config=save_config, player=player, setup=setup, version=VERSION,
-                    size=screen_size(), cache=cache)
+                    size=screen_size(), cache=cache, features=features, helper=helper, restart_app=start_again)
     pairing.on_changed = lambda: asyncio.ensure_future(screen.pin_changed())
     api = Api(screen, pairing, info)
+
+    def home_address() -> str | None:
+        current = config_ref[0]
+        return next((url for url in (current.render_stream, current.ha_url, current.home_dashboard)
+                     if url.startswith(("http://", "https://"))), None)
+
+    api.diagnostics = lambda: diagnostics(home=home_address(), log=RECENT, data=folder)
     # Protocol v2: the connection out to a controller anywhere, once one is given.
     connection = Connection(folder, info=info, route=api.route, state=lambda: screen.state,
                             subscribe=screen.subscribe, unsubscribe=screen.listeners.discard,
@@ -142,16 +165,32 @@ async def main() -> None:
         cache.keep(config.home_playlist)
     _LOGGER.info("PleatView Light %s on %s:%d", VERSION, local_address(), PORT)
 
-    stop = asyncio.Event()
+    async def follow_updates() -> None:
+        """Reports how the helper's update goes, and starts the new version once it's in."""
+        while True:
+            status = helper.status()
+            if status and status != screen.state.get("update"):
+                screen.update(update=status)
+            if (status and status["state"] == "installed" and (status["at"] or 0) >= started
+                    and newer(status["version"], VERSION)):
+                _LOGGER.info("Version %s is installed; starting it", status["version"])
+                await asyncio.sleep(1)
+                start_again()
+                return
+            await asyncio.sleep(5)
+
+    following = asyncio.create_task(follow_updates())
     loop = asyncio.get_running_loop()
     for sig in (signal.SIGTERM, signal.SIGINT):
         loop.add_signal_handler(sig, stop.set)
     await stop.wait()
+    following.cancel()
     await responder.announce(ttl=0)
     responder.stop()
     await connection.stop()
     server.close()
     await player.stop()
+    return again[0]
 
 
 def connect(url: str) -> int:
@@ -179,4 +218,6 @@ if __name__ == "__main__":
     if sys.argv[1:2] == ["connect"] and len(sys.argv) == 3:
         sys.exit(connect(sys.argv[2]))
     logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s: %(message)s")
-    asyncio.run(main())
+    logging.getLogger().addHandler(RECENT)
+    if asyncio.run(main()):
+        restart_app()

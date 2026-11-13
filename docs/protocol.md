@@ -24,6 +24,7 @@ Each request uses its own connection (`Connection: close`). Request bodies need 
 | `DELETE /api/signins` | bearer | `{"site": "…"}` forgets that site's sign-ins, `{}` all → `{"forgotten": 2}` |
 | `POST /api/connect` | bearer, PIN, or this computer | `{"url": "wss://…/api/pleatview/v2", "pin"?: "123456"}` → `202`: connect out to that controller and show the code it hands out, to type there ([protocol v2](protocol-v2.md); the phone page's *Connect this TV to it*) |
 | `POST /api/enrol` | bearer | `{"url": "wss://…/api/pleatview/v2", "token": "…", "fingerprint"?: "…"}` → `202`: connect out to that controller and enrol with the one-time token ([protocol v2](protocol-v2.md); apps with `protocol_v2`) |
+| `GET /api/diagnostics` | bearer | What the screen knows of its own health, and the result of a few checks it runs ([Upkeep](#upkeep); apps with `diagnostics`) |
 
 **Approving on the screen** (1.0.18 and later, Android and Linux): instead of the PIN, a
 client asks with `POST /api/pair/request`, and the screen shows who asks (its name and
@@ -85,6 +86,7 @@ Events stream that sends the full snapshot on connect and after every change
   "battery": {"level": 87, "charging": true},
   "screen": {"width": 1920, "height": 1080, "density": 2.0},
   "features": ["render_stream"],
+  "update": null,
   "app_version": "0.1.0"
 }
 ```
@@ -119,6 +121,10 @@ Events stream that sends the full snapshot on connect and after every change
   size; PleatView Light turns its own text, its stream coming turned from the renderer, as
   for any app with `stream_overlays`. `protocol_v2`: the app connects out to a controller
   over [protocol v2](protocol-v2.md) once one gives it an address (PleatView Light first).
+  `restart_app`, `restart_device`, `update` and `diagnostics`: the [upkeep](#upkeep)
+  commands and checks it takes (1.0.19 and later; `restart_device` and `update` only where
+  the computer lets it, see there).
+- `update`: null, or how the last update a controller asked for went ([Upkeep](#upkeep)).
 
 ## Commands
 
@@ -142,6 +148,8 @@ background, if Android allows it (see `overlay_permission`).
 | `next_dashboard`, `previous_dashboard` | — cycle through configured dashboards |
 | `turn_on`, `turn_off` | — leave / enter standby (black screen, screen may sleep) |
 | `forget_sign_ins` | `site`? — forget the saved sign-ins for one site, or all |
+| `restart` | `what`: `app` (the app starts again) or `device` (the computer does); see [Upkeep](#upkeep) |
+| `update` | `version` (such as `1.0.20`): install that release of the app; see [Upkeep](#upkeep) |
 
 Layout parameters: `mode` (`fullscreen`, `pip`, or `background` for audio),
 `position` (`top-left`, `top-right`, `bottom-left`, `bottom-right`, `center`),
@@ -167,6 +175,80 @@ front, if Android lets PleatView draw over other apps (`overlay_permission`): mu
 taking the remote's keys or audio focus, so the other app carries on. The state's `overlay`
 then reports it (`kind` `video`, `image` or `web`, `mode` `pip`) while `foreground` stays
 false. `stop` and `turn_off` close it, as does PleatView coming to the front.
+
+## Upkeep
+
+What a controller needs to look after screens it can't walk up to (1.0.19 and later). Each
+part is a feature in `features`, so a controller offers only what a screen can do.
+
+**`restart_app`**: `restart` with `"what": "app"` answers `200`, then the app starts again a
+moment later, as it would after a power cut, keeping its settings and pairings.
+
+**`restart_device`**: `restart` with `"what": "device"` answers `200`, then the computer
+restarts. Apps without the feature refuse it with `400 not_supported`. On Linux (the PleatView
+app and PleatView Light) the app asks the package's helper, the one part that runs as root,
+which takes only two requests: restart the computer, or update this package (below). It
+restarts the computer at most once every two minutes of its uptime. The app lists the
+feature when the helper takes its requests, which `sudo pleatview-kiosk enable` and
+`sudo pleatview-light enable` set up (they add the user to the `pleatview` group). Android
+doesn't let apps restart the device.
+
+**`update`**: `update` with a `version` installs that release from
+[GitHub Releases](https://github.com/Hustlesman/pleatview/releases), through the same
+helper. It checks the release's `SHA256SUMS` against `SHA256SUMS.sig`, signed with the key
+that signs the Android app ([`linux/build/release-cert.pem`](../linux/build/release-cert.pem)),
+checks the package's hash, name and version, and installs it with apt. It only moves
+forward: a version that isn't newer than the installed one is refused, and so is anything
+else (the helper never takes an address or a file from a controller). The app answers `200`
+once the helper has the request, reports progress in the state's `update`, and starts again
+on the new version once it's installed:
+
+```json
+"update": {"version": "1.0.20", "state": "installing", "error": null, "at": 1763100000}
+```
+
+`state` is `waiting`, `downloading`, `installing`, `installed` or `failed` (with a reason in
+`error`). The Android app doesn't list `update`: Google Play and Amazon's Appstore update
+their apps themselves, and Android asks a person before any other app installs one.
+
+**`diagnostics`**: `GET /api/diagnostics` (protocol v2's `diagnostics`) answers what the
+screen knows of itself and runs a few fixed checks; a controller can't name a command, an
+address or a file. Values it can't know are null.
+
+```json
+{
+  "uptime": 86400,
+  "app_uptime": 3600,
+  "os": "Debian GNU/Linux 12 (bookworm)",
+  "kernel": "6.6.51+rpt-rpi-v8",
+  "load": 0.42,
+  "processors": 4,
+  "memory": {"total": 4096000000, "available": 2100000000},
+  "storage": {"total": 31000000000, "free": 12000000000},
+  "temperature": 54.2,
+  "power_warning": false,
+  "network": [{"name": "wlan0", "kind": "wifi", "addresses": ["192.168.1.20"], "signal": -58}],
+  "gateway": "192.168.1.1",
+  "checks": [
+    {"check": "gateway", "target": "192.168.1.1", "ok": true, "ms": 3},
+    {"check": "dns", "target": "ha.example.com", "ok": true, "ms": 12},
+    {"check": "home", "target": "ha.example.com:443", "ok": true, "ms": 41}
+  ],
+  "log": ["2026-11-14T09:58:12Z WARN Can't reach the controller at wss://…: timed out"]
+}
+```
+
+- `uptime`, `app_uptime`: seconds since the computer and the app started.
+- `load`: the 1-minute load average, over `processors` processors.
+- `memory`, `storage`: bytes; storage is that of the disk the app keeps its data on.
+- `temperature`: the processor's, in °C. `power_warning` (Raspberry Pi): the power supply's
+  voltage has dropped too low since the computer started.
+- `network`: its interfaces with addresses; `kind` is `wifi`, `ethernet` or `other`, and
+  `signal` the Wi-Fi signal in dBm. `gateway`: the default route's.
+- `checks`: whether the gateway answers a ping, the home page's host resolves, and a
+  connection to it opens (with how long each took). There's no home check before a home
+  page is set.
+- `log`: the app's own last log lines (up to 100), with the query of every address left out.
 
 ## Sign-ins
 

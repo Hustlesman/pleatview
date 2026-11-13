@@ -144,6 +144,14 @@ class Hub(
 
     override fun config(): Config = settings.config
 
+    /** Upkeep's report; its checks look at the home page's host (Home Assistant's, or a web address). */
+    override fun diagnostics(): JSONObject {
+        val config = settings.config
+        val home = listOf(config.renderStream, config.haUrl, config.homeDashboard)
+            .firstOrNull { it.startsWith("http://") || it.startsWith("https://") }
+        return Upkeep.diagnostics(app, home)
+    }
+
     override fun updateConfig(update: JSONObject): Config = settings.update(update)
 
     override fun submitSignIn(username: String, password: String, remember: Boolean): Boolean {
@@ -178,6 +186,10 @@ class Hub(
     // ---- main thread ----
 
     private fun route(command: Command) {
+        if (command == Command.RestartApp) {
+            main.postDelayed({ Upkeep.restartApp(app) }, RESTART_DELAY_MS) // once the answer is out
+            return
+        }
         if (command is Command.ForgetSignIns) {
             signIns.forget(command.site)
             return
@@ -268,6 +280,7 @@ class Hub(
         private const val MAX_PENDING = 10
         private const val PENDING_TTL_MS = 30_000L
         private const val PUBLISH_DELAY_MS = 50L
+        private const val RESTART_DELAY_MS = 1000L
         private const val REOPEN_CHECK_MS = 30_000L
     }
 }
@@ -311,6 +324,7 @@ class StateModel {
         .put("battery", battery?.toJson() ?: JSONObject.NULL)
         .put("screen", screen?.toJson() ?: JSONObject.NULL)
         .put("features", JSONArray(FEATURES))
+        .put("update", JSONObject.NULL)
 
     companion object {
         const val POWER_ON = "on"
@@ -320,7 +334,8 @@ class StateModel {
 
         /** What this app can do beyond protocol version 1, so Home Assistant only asks for that. */
         // protocol_v2: it connects out to a controller anywhere (docs/protocol-v2.md).
-        val FEATURES = listOf("render_stream", "home_without_ha", "home_playlist", "protocol_v2")
+        // restart_app, diagnostics: upkeep (docs/protocol.md).
+        val FEATURES = listOf("render_stream", "home_without_ha", "home_playlist", "protocol_v2", "restart_app", "diagnostics")
     }
 }
 

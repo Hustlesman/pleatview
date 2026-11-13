@@ -1,0 +1,110 @@
+#!/bin/sh
+# PleatView's helper: the one part of PleatView that runs as root. It takes two requests from
+# the app on this screen, which a controller sent it (docs/protocol.md, "Upkeep"):
+#
+#   restart          restart the computer (at most once every two minutes of uptime)
+#   update-X.Y.Z     install release X.Y.Z of this package from GitHub Releases, once its
+#                    signature, hash, name and version check out, and only if it's newer
+#
+# A request is an empty file of that name in /run/PACKAGE/requests, which only root and the
+# pleatview group can write to; systemd starts this when one appears (pleatview-kiosk
+# upkeep, pleatview-light enable). It reads nothing but the file names, never takes an
+# address or a file from the app, and reports in /run/PACKAGE/status.json.
+#
+#   helper pleatview | pleatview-light
+set -euf
+umask 077
+export LC_ALL=C PATH="${PATH:-/usr/sbin:/usr/bin:/sbin:/bin}"
+
+package=${1:-}
+case "$package" in
+  pleatview) file="pleatview_$(dpkg --print-architecture).deb"; home=/usr/lib/pleatview ;;
+  pleatview-light) file=pleatview-light_all.deb; home=/usr/share/pleatview-light ;;
+  *) echo "usage: helper pleatview | pleatview-light" >&2; exit 2 ;;
+esac
+# Tests point these elsewhere; systemd starts the helper without them.
+run=${PLEATVIEW_HELPER_RUN:-/run/$package}
+cert=${PLEATVIEW_HELPER_CERT:-$home/release-cert.pem}
+releases=${PLEATVIEW_HELPER_RELEASES:-https://github.com/Hustlesman/pleatview/releases/download}
+uptime_file=${PLEATVIEW_HELPER_UPTIME:-/proc/uptime}
+requests=$run/requests
+RESTART_AFTER=120
+
+status() { # state version error
+  tmp=$(mktemp "$run/.status.XXXXXX")
+  printf '{"version": "%s", "state": "%s", "error": %s, "at": %s}\n' "$2" "$1" \
+    "$( [ -n "${3:-}" ] && printf '"%s"' "$3" || printf null)" "$(date +%s)" >"$tmp"
+  chmod 640 "$tmp"
+  chgrp pleatview "$tmp" 2>/dev/null || true
+  mv -f "$tmp" "$run/status.json"
+}
+
+[ -d "$requests" ] || exit 0
+# Take the requests' names, then clear them all, whatever they are, before acting on any.
+names=$(find "$requests" -mindepth 1 -maxdepth 1 -printf '%f\n' | head -n 20)
+find "$requests" -mindepth 1 -delete
+
+wanted=""
+reboot=""
+for name in $names; do
+  case "$name" in
+    restart) reboot=yes ;;
+    update-*)
+      version=${name#update-}
+      if printf '%s' "$version" | grep -Eqx '[0-9]{1,4}\.[0-9]{1,4}\.[0-9]{1,6}'; then wanted=$version; fi ;;
+  esac
+done
+
+if [ -n "$reboot" ]; then
+  uptime=$(cut -d. -f1 "$uptime_file")
+  if [ "$uptime" -ge "$RESTART_AFTER" ]; then
+    echo "Restarting the computer, as the controller asked"
+    exec systemctl reboot
+  fi
+  echo "Not restarting: the computer started ${uptime}s ago" >&2
+fi
+
+[ -n "$wanted" ] || exit 0
+
+fail() {
+  echo "Update to $wanted failed: $1" >&2
+  status failed "$wanted" "$1"
+  exit 1
+}
+
+installed=$(dpkg-query -W -f '${Version}' "$package" 2>/dev/null || true)
+[ -n "$installed" ] || fail "$package isn't installed"
+dpkg --compare-versions "$wanted" gt "$installed" || fail "$installed is installed, and only newer versions are"
+
+work=$(mktemp -d /var/tmp/pleatview-update.XXXXXX)
+trap 'rm -rf "$work"' EXIT
+
+fetch() { # url file
+  if command -v curl >/dev/null 2>&1; then
+    curl -fsSL --proto '=https' --proto-redir '=https' --retry 3 --max-time 1800 --max-filesize 400000000 -o "$2" "$1"
+  else
+    wget -q --https-only --tries=3 --timeout=60 -O "$2" "$1"
+  fi
+}
+
+status downloading "$wanted"
+base="$releases/v$wanted"
+fetch "$base/SHA256SUMS" "$work/SHA256SUMS" || fail "no release $wanted"
+fetch "$base/SHA256SUMS.sig" "$work/SHA256SUMS.sig" || fail "release $wanted isn't signed"
+openssl x509 -in "$cert" -pubkey -noout >"$work/key.pem" || fail "the release key is missing"
+openssl dgst -sha256 -verify "$work/key.pem" -signature "$work/SHA256SUMS.sig" "$work/SHA256SUMS" >/dev/null 2>&1 \
+  || fail "the release's signature is wrong"
+expected=$(awk -v f="$file" '$2 == f || $2 == "*" f { print $1 }' "$work/SHA256SUMS")
+printf '%s' "$expected" | grep -Eqx '[0-9a-f]{64}' || fail "the release has no $file"
+fetch "$base/$file" "$work/$file" || fail "can't download $file"
+actual=$(sha256sum "$work/$file" | cut -d' ' -f1)
+[ "$actual" = "$expected" ] || fail "$file doesn't match the release's hash"
+[ "$(dpkg-deb -f "$work/$file" Package)" = "$package" ] || fail "$file isn't $package"
+[ "$(dpkg-deb -f "$work/$file" Version)" = "$wanted" ] || fail "$file isn't version $wanted"
+
+status installing "$wanted"
+DEBIAN_FRONTEND=noninteractive apt-get install -y -q -o DPkg::Lock::Timeout=600 \
+  -o Dpkg::Options::=--force-confold "$work/$file" >"$work/apt.log" 2>&1 \
+  || { tail -n 20 "$work/apt.log" >&2; fail "apt couldn't install it"; }
+status installed "$wanted"
+echo "Updated $package from $installed to $wanted"

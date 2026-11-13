@@ -7,17 +7,61 @@
 #   sudo pleatview-kiosk disable         undo either
 #   pleatview-kiosk connect URL          connect out to a controller at URL (wss://…) and show
 #                                        the code to add this screen there with
+#   sudo pleatview-kiosk upkeep [USER]   let its controller restart this computer and update
+#                                        PleatView (enable does this too)
 set -eu
 
 unit=/etc/systemd/system/pleatview-kiosk.service
 
 usage() {
-  sed -n '2,10p' "$0" | sed 's/^# \{0,1\}//'
+  sed -n '2,12p' "$0" | sed 's/^# \{0,1\}//'
   exit 2
 }
 
 need_root() {
   [ "$(id -u)" -eq 0 ] || { echo "Run this with sudo." >&2; exit 1; }
+}
+
+# Lets a controller restart this computer and update pleatview (docs/protocol.md, "Upkeep"):
+# the app asks the helper, which runs as root and takes nothing else.
+upkeep() {
+  need_root
+  user=$1
+  getent group pleatview >/dev/null || groupadd --system pleatview
+  usermod -aG pleatview "$user"
+  cat >/etc/tmpfiles.d/pleatview.conf <<TMPFILES
+d /run/pleatview 0750 root pleatview -
+d /run/pleatview/requests 0770 root pleatview -
+TMPFILES
+  systemd-tmpfiles --create /etc/tmpfiles.d/pleatview.conf
+  cat >/etc/systemd/system/pleatview-helper.path <<PATHUNIT
+[Unit]
+Description=PleatView: its controller's requests to restart or update this computer
+
+[Path]
+DirectoryNotEmpty=/run/pleatview/requests
+
+[Install]
+WantedBy=paths.target
+PATHUNIT
+  cat >/etc/systemd/system/pleatview-helper.service <<SERVICE
+[Unit]
+Description=PleatView: restart or update this computer, as its controller asked
+
+[Service]
+Type=oneshot
+ExecStart=/usr/lib/pleatview/helper pleatview
+TimeoutStartSec=30min
+SERVICE
+  systemctl daemon-reload
+  systemctl enable --now pleatview-helper.path >/dev/null 2>&1
+}
+
+no_upkeep() {
+  systemctl disable --now pleatview-helper.path >/dev/null 2>&1 || true
+  rm -f /etc/systemd/system/pleatview-helper.path /etc/systemd/system/pleatview-helper.service /etc/tmpfiles.d/pleatview.conf
+  rm -rf /run/pleatview
+  systemctl daemon-reload
 }
 
 enable() {
@@ -56,8 +100,18 @@ EOF
   systemctl daemon-reload
   systemctl disable --now getty@tty1.service >/dev/null 2>&1 || true
   systemctl set-default graphical.target >/dev/null
+  upkeep "$user"
   systemctl enable --now pleatview-kiosk.service
   echo "PleatView now starts with the computer, as $user. Logs: journalctl -u pleatview-kiosk"
+}
+
+allow_upkeep() {
+  need_root
+  user=${1:-${SUDO_USER:-}}
+  [ -n "$user" ] && [ "$user" != root ] || { echo "Name the user PleatView runs as: sudo pleatview-kiosk upkeep USER" >&2; exit 1; }
+  id "$user" >/dev/null 2>&1 || { echo "No user called $user." >&2; exit 1; }
+  upkeep "$user"
+  echo "Its controller can now restart this computer and update PleatView, from $user's next login."
 }
 
 autostart() {
@@ -85,6 +139,7 @@ disable() {
     systemctl daemon-reload
     systemctl enable getty@tty1.service >/dev/null 2>&1 || true
   fi
+  no_upkeep
   user_home=$(getent passwd "${SUDO_USER:-root}" | cut -d: -f6)
   rm -f "$user_home/.config/autostart/pleatview.desktop"
   echo "PleatView no longer starts with the computer."
@@ -110,6 +165,7 @@ PY
 case "${1:-}" in
   enable) shift; enable "${1:-}" ;;
   connect) shift; connect "${1:-}" ;;
+  upkeep) shift; allow_upkeep "${1:-}" ;;
   autostart) autostart ;;
   disable) disable ;;
   *) usage ;;
