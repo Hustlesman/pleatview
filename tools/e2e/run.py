@@ -512,7 +512,7 @@ def colour_pixels(area: tuple[float, float, float, float], rgb: tuple[int, int, 
 def screen_attribute(view_id: str, attribute: str, texts: str | None = None) -> str:
     """An attribute of one of PleatView's views in the current UI dump."""
     for node in (texts if texts is not None else screen_texts()).split("<node"):
-        if f"{PACKAGE}:id/{view_id}" in node and f' {attribute}="' in node:
+        if f'resource-id="{PACKAGE}:id/{view_id}"' in node and f' {attribute}="' in node:
             return node.split(f' {attribute}="', 1)[1].split('"', 1)[0]
     return ""
 
@@ -1188,9 +1188,10 @@ def checks(r: Run, report: Report, apk: Path) -> None:
                 raise AssertionError(f"couldn't ask to pair: {status} {asked}")
             wait_for("the pairing question on the TV", lambda: "E2E controller" in screen_texts(), timeout=30)
             adb("shell", "input", "keyevent", "KEYCODE_DPAD_CENTER")
-            v1_token = wait_for("the pairing token", lambda: (
-                answer := http("GET", f"{r.tv_api}/api/pair/request/{asked['request']}")[1]
-            ).get("token") if isinstance(answer, dict) else None, timeout=20)
+            def pairing_token():
+                answer = http("GET", f"{r.tv_api}/api/pair/request/{asked['request']}")[1]
+                return answer.get("token") if isinstance(answer, dict) else None
+            v1_token = wait_for("the pairing token", pairing_token, timeout=20)
             status, reply = http("POST", f"{r.tv_api}/api/enrol",
                                  {"url": address, "token": controller.new_token(), "fingerprint": controller.pin}, token=v1_token)
             if status != 202:
