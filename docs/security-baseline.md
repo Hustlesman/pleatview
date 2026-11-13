@@ -9,8 +9,7 @@ still to do. The same points cover most of what the EU **Cyber Resilience Act** 
 product's security; the last section lists what that act adds.
 
 The parts: the screen apps (Android and Fire TV, Linux, PleatView Light), the Home Assistant
-integration and the PleatView Renderer. PleatView Console, a separate commercial product, has
-an assessment of its own.
+integration and the PleatView Renderer.
 
 ## ETSI EN 303 645
 

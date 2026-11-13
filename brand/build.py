@@ -6,7 +6,6 @@ Run tools/build-brand.sh. It writes:
     brand/pleatview-mark.png                          the mark as a transparent PNG
     android/app/src/main/res/drawable-*/              launcher icon foreground and TV banner
     site/favicon.svg, site/img/                       website icon and logo, Apple touch icon, Play Store images
-    brand/console/                                    PleatView Console's web app icons (copied into its repository)
     custom_components/pleatview/brand/                Home Assistant (and its Marketplace)
 """
 
@@ -162,16 +161,6 @@ def main() -> None:
     render("site/img/pleatview-icon-512.png", icon, 512, 512)
     full_bleed = document(180, 180, MARK, "-24 -24 560 560", background=INK)  # iOS rounds the corners itself
     render("site/img/apple-touch-icon.png", full_bleed, 180, 180, opaque=True)
-
-    # PleatView Console's web app (its own repository copies them from here): icons for
-    # installing it, and a full-bleed one that Android masks to its own shape (the mark
-    # inside the safe circle).
-    console = "brand/console"
-    write(f"{console}/icon.svg", icon)
-    render(f"{console}/icon-192.png", icon, 192, 192)
-    render(f"{console}/icon-512.png", icon, 512, 512)
-    maskable = document(512, 512, MARK, "-41 -41 594 594", background=INK)
-    render(f"{console}/icon-maskable-512.png", maskable, 512, 512, opaque=True)
 
     # Google Play: a full square icon (Play masks it), the feature graphic, the TV banner.
     render("site/img/play/icon-512.png", document(512, 512, MARK, "-41 -41 594 594", background=INK), 512, 512, opaque=True)

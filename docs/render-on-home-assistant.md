@@ -84,7 +84,7 @@ instead, using about one core per TV.
 <summary><b>Another machine:</b> a renderer for many TVs, or near them</summary>
 
 A renderer can run on any Linux machine with Docker, such as a mini PC in a rack. On the
-network it lets in only the Home Assistants (and PleatView Consoles) paired with it:
+network it lets in only the Home Assistants (and other controllers) paired with it:
 
 ```sh
 docker build -t pleatview-renderer https://github.com/Hustlesman/pleatview.git#main:renderer

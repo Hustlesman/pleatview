@@ -1,4 +1,4 @@
-"""A home page that is a playlist (`home_playlist`, from PleatView Console): every item is kept
+"""A home page that is a playlist (`home_playlist`, from another controller): every item is kept
 on disk, so the list plays on without the network and after a restart."""
 
 from __future__ import annotations

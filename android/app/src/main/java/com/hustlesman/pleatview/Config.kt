@@ -26,12 +26,12 @@ data class Config(
     val reopenMinutes: Int = 10,
     /** A live stream of the TV's dashboards, rendered by Home Assistant; empty: the TV renders them. */
     val renderStream: String = "",
-    /** A home page that is a playlist of media the app plays and caches itself (PleatView Console). */
+    /** A home page that is a playlist of media the app plays and caches itself (from another controller). */
     val homePlaylist: List<PlaylistItem> = emptyList(),
     val rev: String = "",
 ) {
-    /** Set up: Home Assistant's address, or a home page of its own from another controller
-     *  (PleatView Console), which leaves the setup screen without Home Assistant. */
+    /** Set up: Home Assistant's address, or a home page of its own from another controller,
+     *  which leaves the setup screen without Home Assistant. */
     val isConfigured: Boolean get() = haUrl.isNotEmpty() || isHttpUrl(homeDashboard) || homePlaylist.isNotEmpty()
 
     /** `scheme://host[:port]` of Home Assistant, used to scope the auth bridge. */
