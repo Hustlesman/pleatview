@@ -13,6 +13,7 @@ import os
 import re
 import shutil
 import socket
+import subprocess
 import sys
 import time
 from pathlib import Path
@@ -129,15 +130,35 @@ def _temperature() -> float | None:
     return None
 
 
-def _power_warning() -> bool | None:
-    """Raspberry Pi firmware: the voltage is too low now (bit 0), or has been since it started (bit 16)."""
+UNDER_VOLTAGE = 0x10001  # now (bit 0), or since it started (bit 16)
+SLOWED = 0x60006  # its processor capped or throttled, now or since it started (bits 1, 2, 17, 18)
+
+
+def _throttled() -> int | None:
+    """Raspberry Pi firmware's throttled bits: from sysfs on older kernels, else vcgencmd (the
+    app's user is in the video group)."""
     text = _read("/sys/devices/platform/soc/soc:firmware/get_throttled")
-    if text is None:
-        return None
+    if text is None and shutil.which("vcgencmd"):
+        try:
+            text = subprocess.run(["vcgencmd", "get_throttled"], capture_output=True, text=True, timeout=2).stdout
+        except (OSError, subprocess.SubprocessError):
+            text = None
     try:
-        return bool(int(text.strip(), 16) & 0x10001)
+        return int((text or "").strip().rpartition("=")[2], 16) if text else None
     except ValueError:
         return None
+
+
+def _power(bits: int | None) -> tuple[bool | None, bool | None]:
+    """(power_warning, throttled); a board that only says whether its voltage is low now (the
+    rpi_volt sensor) gives the first."""
+    if bits is not None:
+        return bool(bits & UNDER_VOLTAGE), bool(bits & SLOWED)
+    for sensor in Path("/sys/class/hwmon").glob("hwmon*"):
+        if (_read(str(sensor / "name")) or "").strip() == "rpi_volt":
+            alarm = (_read(str(sensor / "in0_lcrit_alarm")) or "").strip()
+            return (alarm == "1" if alarm else None), None
+    return None, None
 
 
 def _gateway() -> str | None:
@@ -257,6 +278,7 @@ async def diagnostics(*, home: str | None, log: RecentLog | None, data: Path) ->
         load = round(os.getloadavg()[0], 2)
     except OSError:
         load = None
+    power_warning, throttled = _power(_throttled())
     return {
         "uptime": int(float(uptime.split()[0])) if uptime else None,
         "app_uptime": int(time.monotonic() - STARTED),
@@ -267,7 +289,8 @@ async def diagnostics(*, home: str | None, log: RecentLog | None, data: Path) ->
         "memory": _meminfo(),
         "storage": storage,
         "temperature": _temperature(),
-        "power_warning": _power_warning(),
+        "power_warning": power_warning,
+        "throttled": throttled,
         "network": _network(),
         "gateway": _gateway(),
         "checks": await checks(home),

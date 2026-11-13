@@ -227,6 +227,7 @@ address or a file. Values it can't know are null.
   "storage": {"total": 31000000000, "free": 12000000000},
   "temperature": 54.2,
   "power_warning": false,
+  "throttled": false,
   "network": [{"name": "wlan0", "kind": "wifi", "addresses": ["192.168.1.20"], "signal": -58}],
   "gateway": "192.168.1.1",
   "checks": [
@@ -242,7 +243,8 @@ address or a file. Values it can't know are null.
 - `load`: the 1-minute load average, over `processors` processors.
 - `memory`, `storage`: bytes; storage is that of the disk the app keeps its data on.
 - `temperature`: the processor's, in °C. `power_warning` (Raspberry Pi): the power supply's
-  voltage has dropped too low since the computer started.
+  voltage is too low, or has been since the computer started. `throttled` (Raspberry Pi): the
+  processor has slowed itself down, too hot or short of power, now or since it started.
 - `network`: its interfaces with addresses; `kind` is `wifi`, `ethernet` or `other`, and
   `signal` the Wi-Fi signal in dBm. `gateway`: the default route's.
 - `checks`: whether the gateway answers a ping, the home page's host resolves, and a
