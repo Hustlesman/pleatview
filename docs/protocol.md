@@ -5,6 +5,10 @@ mDNS as `_pleatview._tcp` with TXT records `id`, `name`, `api` and `version`. Th
 Home Assistant integration (or any other client) talks to it with JSON over HTTP.
 
 All responses are JSON unless noted. Errors look like `{"error": "message"}`.
+Requests name the screen by its address: a `Host` that is an IP address, `localhost`, a name
+without dots, or a name ending in `.local`, `.lan`, `.home`, `.home.arpa` or `.internal`.
+Others get `421` (1.0.19 and later), so a web page elsewhere can't reach the screen by
+pointing its own name at it (DNS rebinding).
 Each request uses its own connection (`Connection: close`). Request bodies need a
 `Content-Length` and are limited to 256 KiB.
 

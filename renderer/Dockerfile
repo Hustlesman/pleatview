@@ -5,7 +5,9 @@
 ARG DEBIAN=debian:bookworm-slim@sha256:734a72b3d6142a71993b4bc580ca01d8ca687f77a2c422d96a961d3376b179bc
 FROM ${DEBIAN}
 
+# The base's own packages take their security updates too (apt-get upgrade), not only those installed here.
 RUN apt-get update \
+    && apt-get upgrade -y --no-install-recommends \
     && apt-get install -y --no-install-recommends \
         chromium xvfb ffmpeg python3 python3-aiohttp python3-cryptography tini ca-certificates \
         fonts-dejavu-core fonts-noto-color-emoji mesa-va-drivers \

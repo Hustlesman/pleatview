@@ -47,6 +47,9 @@ class Pairing(
     private var failures = 0
     private var lockedUntil = 0L
 
+    /** Five wrong PINs locked pairing (logged, so a controller's diagnostics show it). */
+    var onLockout: (() -> Unit)? = null
+
     @Volatile
     var pin: String = newPin()
         private set
@@ -99,6 +102,7 @@ class Pairing(
                 failures = 0
                 lockedUntil = now + LOCKOUT_MS
                 rotatePin()
+                onLockout?.invoke()
             }
             return Result.InvalidPin
         }

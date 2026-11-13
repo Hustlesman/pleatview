@@ -47,6 +47,7 @@ class PleatApp : Application() {
         if (processName().endsWith(RestartActivity.PROCESS_SUFFIX)) return
         settings = Settings(this)
         pairing = Pairing(settings)
+        pairing.onLockout = { Log.w("PleatView", "Pairing locked for a minute after five wrong PINs; the PIN changed") }
         signIns = SignIns(settings, KeystoreVault())
         hub = Hub(this, settings, pairing, signIns)
         hub.enrolOut = { url, token, fingerprint ->

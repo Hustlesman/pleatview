@@ -2,6 +2,22 @@
 // PleatView's own layer (setup screen, cards, media, banner, menu, standby curtain) on top
 // of everything. Plays the part of MainActivity.kt and DashboardController.kt on Android.
 import { BaseWindow, WebContentsView, powerSaveBlocker, screen } from "electron";
+
+// Pages on the screen get no microphone, camera, location, notifications, clipboard reading,
+// or USB, HID and serial devices: Electron would otherwise allow whatever a page asks for.
+// Full screen video and copying stay.
+const ALLOWED_PERMISSIONS = new Set(["fullscreen", "clipboard-sanitized-write"]);
+const guarded = new WeakSet();
+function guard(session) {
+  if (guarded.has(session)) return;
+  guarded.add(session);
+  session.setPermissionRequestHandler((_contents, permission, callback) => callback(ALLOWED_PERMISSIONS.has(permission)));
+  session.setPermissionCheckHandler((_contents, permission) => ALLOWED_PERMISSIONS.has(permission));
+  session.setDevicePermissionHandler(() => false);
+  session.on("select-hid-device", (event, _details, callback) => { event.preventDefault(); callback(); });
+  session.on("select-serial-port", (event, _ports, _contents, callback) => { event.preventDefault(); callback(""); });
+  session.on("select-usb-device", (event, _details, callback) => { event.preventDefault(); callback(); });
+}
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
@@ -86,7 +102,9 @@ export class Display {
   }
 
   view(preload, partition, extra = {}) {
-    return new WebContentsView({ webPreferences: { preload, partition, contextIsolation: true, sandbox: true, ...extra } });
+    const view = new WebContentsView({ webPreferences: { preload, partition, contextIsolation: true, sandbox: true, ...extra } });
+    guard(view.webContents.session);
+    return view;
   }
 
   get size() {

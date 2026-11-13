@@ -242,6 +242,7 @@ class HttpServer(
         409 -> "Conflict"
         411 -> "Length Required"
         413 -> "Payload Too Large"
+        421 -> "Misdirected Request"
         429 -> "Too Many Requests"
         431 -> "Request Header Fields Too Large"
         503 -> "Service Unavailable"

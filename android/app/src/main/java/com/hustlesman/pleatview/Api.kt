@@ -8,6 +8,26 @@ import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
 
+/**
+ * Requests name the screen by its address, not another site's name: a web page elsewhere that
+ * points its own name at the screen (DNS rebinding) is refused (docs/protocol.md).
+ */
+fun hostAllowed(value: String?): Boolean {
+    var host = value?.trim()?.lowercase() ?: return true
+    if (host.isEmpty()) return true // HTTP/1.0 clients send none; browsers always do
+    host = when {
+        host.startsWith("[") -> host.substring(1, host.indexOf(']').takeIf { it > 0 } ?: host.length)
+        host.count { it == ':' } == 1 -> host.substringBeforeLast(':')
+        else -> host
+    }
+    if (host.matches(Regex("^[0-9.]+$")) && host.split('.').size == 4 && host.split('.').all { it.toIntOrNull() in 0..255 }) return true
+    if (host.contains(':') && host.matches(Regex("^[0-9a-f:.]+$"))) return true
+    host = host.trimEnd('.')
+    return host == "localhost" || !host.contains('.') || LOCAL_SUFFIXES.any { host.endsWith(it) }
+}
+
+private val LOCAL_SUFFIXES = listOf(".local", ".lan", ".home", ".home.arpa", ".internal")
+
 /** Routes for the local control API. The wire format is documented in docs/protocol.md. */
 class Api(
     private val backend: Backend,
@@ -47,6 +67,7 @@ class Api(
     private val openStreams = AtomicInteger()
 
     fun handle(request: HttpRequest): HttpResponse {
+        if (!hostAllowed(request.header("host"))) return HttpResponse.error(421, "misdirected")
         val path = request.path.trimEnd('/').ifEmpty { "/" }
         return when (path) {
             "/", "/setup" -> get(request) { HttpResponse.html(setupPage()) }

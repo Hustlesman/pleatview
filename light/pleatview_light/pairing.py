@@ -6,6 +6,8 @@ of tokens are kept, the newest 8. Five wrong PINs lock pairing for a minute and 
 
 from __future__ import annotations
 
+import logging
+
 import hashlib
 import hmac
 import json
@@ -31,6 +33,8 @@ def _same(a: str, b: str) -> bool:
 def new_pin() -> str:
     return "".join(str(secrets.randbelow(10)) for _ in range(PIN_LENGTH))
 
+
+_LOGGER = logging.getLogger(__name__)
 
 class Pairing:
     def __init__(self, load: Callable[[], str | None], save: Callable[[str], None],
@@ -78,6 +82,7 @@ class Pairing:
                 self.failures = 0
                 self.locked_until = now + LOCKOUT_SECONDS
                 self.rotate_pin()
+                _LOGGER.warning("Pairing locked for %d s after %d wrong PINs; the PIN changed", LOCKOUT_SECONDS, MAX_FAILURES)
             return {"result": "invalid_pin"}
         self.failures = 0
         return None

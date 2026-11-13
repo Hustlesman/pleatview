@@ -78,7 +78,7 @@ class Player:
         while True:
             self.socket_path.unlink(missing_ok=True)
             self.process = await asyncio.create_subprocess_exec(
-                "mpv", "--idle=yes", "--force-window=yes", "--fs", "--no-terminal", "--no-config",
+                "mpv", "--idle=yes", "--force-window=yes", "--fs", "--no-terminal", "--no-config", "--ytdl=no", "--load-scripts=no",
                 "--keep-open=no", "--cursor-autohide=always", "--image-display-duration=inf",
                 "--osd-font-size=40", "--osd-align-x=center", "--osd-align-y=center",
                 "--osd-border-style=background-box", "--osd-back-color=#E60F1417", "--osd-color=#EDF3F6",
