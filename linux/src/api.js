@@ -30,6 +30,7 @@ class HttpError extends Error {
  * @param {(site: string | null) => number} backend.forgetSignIns
  * @param {() => Buffer} backend.setupPage
  * @param {() => void} [backend.approvalRequested] someone asked to pair without the PIN
+ * @param {() => Promise<object>} [backend.diagnostics] upkeep's report (docs/protocol.md, "Upkeep")
  * @param {import("./pairing.js").Pairing} pairing
  */
 /** A refused call made over protocol v2's connection, with v1's reason. */
@@ -47,16 +48,17 @@ export function createCalls(backend, pairing) {
       case "state":
         return JSON.parse(backend.stateJson());
       case "command": {
-        let command;
         try {
-          command = parseCommand(params);
+          backend.dispatch(parseCommand(params));
         } catch (e) {
           if (e instanceof BadCommand) throw new CallError(e.message);
           throw e;
         }
-        backend.dispatch(command);
         return { ok: true };
       }
+      case "diagnostics":
+        if (!backend.diagnostics) throw new CallError(`unknown method ${method}`);
+        return backend.diagnostics();
       case "config":
         return backend.config().toJson();
       case "set_config":
@@ -155,16 +157,18 @@ export function createApi(backend, pairing, { local = (req) => LOOPBACK.has(req.
         return get(req, () => send(res, 200, backend.stateJson(), "application/json"));
       case "/api/events":
         return get(req, () => events(req, res));
+      case "/api/diagnostics":
+        if (!backend.diagnostics) throw new HttpError(404, "not found");
+        return get(req, async () => json(res, 200, await backend.diagnostics()));
       case "/api/command":
         return post(req, async () => {
-          let command;
+          const request = await body(req);
           try {
-            command = parseCommand(await body(req));
+            backend.dispatch(parseCommand(request));
           } catch (e) {
             if (e instanceof BadCommand) throw new HttpError(400, e.message);
             throw e;
           }
-          backend.dispatch(command);
           ok(res);
         });
       case "/api/config":

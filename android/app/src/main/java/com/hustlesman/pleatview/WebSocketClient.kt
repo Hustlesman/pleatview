@@ -32,6 +32,9 @@ class WebSocketClient private constructor(private val socket: Socket, rest: Byte
 
     class Closed(val code: Int?) : IOException("closed ($code)")
 
+    /** The server answered 503: come back after a random wait of up to [retryAfter] seconds. */
+    class Busy(val retryAfter: Int) : IOException("busy; retry within ${retryAfter}s")
+
     @Synchronized
     fun send(message: JSONObject) {
         output.write(encode(TEXT, message.toString().toByteArray(), mask = true))
@@ -186,6 +189,9 @@ class WebSocketClient private constructor(private val socket: Socket, rest: Byte
             val lines = String(head.toByteArray(), Charsets.ISO_8859_1).split("\r\n")
             val headers = lines.drop(1).filter { ':' in it }
                 .associate { it.substringBefore(':').trim().lowercase() to it.substringAfter(':').trim() }
+            // Busy, or restarting: it says when to come back (docs/protocol-v2.md, "Closing").
+            val retryAfter = headers["retry-after"]?.takeIf { it.isNotEmpty() && it.length < 6 && it.all(Char::isDigit) }
+            if (lines[0].startsWith("HTTP/1.1 503") && retryAfter != null) throw Busy(retryAfter.toInt())
             if (!lines[0].startsWith("HTTP/1.1 101") || headers["sec-websocket-accept"] != acceptKey(key)) {
                 throw IOException("not a WebSocket: ${lines[0]}")
             }

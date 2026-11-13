@@ -2,7 +2,9 @@ package com.hustlesman.pleatview
 
 import android.app.Application
 import android.content.Context
+import android.os.Build
 import android.util.Log
+import java.io.File
 
 class PleatApp : Application() {
     lateinit var settings: Settings
@@ -41,6 +43,8 @@ class PleatApp : Application() {
 
     override fun onCreate() {
         super.onCreate()
+        // The process that starts the app again (Upkeep) needs none of it.
+        if (processName().endsWith(RestartActivity.PROCESS_SUFFIX)) return
         settings = Settings(this)
         pairing = Pairing(settings)
         signIns = SignIns(settings, KeystoreVault())
@@ -50,6 +54,10 @@ class PleatApp : Application() {
         }
         Battery.watch(this) { info -> hub.update { battery = info } }
     }
+
+    private fun processName(): String =
+        if (Build.VERSION.SDK_INT >= 28) getProcessName()
+        else runCatching { File("/proc/self/cmdline").readText().trimEnd('\u0000') }.getOrDefault("")
 
     companion object {
         fun from(context: Context): PleatApp = context.applicationContext as PleatApp

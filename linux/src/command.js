@@ -9,6 +9,7 @@ export const TONES = ["chime", "ding", "beep", "alarm", "siren", "bell"];
 export class BadCommand extends Error {}
 
 const MAX_DURATION = 24 * 60 * 60;
+const VERSION = /^\d{1,4}\.\d{1,4}\.\d{1,6}$/;
 const AUDIO_EXT = new Set(["mp3", "aac", "m4a", "flac", "ogg", "oga", "opus", "wav", "wma"]);
 const IMAGE_EXT = new Set(["jpg", "jpeg", "png", "gif", "webp", "bmp", "svg", "avif", "heic"]);
 export const MODES = ["fullscreen", "pip", "background"];
@@ -63,6 +64,13 @@ export function parseCommand(json) {
       return { name, muted: json.muted };
     case "forget_sign_ins":
       return { name, site: typeof json.site === "string" && json.site.trim() ? json.site.trim() : null };
+    // Upkeep (docs/protocol.md): main.js carries them out, with the package's helper.
+    case "restart":
+      if (json.what !== "app" && json.what !== "device") throw new BadCommand("'what' is app or device");
+      return { name, what: json.what };
+    case "update":
+      if (typeof json.version !== "string" || !VERSION.test(json.version)) throw new BadCommand("version is like 1.0.20");
+      return { name, version: json.version };
     case "home":
     case "reload":
     case "play":

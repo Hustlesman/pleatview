@@ -75,6 +75,9 @@ sealed class Command {
     object NextDashboard : Command()
     object PreviousDashboard : Command()
 
+    /** Upkeep (docs/protocol.md): the app starts again. */
+    object RestartApp : Command()
+
     enum class WebKind { PAGE, IMAGE }
     enum class Mode(val wire: String) { FULLSCREEN("fullscreen"), PIP("pip"), BACKGROUND("background") }
     enum class Position(val wire: String) {
@@ -125,6 +128,14 @@ sealed class Command {
                 "turn_off" -> TurnOff
                 "next_dashboard" -> NextDashboard
                 "previous_dashboard" -> PreviousDashboard
+                // Upkeep: Android lets an app start itself again, but neither restart the device
+                // nor install an update without a person (docs/protocol.md, "Upkeep").
+                "restart" -> when (json.optString("what")) {
+                    "app" -> RestartApp
+                    "device" -> throw BadCommand("not_supported")
+                    else -> throw BadCommand("'what' is app or device")
+                }
+                "update" -> throw BadCommand("not_supported")
                 else -> throw BadCommand("unknown command '$name'")
             }
         }

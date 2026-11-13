@@ -49,6 +49,14 @@ computer, PleatView connects out to that controller and shows a code to add it t
 No port has to be open to the screen. A controller on the local network that pairs with
 the PIN moves the screen to v2 by itself.
 
+**Restarts and updates from the controller** ([Upkeep](../docs/protocol.md#upkeep)): a
+controller can always start PleatView again and ask for its checks (memory, storage,
+temperature, network, and whether the home page's host answers). With
+`sudo pleatview-kiosk enable` it can also restart the computer and update PleatView to a
+newer release, which `sudo pleatview-kiosk upkeep` allows on a desktop too. A small helper
+does both as root: it takes nothing but those two requests, and installs only releases
+signed with PleatView's release key, never an older one.
+
 On the screen, Escape, the menu key or a right-click (a long press on a touch screen)
 opens the menu.
 

@@ -27,6 +27,14 @@ class Closed(Exception):
         self.reason = reason
 
 
+class Busy(ConnectionError):
+    """The server answered 503: come back after a random wait of up to `retry_after` seconds."""
+
+    def __init__(self, retry_after: int) -> None:
+        super().__init__(f"busy; retry within {retry_after}s")
+        self.retry_after = retry_after
+
+
 def accept_key(key: str) -> str:
     return base64.b64encode(hashlib.sha1((key + GUID).encode()).digest()).decode()
 
@@ -151,6 +159,8 @@ async def connect(url: str, *, subprotocol: str, pin: str | None = None, timeout
         head = await asyncio.wait_for(reader.readuntil(b"\r\n\r\n"), timeout)
         lines = head.decode("latin-1").split("\r\n")
         headers = {k.strip().lower(): v.strip() for k, _, v in (line.partition(":") for line in lines[1:] if line)}
+        if " 503 " in f"{lines[0]} " and headers.get("retry-after", "").isdigit():
+            raise Busy(int(headers["retry-after"]))
         if " 101 " not in f"{lines[0]} " or headers.get("sec-websocket-accept") != accept_key(key):
             raise ConnectionError(f"not a WebSocket: {lines[0]}")
         if headers.get("sec-websocket-protocol") != subprotocol:

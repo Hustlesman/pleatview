@@ -39,6 +39,9 @@ class Api(
          * @throws IllegalArgumentException for an address or fingerprint that can't be.
          */
         fun enrol(url: String, token: String?, fingerprint: String?): Unit = throw IllegalArgumentException("not supported")
+
+        /** Upkeep's report (docs/protocol.md, "Upkeep"). */
+        fun diagnostics(): JSONObject = throw HttpError(404, "not found")
     }
 
     private val openStreams = AtomicInteger()
@@ -68,6 +71,7 @@ class Api(
                 when (path) {
                     "/api/state" -> get(request) { HttpResponse.json(200, backend.stateJson()) }
                     "/api/events" -> get(request) { events() }
+                    "/api/diagnostics" -> get(request) { HttpResponse.json(200, backend.diagnostics()) }
                     "/api/command" -> post(request) { command(request) }
                     "/api/config" -> when (request.method) {
                         "GET", "HEAD" -> HttpResponse.json(200, backend.config().toJson())
@@ -107,6 +111,7 @@ class Api(
                 "command" -> command(request)
                 "config" -> HttpResponse.json(200, backend.config().toJson())
                 "set_config" -> updateConfig(request)
+                "diagnostics" -> HttpResponse.json(200, backend.diagnostics())
                 "signins" -> HttpResponse.json(200, JSONObject().put("sign_ins", backend.signIns()))
                 "forget_signins" -> HttpResponse.json(
                     200, JSONObject().put("forgotten", backend.forgetSignIns(params.optString("site").trim().ifEmpty { null })),

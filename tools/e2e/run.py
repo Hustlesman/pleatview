@@ -1213,17 +1213,38 @@ def checks(r: Run, report: Report, apk: Path) -> None:
             refused = controller.request("command", {"command": "explode"})
             if "error" not in refused:
                 raise AssertionError(f"a bad command wasn't refused: {refused}")
+            # Upkeep (docs/protocol.md): its checks, then it starts again and signs back in.
+            checks = controller.request("diagnostics", timeout=20).get("result", {})
+            if not isinstance(checks.get("memory"), dict) or not isinstance(checks.get("network"), list) or "log" not in checks:
+                raise AssertionError(f"diagnostics over v2: {sorted(checks)}")
+            if not {"restart_app", "diagnostics"} <= set(state.get("features", [])):
+                raise AssertionError(f"features {state.get('features')}")
+            device = controller.request("command", {"command": "restart", "what": "device"})
+            if device.get("error") != "not_supported":
+                raise AssertionError(f"restarting the device should be refused on Android: {device}")
+            process = adb("shell", "pidof", PACKAGE, check=False).strip()
+            if "result" not in controller.request("command", {"command": "restart", "what": "app"}):
+                raise AssertionError("restarting the app was refused")
+            again = wait_for("the TV to sign back in after starting again",
+                             lambda: len(controller.hellos) >= 2 and controller.hellos[1], timeout=60)
+            if again.get("type") != "auth":
+                raise AssertionError(f"after starting again it sent {again.get('type')}")
+            started = adb("shell", "pidof", PACKAGE, check=False).strip()
+            if not started or started == process:
+                raise AssertionError(f"the app's process didn't change ({process} → {started})")
+            wait_for("Home Assistant to see it again", lambda: ha.state(entity["id"]).get("state") not in (None, "unavailable"), timeout=60)
             # Removed by the controller: the TV forgets it and doesn't come back.
+            signed_in = len(controller.hellos)
             controller.revoke()
             time.sleep(6)
-            if len(controller.hellos) != 1:
-                raise AssertionError(f"the TV came back {len(controller.hellos) - 1} time(s) after being removed")
+            if len(controller.hellos) != signed_in:
+                raise AssertionError(f"the TV came back {len(controller.hellos) - signed_in} time(s) after being removed")
         finally:
             if v1_token:
                 http("POST", f"{r.tv_api}/api/unpair", {}, token=v1_token)
             controller.stop()
-        return ("paired with OK, moved to v2 with a token over TLS with a pinned certificate; a notification "
-                "and its settings over the connection; removed, it stays away")
+        return ("paired with OK, moved to v2 with a token over TLS with a pinned certificate; a notification, "
+                "its settings and diagnostics over the connection; started again and signed back in; removed, it stays away")
 
     def sign_ins():
         site = r.media_server

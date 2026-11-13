@@ -1,7 +1,8 @@
 #!/bin/sh
 # Sets up PleatView Light, which plays the dashboards Home Assistant renders, full screen.
 #
-#   sudo pleatview-light enable [USER]   start it with the computer, as USER (default: you)
+#   sudo pleatview-light enable [USER]   start it with the computer, as USER (default: you),
+#                                        and let its controller restart and update it
 #   sudo pleatview-light disable         stop starting it
 #   pleatview-light pin                  show the screen's pairing PIN (also on screen)
 #   pleatview-light connect URL          connect out to a controller at URL (wss://…) and
@@ -13,12 +14,54 @@ set -eu
 unit=/etc/systemd/system/pleatview-light.service
 
 usage() {
-  sed -n '2,10p' "$0" | sed 's/^# \{0,1\}//'
+  sed -n '2,11p' "$0" | sed 's/^# \{0,1\}//'
   exit 2
 }
 
 need_root() {
   [ "$(id -u)" -eq 0 ] || { echo "Run this with sudo." >&2; exit 1; }
+}
+
+# Lets a controller restart this computer and update pleatview-light (docs/protocol.md, "Upkeep"):
+# the app asks the helper, which runs as root and takes nothing else.
+upkeep() {
+  need_root
+  user=$1
+  getent group pleatview >/dev/null || groupadd --system pleatview
+  usermod -aG pleatview "$user"
+  cat >/etc/tmpfiles.d/pleatview-light.conf <<TMPFILES
+d /run/pleatview-light 0750 root pleatview -
+d /run/pleatview-light/requests 0770 root pleatview -
+TMPFILES
+  systemd-tmpfiles --create /etc/tmpfiles.d/pleatview-light.conf
+  cat >/etc/systemd/system/pleatview-light-helper.path <<PATHUNIT
+[Unit]
+Description=PleatView: its controller's requests to restart or update this computer
+
+[Path]
+DirectoryNotEmpty=/run/pleatview-light/requests
+
+[Install]
+WantedBy=paths.target
+PATHUNIT
+  cat >/etc/systemd/system/pleatview-light-helper.service <<SERVICE
+[Unit]
+Description=PleatView: restart or update this computer, as its controller asked
+
+[Service]
+Type=oneshot
+ExecStart=/usr/share/pleatview-light/helper pleatview-light
+TimeoutStartSec=30min
+SERVICE
+  systemctl daemon-reload
+  systemctl enable --now pleatview-light-helper.path >/dev/null 2>&1
+}
+
+no_upkeep() {
+  systemctl disable --now pleatview-light-helper.path >/dev/null 2>&1 || true
+  rm -f /etc/systemd/system/pleatview-light-helper.path /etc/systemd/system/pleatview-light-helper.service /etc/tmpfiles.d/pleatview-light.conf
+  rm -rf /run/pleatview-light
+  systemctl daemon-reload
 }
 
 enable() {
@@ -59,6 +102,7 @@ WantedBy=multi-user.target
 UNIT
   systemctl daemon-reload
   systemctl disable --now getty@tty1.service >/dev/null 2>&1 || true
+  upkeep "$user"
   systemctl enable --now pleatview-light.service
   echo "PleatView Light now starts with the computer, as $user. Logs: journalctl -u pleatview-light"
 }
@@ -67,7 +111,7 @@ disable() {
   need_root
   systemctl disable --now pleatview-light.service >/dev/null 2>&1 || true
   rm -f "$unit"
-  systemctl daemon-reload
+  no_upkeep
   systemctl enable --now getty@tty1.service >/dev/null 2>&1 || true
   echo "PleatView Light no longer starts with the computer."
 }

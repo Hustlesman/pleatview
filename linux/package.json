@@ -71,7 +71,9 @@
         "v4l-utils"
       ],
       "fpm": [
-        "build/pleatview-kiosk=/usr/bin/pleatview-kiosk"
+        "build/pleatview-kiosk=/usr/bin/pleatview-kiosk",
+        "build/pleatview-helper=/usr/lib/pleatview/helper",
+        "build/release-cert.pem=/usr/lib/pleatview/release-cert.pem"
       ]
     }
   },

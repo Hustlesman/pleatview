@@ -232,6 +232,64 @@ class ConnectsOut(unittest.IsolatedAsyncioTestCase):
         with self.assertRaises(ValueError):
             self.connection.enrol("https://controller.example/")
 
+    async def enrolled(self) -> None:
+        self.connection.start()
+        self.connection.enrol(self.controller.url, token="one-time", pin=self.controller.pin)
+        await self.until(lambda: self.connection.online)
+
+    async def test_a_move_is_kept_once_the_new_address_lets_it_in(self) -> None:
+        await self.enrolled()
+        (self.folder / "b").mkdir()
+        moved = FakeController(self.folder / "b")
+        moved.keys = self.controller.keys  # the same controller, at another address
+        await moved.start()
+        self.addCleanup(moved.server.close)
+        await self.controller.send({"type": "move", "url": "https://elsewhere.example/api/pleatview/v2"})
+        await self.controller.send({"type": "move", "url": moved.url, "fingerprint": moved.pin})
+        await self.until(lambda: moved.hellos)
+        self.assertEqual(moved.hellos[0]["type"], "auth")
+        await self.until(lambda: json.loads((self.folder / "controller.json").read_text())["url"] == connect.address(moved.url))
+        self.assertEqual(json.loads((self.folder / "controller.json").read_text())["pin"], moved.pin)
+
+    async def test_a_move_that_doesnt_let_it_in_goes_back(self) -> None:
+        connect.FIRST_WAIT = 0.05
+        self.addCleanup(setattr, connect, "FIRST_WAIT", 2)
+        await self.enrolled()
+        (self.folder / "c").mkdir()
+        refusing = FakeController(self.folder / "c")
+        refusing.close_with = connect.REVOKED  # not even 4403 there makes it forget the controller
+        await refusing.start()
+        self.addCleanup(refusing.server.close)
+        await self.controller.send({"type": "move", "url": refusing.url, "fingerprint": refusing.pin})
+        await self.until(lambda: len(refusing.hellos) == connect.MOVE_TRIES and len(self.controller.hellos) == 2)
+        kept = json.loads((self.folder / "controller.json").read_text())
+        self.assertEqual((kept["url"], kept["enrolled"]), (connect.address(self.controller.url), True))
+        self.assertIsNone(self.connection.moving)
+
+    async def test_retry_waits_as_the_controller_says(self) -> None:
+        await self.enrolled()
+        await self.controller.send({"type": "retry", "after": 7200})  # out of range: ignored
+        await self.controller.send({"type": "retry", "after": 1})
+        await self.until(lambda: self.connection.retry_after == 1)
+        self.controller.writer.close()
+        await self.until(lambda: len(self.controller.hellos) == 2)
+
+    async def test_busy_answers_say_when_to_come_back(self) -> None:
+        async def busy(reader, writer):  # noqa: ANN001, ANN202
+            await reader.readuntil(b"\r\n\r\n")
+            writer.write(b"HTTP/1.1 503 Service Unavailable\r\nRetry-After: 45\r\nContent-Length: 0\r\n\r\n")
+            await writer.drain()
+            writer.close()
+        context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+        context.load_cert_chain(self.controller.cert, self.controller.key)
+        server = await asyncio.start_server(busy, "127.0.0.1", 0, ssl=context)
+        self.addCleanup(server.close)
+        port = server.sockets[0].getsockname()[1]
+        with self.assertRaises(websocket.Busy) as raised:
+            await websocket.connect(f"wss://127.0.0.1:{port}/api/pleatview/v2", subprotocol=connect.SUBPROTOCOL,
+                                    pin=self.controller.pin)
+        self.assertEqual(raised.exception.retry_after, 45)
+
 
 if __name__ == "__main__":
     unittest.main()

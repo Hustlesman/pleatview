@@ -92,6 +92,8 @@ and signs in with `auth` from then on.
 | Screen | `{"type": "response", "id": 7, "result": {…}}` | Its answer, the body v1 would return |
 | Screen | `{"type": "response", "id": 7, "error": "…"}` | Its refusal, with v1's reason |
 | Either | `{"type": "ping"}` / `{"type": "pong"}` | Every 20 seconds; a minute without either closes the connection |
+| Controller | `{"type": "retry", "after": 30}` | It's about to close the connection (a restart, or too busy): come back after a random wait of up to `after` seconds (1–3600) |
+| Controller | `{"type": "move", "url": "wss://…/api/pleatview/v2", "fingerprint"?: "…"}` | Use this address from now on ([Moving a controller](#moving-a-controller)) |
 
 | Method | Same as in v1 | `params` |
 | --- | --- | --- |
@@ -103,6 +105,7 @@ and signs in with `auth` from then on.
 | `signins` | `GET /api/signins` | none |
 | `forget_signins` | `DELETE /api/signins` | `{"site": "…"}` or `{}` |
 | `signin` | `POST /api/signin` | `{"username": "…", "password": "…"}` |
+| `diagnostics` | `GET /api/diagnostics` | none (apps with `diagnostics`, 1.0.19 and later) |
 
 v1's pairing, `verify` and `unpair` have no v2 method: enrolment and revocation replace them.
 
@@ -117,14 +120,53 @@ v1's pairing, `verify` and `unpair` have no v2 method: enrolment and revocation 
 | 4409 | The same screen connected again | Stays away until it's told otherwise |
 
 Otherwise the screen reconnects with growing waits, from 2 seconds doubling to a minute,
-give or take a fifth, and at once when its network comes back. Removing a screen in the
-controller revokes its key immediately: the open connection closes with 4403 and later ones
-are refused.
+each a random time between half and all of it, and at once when its network comes back.
+After a `retry` it waits a random time of up to `after` seconds instead, and the same when
+the controller answers the WebSocket request with `503` and a `Retry-After` in seconds: a
+controller that restarts, or has more screens coming back than it can take at once, spreads
+them out. Removing a screen in the controller revokes its key immediately: the open
+connection closes with 4403 and later ones are refused.
+
+## Moving a controller
+
+A controller that moves to another address (a new host name, or one per region) sends
+`move` to each screen it has signed in. The screen closes the connection, connects to the
+new address and signs in there with the same key, signing for the new address, so the
+controller must already accept it as one of its own. Only once it has `welcome` there does
+the screen keep the new address. If the new address doesn't let it in within three tries
+(it can't connect, or is closed before `welcome` with any code, 4401 and 4403 included),
+the screen goes back to the old address and keeps it. `move` counts only on a connection
+that has had `welcome`, and only for a `wss://` address.
+
+## Hosting
+
+A controller can run behind the services that host websites: a CDN or proxy such as
+Cloudflare, or a cloud's load balancer.
+
+- **TLS can end there.** Signatures bind the controller's address, not the TLS channel,
+  so a proxy that ends TLS and opens another connection to the controller changes nothing.
+  Its certificate is one the screens' systems trust, so a controller behind one doesn't pin
+  (no `fingerprint` when enrolling or moving).
+- **Keep connections alive.** Proxies close WebSockets that stay quiet (Cloudflare after
+  about 100 seconds); the pings every 20 seconds keep them open. Proxies also close connections
+  when they restart, and screens come back as above.
+- **The screen's own address** reaches the controller in the proxy's header
+  (`X-Forwarded-For`, or Cloudflare's `CF-Connecting-IP`). A controller takes it only from
+  proxies it knows.
+- **Keep the address.** A screen keeps the address it enrolled with. A host name the
+  controller's owner controls lets the controller move between servers, data centres and
+  clouds by changing its DNS, without telling the screens. `move` is for changing the name
+  itself.
+- **Several servers.** A screen keeps one connection, to whichever server took it. A
+  controller with several servers sends a screen's requests through the server that holds
+  its connection; nothing else in the protocol changes.
 
 ## Thin agent
 
 The screen's part is small: a key pair, a TLS WebSocket, and v1's calls. Approval,
-revocation, logs, policies and certificates live in the controller.
+revocation, logs, policies, certificates, maintenance windows and which version screens
+should run live in the controller; the screen only restarts, updates or runs its fixed
+checks when asked ([Upkeep](protocol.md#upkeep)).
 
 ## Moving from v1
 

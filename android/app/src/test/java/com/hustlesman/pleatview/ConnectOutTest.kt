@@ -130,12 +130,11 @@ class ConnectOutTest {
     }
 
     /** A controller's end of protocol v2 over a plain socket, one screen at a time. */
-    private inner class FakeController {
+    private inner class FakeController(val keys: HashMap<String, String> = HashMap()) {
         val server = ServerSocket(0)
         val url = "wss://127.0.0.1:${server.localPort}/api/pleatview/v2"
         val hellos = LinkedBlockingQueue<JSONObject>()
         val messages = LinkedBlockingQueue<JSONObject>()
-        val keys = HashMap<String, String>()
         @Volatile var closeWith: Int? = null
         @Volatile var socket: Socket? = null
         private val nonce = "ab".repeat(32)
@@ -202,7 +201,7 @@ class ConnectOutTest {
     private val codes = CopyOnWriteArrayList<Pair<String, String>?>()
     private lateinit var connection: ConnectOut
 
-    private fun newConnection(): ConnectOut = ConnectOut(
+    private fun newConnection(firstWaitMs: Long = 2000): ConnectOut = ConnectOut(
         prefs = prefs,
         signer = SoftwareSigner.fresh(),
         info = { JSONObject().put("id", "tv-1").put("name", "Den TV").put("app_version", "1.0.19") },
@@ -217,6 +216,7 @@ class ConnectOutTest {
         codeChanged = { codes += connection.code },
         // The fake controller has no TLS: the tests check the protocol, the device the TLS.
         connector = { url, _ -> WebSocketClient.open(Socket("127.0.0.1", URI(url).port), URI(url), ProtocolV2.SUBPROTOCOL) },
+        firstWaitMs = firstWaitMs,
     ).also { connection = it }
 
     @After
@@ -270,6 +270,55 @@ class ConnectOutTest {
         controller.socket!!.close()
         until { prefs.values["v2_url"] == null }
         assertNull(c.url)
+    }
+
+    @Test
+    fun `a move is kept once the new address lets it in`() {
+        val c = newConnection()
+        c.start()
+        c.enrol(controller.url, token = "one-time")
+        until { c.online }
+        val moved = FakeController(controller.keys) // the same controller, at another address
+        try {
+            controller.send(JSONObject().put("type", "move").put("url", "https://elsewhere.example/api/pleatview/v2"))
+            controller.send(JSONObject().put("type", "move").put("url", moved.url))
+            assertEquals("auth", moved.hellos.poll(8, TimeUnit.SECONDS)!!.getString("type"))
+            until { prefs.values["v2_url"] == ProtocolV2.address(moved.url) }
+            assertNull(c.moving)
+        } finally {
+            moved.server.close()
+        }
+    }
+
+    @Test
+    fun `a move that doesn't let it in goes back, without forgetting the controller`() {
+        val c = newConnection(firstWaitMs = 50)
+        c.start()
+        c.enrol(controller.url, token = "one-time")
+        until { c.online }
+        controller.hellos.take()
+        val refusing = FakeController().apply { closeWith = ProtocolV2.REVOKED }
+        try {
+            controller.send(JSONObject().put("type", "move").put("url", refusing.url))
+            until { refusing.hellos.size == 3 }
+            assertEquals("auth", controller.hellos.poll(8, TimeUnit.SECONDS)!!.getString("type"))
+            assertEquals(ProtocolV2.address(controller.url), prefs.values["v2_url"])
+            assertEquals(true, prefs.values["v2_enrolled"])
+            assertNull(c.moving)
+        } finally {
+            refusing.server.close()
+        }
+    }
+
+    @Test
+    fun `retry says how long to wait, and is ignored out of range`() {
+        val c = newConnection()
+        c.start()
+        c.enrol(controller.url, token = "one-time")
+        until { c.online }
+        controller.send(JSONObject().put("type", "retry").put("after", 7200))
+        controller.send(JSONObject().put("type", "retry").put("after", 1))
+        until { c.retryAfter == 1 }
     }
 
     @Test

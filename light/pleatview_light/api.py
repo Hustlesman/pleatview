@@ -10,7 +10,7 @@ import asyncio
 import json
 import logging
 import re
-from typing import Any, Callable
+from typing import Any, Awaitable, Callable
 
 from .pairing import Pairing
 from .screen import Screen
@@ -24,6 +24,7 @@ REASONS = {200: "OK", 202: "Accepted", 400: "Bad Request", 401: "Unauthorized", 
 
 class Api:
     def __init__(self, screen: Screen, pairing: Pairing, info: Callable[[], dict[str, Any]]) -> None:
+        self.diagnostics: Callable[[], Awaitable[dict[str, Any]]] | None = None
         self.screen = screen
         self.pairing = pairing
         self.info = info
@@ -107,6 +108,8 @@ class Api:
             return 200, {}
         if (method, path) == ("GET", "/api/state"):
             return 200, self.screen.state
+        if (method, path) == ("GET", "/api/diagnostics") and self.diagnostics:
+            return 200, await self.diagnostics()
         if path == "/api/config":
             if method == "GET":
                 return 200, self.screen.config.public()

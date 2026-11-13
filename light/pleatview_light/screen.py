@@ -16,13 +16,17 @@ from typing import Any, Callable
 from .config import Config, is_http
 from .player import Player
 from .playlist import MediaCache
+from .upkeep import VERSION_TEXT, Helper, newer
 
 _LOGGER = logging.getLogger(__name__)
 
 # stream_overlays: Home Assistant draws notifications and cameras into the rendered stream.
 # rotation: Home Assistant sends how the screen is mounted; the renderer turns the stream, and
 # this screen its own text.
-FEATURES = ["render_stream", "home_without_ha", "home_playlist", "stream_overlays", "rotation", "protocol_v2"]
+# restart_app, diagnostics: upkeep (docs/protocol.md); restart_device and update join them
+# where the package's helper takes requests (upkeep.Helper).
+FEATURES = ["render_stream", "home_without_ha", "home_playlist", "stream_overlays", "rotation", "protocol_v2",
+            "restart_app", "diagnostics"]
 STREAM_RETRY = 2.0
 PIN_SHOWN = 120  # seconds the PIN stays up after someone starts pairing
 
@@ -38,7 +42,8 @@ def _number(value: Any, low: float, high: float, name: str) -> float | None:
 class Screen:
     def __init__(self, *, config: Config, save_config: Callable[[Config], None], player: Player,
                  setup: Callable[[], dict[str, str]], version: str, size: tuple[int, int],
-                 cache: MediaCache | None = None) -> None:
+                 cache: MediaCache | None = None, features: list[str] | None = None,
+                 helper: Helper | None = None, restart_app: Callable[[], None] | None = None) -> None:
         self.config = config
         self.save_config = save_config
         self.player = player
@@ -54,6 +59,9 @@ class Screen:
         self.playlist_index = 0
         self.playlist_failures = 0
         self.cache = cache
+        self.version = version
+        self.helper = helper
+        self.restart_app = restart_app
         self._timers: dict[str, asyncio.TimerHandle] = {}
         self._rotation: asyncio.Task | None = None
         self.state: dict[str, Any] = {
@@ -61,7 +69,8 @@ class Screen:
             "ha_connected": None, "auth_error": False, "last_error": None, "overlay": None, "media": None,
             "volume": 1.0, "muted": False, "config_rev": config.rev, "overlay_permission": True,
             "sign_in": None, "battery": None, "app_version": version,
-            "screen": {"width": size[0], "height": size[1], "density": 1.0}, "features": FEATURES,
+            "screen": {"width": size[0], "height": size[1], "density": 1.0}, "features": features or FEATURES,
+            "update": None,
         }
 
     # State
@@ -336,6 +345,29 @@ class Screen:
             await self.show()
         elif name == "forget_sign_ins":
             pass  # nothing is signed in here: Home Assistant renders the pages
+        elif name == "restart":
+            what = data.get("what")
+            if what == "app" and self.restart_app:
+                _LOGGER.info("Starting again, as the controller asked")
+                asyncio.get_running_loop().call_later(1, self.restart_app)  # once the answer is out
+            elif what == "device":
+                if not self.helper or not self.helper.ready:
+                    raise ValueError("not_supported")
+                _LOGGER.info("Restarting the computer, as the controller asked")
+                self.helper.restart_device()
+            else:
+                raise ValueError("what is app or device")
+        elif name == "update":
+            version = data.get("version")
+            if not self.helper or not self.helper.ready:
+                raise ValueError("not_supported")
+            if not isinstance(version, str) or not VERSION_TEXT.match(version):
+                raise ValueError("version is like 1.0.20")
+            if not newer(version, self.version):
+                raise ValueError(f"{self.version} is installed, and only newer versions are")
+            _LOGGER.info("Updating to %s, as the controller asked", version)
+            self.helper.update(version)
+            self.update(update={"version": version, "state": "waiting", "error": None, "at": int(time.time())})
         else:
             raise ValueError(f"unknown command: {name}")
 
