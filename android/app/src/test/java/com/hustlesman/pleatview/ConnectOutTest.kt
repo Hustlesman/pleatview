@@ -11,6 +11,8 @@ import org.junit.Assert.fail
 import org.junit.Test
 import java.io.DataInputStream
 import java.io.File
+import java.io.FilterOutputStream
+import java.io.OutputStream
 import java.net.ServerSocket
 import java.net.Socket
 import java.net.URI
@@ -200,6 +202,25 @@ class ConnectOutTest {
     private val listeners = CopyOnWriteArrayList<(String) -> Unit>()
     private val codes = CopyOnWriteArrayList<Pair<String, String>?>()
     private lateinit var connection: ConnectOut
+    private val writers = CopyOnWriteArrayList<String>()
+
+    /** A socket that notes which thread writes to it. */
+    private inner class Watched(port: Int) : Socket("127.0.0.1", port) {
+        override fun getOutputStream(): OutputStream {
+            val real = super.getOutputStream()
+            return object : FilterOutputStream(real) {
+                override fun write(b: Int) {
+                    writers += Thread.currentThread().name
+                    real.write(b)
+                }
+
+                override fun write(b: ByteArray, off: Int, len: Int) {
+                    writers += Thread.currentThread().name
+                    real.write(b, off, len)
+                }
+            }
+        }
+    }
 
     private fun newConnection(firstWaitMs: Long = 2000): ConnectOut = ConnectOut(
         prefs = prefs,
@@ -215,7 +236,7 @@ class ConnectOutTest {
         removeStateListener = { listeners -= it },
         codeChanged = { codes += connection.code },
         // The fake controller has no TLS: the tests check the protocol, the device the TLS.
-        connector = { url, _ -> WebSocketClient.open(Socket("127.0.0.1", URI(url).port), URI(url), ProtocolV2.SUBPROTOCOL) },
+        connector = { url, _ -> WebSocketClient.open(Watched(URI(url).port), URI(url), ProtocolV2.SUBPROTOCOL) },
         firstWaitMs = firstWaitMs,
     ).also { connection = it }
 
@@ -251,8 +272,10 @@ class ConnectOutTest {
         assertEquals("command", controller.next("response").getJSONObject("result").getString("ok"))
         controller.send(JSONObject().put("type", "request").put("id", 2).put("method", "command").put("params", JSONObject().put("command", "explode")))
         assertEquals("unknown command 'explode'", controller.next("response").getString("error"))
-        listeners.forEach { it("""{"power":"standby"}""") }
+        // State changes come on Android's main thread, which may not touch the network.
+        Thread({ listeners.forEach { it("""{"power":"standby"}""") } }, "main-thread").apply { start(); join() }
         assertEquals("standby", controller.next("state").getJSONObject("state").getString("power"))
+        assertFalse("sent from the main thread", "main-thread" in writers)
         controller.socket!!.close() // dropped: back by itself, with its key
         val again = controller.hellos.poll(8, TimeUnit.SECONDS)!!
         assertEquals("auth", again.getString("type"))

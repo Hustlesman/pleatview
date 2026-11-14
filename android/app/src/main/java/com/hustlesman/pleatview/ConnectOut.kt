@@ -15,6 +15,7 @@ import java.security.PrivateKey
 import java.security.Signature
 import java.security.spec.ECGenParameterSpec
 import java.util.concurrent.Executors
+import java.util.concurrent.RejectedExecutionException
 import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicLong
@@ -264,10 +265,17 @@ class ConnectOut(
             online = true
             waitMs = firstWaitMs
             ws.send(JSONObject().put("type", "state").put("state", JSONObject(stateJson())))
+            // Called on the main thread, where Android allows no network (over TLS it stops the
+            // app): sent from the session's own thread, in order.
             val sendState: (String) -> Unit = { json ->
                 try {
-                    ws.send(JSONObject().put("type", "state").put("state", JSONObject(json)))
-                } catch (_: IOException) {
+                    pinger.execute {
+                        try {
+                            ws.send(JSONObject().put("type", "state").put("state", JSONObject(json)))
+                        } catch (_: IOException) {
+                        }
+                    }
+                } catch (_: RejectedExecutionException) { // the session just ended
                 }
             }
             listener = sendState
