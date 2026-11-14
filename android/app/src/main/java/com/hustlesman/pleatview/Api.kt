@@ -28,6 +28,20 @@ fun hostAllowed(value: String?): Boolean {
 
 private val LOCAL_SUFFIXES = listOf(".local", ".lan", ".home", ".home.arpa", ".internal")
 
+/**
+ * Changes come from the screen's own pages or from programs, never from another site's page:
+ * a browser names the page that sent a request (Origin), so one from elsewhere is refused, and
+ * bodies are JSON (a page can't send that to another site without asking first). Even a page
+ * shown on this very screen can't change its settings or pair it (docs/protocol.md).
+ */
+fun crossSite(method: String, origin: String?, host: String?, contentType: String?, bodySize: Int): Pair<Int, String>? {
+    if (method !in setOf("POST", "PUT", "PATCH", "DELETE")) return null
+    val from = origin?.trimEnd('/').orEmpty()
+    if (from.isNotEmpty() && from != "http://${host.orEmpty()}") return 403 to "cross_site"
+    if (bodySize > 0 && contentType?.lowercase()?.startsWith("application/json") != true) return 415 to "json_required"
+    return null
+}
+
 /** Routes for the local control API. The wire format is documented in docs/protocol.md. */
 class Api(
     private val backend: Backend,
@@ -68,6 +82,8 @@ class Api(
 
     fun handle(request: HttpRequest): HttpResponse {
         if (!hostAllowed(request.header("host"))) return HttpResponse.error(421, "misdirected")
+        crossSite(request.method, request.header("origin"), request.header("host"), request.header("content-type"), request.body.size)
+            ?.let { (status, error) -> return HttpResponse.error(status, error) }
         val path = request.path.trimEnd('/').ifEmpty { "/" }
         return when (path) {
             "/", "/setup" -> get(request) { HttpResponse.html(setupPage()) }

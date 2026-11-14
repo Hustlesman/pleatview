@@ -242,6 +242,7 @@ class HttpServer(
         409 -> "Conflict"
         411 -> "Length Required"
         413 -> "Payload Too Large"
+        415 -> "Unsupported Media Type"
         421 -> "Misdirected Request"
         429 -> "Too Many Requests"
         431 -> "Request Header Fields Too Large"

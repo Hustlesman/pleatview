@@ -20,6 +20,21 @@ from .pairing import Pairing
 LOCAL_SUFFIXES = (".local", ".lan", ".home", ".home.arpa", ".internal")
 
 
+def cross_site(method: str, headers: dict[str, str]) -> tuple[int, dict[str, str]] | None:
+    """Changes come from the screen's own pages or from programs, never from another site's page:
+a browser names the page that sent a request (Origin), so one from elsewhere is refused, and
+bodies are JSON (a page can't send that to another site without asking first). Even a page
+shown on this very screen can't change its settings or pair it (docs/protocol.md)."""
+    if method not in ("POST", "PUT", "PATCH", "DELETE"):
+        return None
+    origin = headers.get("origin", "").rstrip("/")
+    if origin and origin != f"http://{headers.get('host', '')}":
+        return 403, {"error": "cross_site"}
+    if int(headers.get("content-length") or 0) and not headers.get("content-type", "").lower().startswith("application/json"):
+        return 415, {"error": "json_required"}
+    return None
+
+
 def host_allowed(value: str) -> bool:
     host = value.strip().lower()
     if not host:
@@ -41,7 +56,8 @@ _LOGGER = logging.getLogger(__name__)
 
 MAX_BODY = 256 * 1024
 REASONS = {200: "OK", 202: "Accepted", 400: "Bad Request", 401: "Unauthorized", 403: "Forbidden", 404: "Not Found",
-           405: "Method Not Allowed", 409: "Conflict", 413: "Payload Too Large", 421: "Misdirected Request",
+           405: "Method Not Allowed", 409: "Conflict", 413: "Payload Too Large", 415: "Unsupported Media Type",
+           421: "Misdirected Request",
            429: "Too Many Requests"}
 
 
@@ -68,6 +84,8 @@ class Api:
         headers = {k.strip().lower(): v.strip() for k, _, v in (line.partition(":") for line in lines[1:] if line)}
         if not host_allowed(headers.get("host", "")):
             return await self._send(writer, 421, {"error": "misdirected"})
+        if refusal := cross_site(method, headers):
+            return await self._send(writer, *refusal)
         length = int(headers.get("content-length") or 0)
         if length > MAX_BODY:
             return await self._send(writer, 413, {"error": "too_large"})

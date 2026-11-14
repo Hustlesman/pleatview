@@ -92,6 +92,23 @@ export function createCalls(backend, pairing) {
 // points its own name at the screen (DNS rebinding) is refused (docs/protocol.md).
 const LOCAL_SUFFIXES = [".local", ".lan", ".home", ".home.arpa", ".internal"];
 
+/**
+ * Changes come from the screen's own pages or from programs, never from another site's page:
+ * a browser names the page that sent a request (Origin), so one from elsewhere is refused, and
+ * bodies are JSON (a page can't send that to another site without asking first). Even a page
+ * shown on this very screen can't change its settings or pair it (docs/protocol.md).
+ * @returns {[number, string] | null}
+ */
+export function crossSite(method, headers) {
+  if (!["POST", "PUT", "PATCH", "DELETE"].includes(method)) return null;
+  const origin = String(headers.origin ?? "").replace(/\/$/, "");
+  if (origin && origin !== `http://${headers.host ?? ""}`) return [403, "cross_site"];
+  if (Number(headers["content-length"] ?? 0) && !String(headers["content-type"] ?? "").toLowerCase().startsWith("application/json")) {
+    return [415, "json_required"];
+  }
+  return null;
+}
+
 export function hostAllowed(value) {
   let host = String(value ?? "").trim().toLowerCase();
   if (!host) return true; // HTTP/1.0 clients send none; browsers always do
@@ -107,6 +124,8 @@ export function createApi(backend, pairing, { local = (req) => LOOPBACK.has(req.
 
   async function route(req, res) {
     if (!hostAllowed(req.headers.host)) throw new HttpError(421, "misdirected");
+    const refusal = crossSite(req.method, req.headers);
+    if (refusal) throw new HttpError(...refusal);
     const url = new URL(req.url ?? "/", "http://screen");
     const path = url.pathname.replace(/\/+$/, "") || "/";
     switch (path) {
