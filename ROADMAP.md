@@ -27,7 +27,7 @@ and there's one place to fix and to audit.
 
 ## Status
 
-Last updated 13 November 2026. **Current milestone: M1** (M0 finished early).
+Last updated 14 November 2026. **Current milestone: M1** (M0 finished early).
 
 | Milestone | Target | Needs first | Status |
 | --- | --- | --- | --- |
@@ -42,6 +42,7 @@ Last updated 13 November 2026. **Current milestone: M1** (M0 finished early).
 | [M5](#m5--lg-and-samsung-apps) LG and Samsung apps submitted | Fri 5 Mar 2027 | M4, test TVs | Not started |
 | [M6](#m6--on-every-store) On every store | Fri 2 Apr 2027 | M5 approvals, 30-day soak | Not started |
 | [M7](#m7--iphone-and-ipad-app) iPhone and iPad app | Fri 14 May 2027 | M4, Apple developer account | Not started |
+| [V1](#v1--vr-headsets) VR headsets: dashboards and media in the headset, and what it shows, for those who look after it | After the 1.0.19 release | Upkeep (1.0.19), a test headset | Not started |
 
 Progress is tracked in [GitHub milestones](https://github.com/Hustlesman/pleatview/milestones).
 Bugs and features for the current milestone are [issues](https://github.com/Hustlesman/pleatview/issues);
@@ -430,6 +431,32 @@ reviews). Until then, iPhones and iPads use the web player in Safari (M4).
 **Exit:** PleatView installs from the App Store on iPhone and iPad, and the link is on the
 website and in the README.
 
+## V1 — VR headsets
+
+*To be scheduled, after the 1.0.19 release.* Standalone headsets (Meta Quest and other
+Android-based ones such as Pico) as PleatView screens, managed from Home Assistant and from
+other controllers like any screen. Two uses drive it: parents keeping an eye on what their
+children do in a headset, and organisations that use headsets for training or work.
+
+- [ ] The Android app as a panel in the headset: dashboards, notifications and media from Home
+      Assistant, with the headset's own controls; discovered, paired and updated like any screen
+- [ ] **What it shows:** pictures of the headset's view at the interval its controller sets.
+      Android asks the wearer before an app may capture the screen, and a headset shows that it's
+      being captured while it is; PleatView never captures without either. No sound is recorded
+- [ ] **A day at a glance:** the controller keeps the day's pictures and makes them into a
+      timelapse video to watch or download, kept as long as it's told. The same works for any
+      screen and for cameras and live streams, which need nothing new in the apps
+- [ ] **What's in use:** which app is in front and for how long (Android's usage access, which the
+      wearer allows), battery, temperature, and whether the headset is being worn
+- [ ] Remote actions as on other screens (upkeep): restart the app, checks
+- [ ] Off until it's switched on for a headset; the wearer is told on the headset itself that it's
+      looked after, and by whom. At work, only where it's lawful and people are told; with
+      children, as the family decides
+
+**Exit:** a headset paired with Home Assistant shows a dashboard and plays media, and its
+controller shows its pictures, a day's timelapse and what was in use, with the wearer told
+throughout.
+
 ## Platforms
 
 | Platform | How | Store | When |
@@ -441,6 +468,7 @@ website and in the README.
 | Linux: Ubuntu mini PCs, Raspberry Pi 4 and 5 | Electron app, same integration | `.deb` on GitHub, then an APT repository | Beta in L1 |
 | Linux: Raspberry Pi Zero 2 W and other small boards | Light client that plays dashboards rendered on Home Assistant | `.deb` on GitHub | L1 |
 | iPhone and iPad | Web player in Safari, then a native app that wraps it | App Store | Web player (M4); app in M7 |
+| VR headsets (Meta Quest, Pico) | The Android app as a panel in the headset | Meta Horizon Store, Pico Store, or a download | V1 |
 | LG webOS (2021+) | Web player in a webOS app | LG Content Store | Yes (M5) |
 | Samsung Tizen (2021+) | Web player in a Tizen app | Samsung TV Apps | Yes (M5) |
 | Browsers and kiosks | Web player served by Home Assistant | — | Yes (M4) |
