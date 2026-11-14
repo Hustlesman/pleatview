@@ -35,7 +35,7 @@ export class RecentLog {
     }
   }
 
-  /** Keeps a copy of what the app writes to the console from now on. */
+  /** Keeps a copy of what the app logs from now on. */
   capture(target = console) {
     for (const [method, level] of [["log", "INFO"], ["info", "INFO"], ["warn", "WARNING"], ["error", "ERROR"]]) {
       const original = target[method].bind(target);

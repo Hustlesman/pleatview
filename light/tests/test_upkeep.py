@@ -59,7 +59,7 @@ class HostNames(unittest.TestCase):
 class CrossSite(unittest.TestCase):
     def test_pages_from_elsewhere_change_nothing(self) -> None:
         json_post = {"host": "10.0.0.5:8765", "content-type": "application/json", "content-length": "10"}
-        self.assertIsNone(cross_site("POST", json_post))  # Home Assistant, the console, the CLI
+        self.assertIsNone(cross_site("POST", json_post))  # Home Assistant, other controllers, the CLI
         self.assertIsNone(cross_site("POST", {**json_post, "origin": "http://10.0.0.5:8765"}))  # the screen's own phone page
         self.assertEqual(cross_site("POST", {**json_post, "origin": "http://127.0.0.1:18080"})[0], 403)
         self.assertEqual(cross_site("POST", {**json_post, "origin": "null"})[0], 403)
