@@ -59,8 +59,9 @@ pairing, automatic sign-in, kiosk mode, casting, cameras, notifications, sign-in
 steps, standby, updates, and recovery from a Home Assistant restart and from a frozen page.
 Phone and tablet emulators add touch, turning the screen and the lock screen.
 `tools/e2e/linux.py` checks the Linux app the same way in Docker. A Fire TV Stick and a
-Chromecast HD pass the automated checks, and both ran a 42-hour soak test without a crash. A
-security review on 2 Nov fixed what it found. The apps, the integration, the renderer and
+Chromecast HD pass the automated checks, and both ran a 42-hour soak test without a crash.
+Security reviews on 2 and 14 Nov, with attacks from the network, from screens and from the
+pages they show, fixed what they found. The apps, the integration, the renderer and
 PleatView Light have unit tests that run on every change. Home Assistant can
 render a TV's dashboards and stream them to it, on its own machine or on renderers elsewhere,
 also for PleatView Light on the smallest boards. The Android app, the phone page and the

@@ -1,5 +1,5 @@
 name: PleatView Renderer
-version: "1.0.18"
+version: "1.0.19"
 slug: pleatview_renderer
 description: Renders PleatView dashboards here and streams them to slow TVs
 url: https://github.com/Hustlesman/pleatview/blob/main/docs/render-on-home-assistant.md
