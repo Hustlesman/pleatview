@@ -3,7 +3,7 @@ import { mkdirSync, mkdtempSync, readdirSync, rmSync, writeFileSync } from "node
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "node:test";
-import { createCalls, hostAllowed } from "../src/api.js";
+import { createCalls, crossSite, hostAllowed } from "../src/api.js";
 import { BadCommand, parseCommand } from "../src/command.js";
 import { Helper, RecentLog, checks, diagnostics, newer, redact } from "../src/upkeep.js";
 
@@ -92,4 +92,14 @@ test("only the screen's own names: no DNS rebinding", () => {
   for (const host of ["rebind.evil.example", "rebind.evil.example:8765", "192.168.1.20.nip.io", "localhost.evil.example"]) {
     assert.ok(!hostAllowed(host), host);
   }
+});
+
+test("pages from elsewhere change nothing, even one on this screen", () => {
+  const post = { host: "10.0.0.5:8765", "content-type": "application/json", "content-length": "10" };
+  assert.equal(crossSite("POST", post), null);
+  assert.equal(crossSite("POST", { ...post, origin: "http://10.0.0.5:8765" }), null);
+  assert.deepEqual(crossSite("POST", { ...post, origin: "http://127.0.0.1:18080" }), [403, "cross_site"]);
+  assert.deepEqual(crossSite("POST", { ...post, origin: "null" }), [403, "cross_site"]);
+  assert.deepEqual(crossSite("POST", { ...post, "content-type": "text/plain" }), [415, "json_required"]);
+  assert.equal(crossSite("GET", { origin: "https://evil.example" }), null);
 });

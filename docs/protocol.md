@@ -8,7 +8,10 @@ All responses are JSON unless noted. Errors look like `{"error": "message"}`.
 Requests name the screen by its address: a `Host` that is an IP address, `localhost`, a name
 without dots, or a name ending in `.local`, `.lan`, `.home`, `.home.arpa` or `.internal`.
 Others get `421` (1.0.19 and later), so a web page elsewhere can't reach the screen by
-pointing its own name at it (DNS rebinding).
+pointing its own name at it (DNS rebinding). Requests that change something (`POST`,
+`DELETE`) with an `Origin` other than the screen's own address get `403`, and bodies that
+aren't `Content-Type: application/json` get `415` (1.0.19 and later): a web page, even one
+shown on the screen itself, can't change its settings, pair it or connect it to a controller.
 Each request uses its own connection (`Connection: close`). Request bodies need a
 `Content-Length` and are limited to 256 KiB.
 

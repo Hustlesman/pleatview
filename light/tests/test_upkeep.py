@@ -16,7 +16,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from pleatview_light import upkeep  # noqa: E402
-from pleatview_light.api import Api, host_allowed  # noqa: E402
+from pleatview_light.api import Api, cross_site, host_allowed  # noqa: E402
 from pleatview_light.config import Config  # noqa: E402
 from pleatview_light.pairing import Pairing  # noqa: E402
 from pleatview_light.screen import Screen  # noqa: E402
@@ -54,6 +54,17 @@ class HostNames(unittest.TestCase):
             self.assertTrue(host_allowed(host), host)
         for host in ("rebind.evil.example", "rebind.evil.example:8765", "192.168.1.20.nip.io", "localhost.evil.example"):
             self.assertFalse(host_allowed(host), host)
+
+
+class CrossSite(unittest.TestCase):
+    def test_pages_from_elsewhere_change_nothing(self) -> None:
+        json_post = {"host": "10.0.0.5:8765", "content-type": "application/json", "content-length": "10"}
+        self.assertIsNone(cross_site("POST", json_post))  # Home Assistant, the console, the CLI
+        self.assertIsNone(cross_site("POST", {**json_post, "origin": "http://10.0.0.5:8765"}))  # the screen's own phone page
+        self.assertEqual(cross_site("POST", {**json_post, "origin": "http://127.0.0.1:18080"})[0], 403)
+        self.assertEqual(cross_site("POST", {**json_post, "origin": "null"})[0], 403)
+        self.assertEqual(cross_site("POST", {**json_post, "content-type": "text/plain"})[0], 415)
+        self.assertIsNone(cross_site("GET", {"origin": "https://evil.example"}))
 
 
 class Diagnostics(unittest.IsolatedAsyncioTestCase):

@@ -41,7 +41,7 @@ status() { # state version error
 
 [ -d "$requests" ] || exit 0
 # Take the requests' names, then clear them all, whatever they are, before acting on any.
-names=$(find "$requests" -mindepth 1 -maxdepth 1 -printf '%f\n' | head -n 20)
+names=$(find "$requests" -mindepth 1 -maxdepth 1 -printf "%f\n" 2>/dev/null | head -n 20)
 find "$requests" -mindepth 1 -delete
 
 wanted=""

@@ -292,4 +292,13 @@ class ApiTest {
             assertFalse(host, hostAllowed(host))
         }
     }
+
+    @Test
+    fun `pages from elsewhere change nothing, even one on this screen`() {
+        assertEquals(null, crossSite("POST", null, "10.0.0.5:8765", "application/json", 10))
+        assertEquals(null, crossSite("POST", "http://10.0.0.5:8765", "10.0.0.5:8765", "application/json", 10))
+        assertEquals(403 to "cross_site", crossSite("POST", "http://127.0.0.1:18080", "10.0.0.5:8765", "application/json", 10))
+        assertEquals(415 to "json_required", crossSite("POST", null, "10.0.0.5:8765", "text/plain", 10))
+        assertEquals(null, crossSite("GET", "https://evil.example", "10.0.0.5:8765", null, 0))
+    }
 }
