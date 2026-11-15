@@ -155,6 +155,10 @@ class Displays(unittest.IsolatedAsyncioTestCase):
                 await asyncio.sleep(0.1)
                 self.assertEqual(screen.state["display"]["connected"], False)
                 self.assertIsNotNone(screen.state["display"]["since"])
+                self.assertEqual(player.calls[-1], ("blank",))  # nothing plays with nobody to see it
+                player.calls.clear()
+                await screen.show()  # nor when asked again meanwhile
+                self.assertNotIn("play", [c[0] for c in player.calls])
                 player.calls.clear()
                 self.ports(folder, **{"card0-HDMI-A-1": "connected"})
                 await asyncio.sleep(0.1)
