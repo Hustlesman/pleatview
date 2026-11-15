@@ -146,6 +146,8 @@ Events stream that sends the full snapshot on connect and after every change
   size; PleatView Light turns its own text, its stream coming turned from the renderer, as
   for any app with `stream_overlays`. `protocol_v2`: the app connects out to a controller
   over [protocol v2](protocol-v2.md) once one gives it an address (PleatView Light first).
+  `enrol_confirm`: when it enrols with a code, it asks the person in front of it to allow the
+  organisation that typed the code ([Enrolment](protocol-v2.md#enrolment)).
   `restart_app`, `restart_device`, `update` and `diagnostics`: the [upkeep](#upkeep)
   commands and checks it takes (1.0.19 and later; `restart_device` and `update` only where
   the computer lets it, see there).
