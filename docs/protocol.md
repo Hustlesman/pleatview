@@ -92,6 +92,7 @@ Events stream that sends the full snapshot on connect and after every change
   "sign_in": null,
   "battery": {"level": 87, "charging": true},
   "screen": {"width": 1920, "height": 1080, "density": 2.0},
+  "display": {"connected": true, "since": 1761640000.5},
   "features": ["render_stream"],
   "update": null,
   "app_version": "0.1.0"
@@ -114,6 +115,12 @@ Events stream that sends the full snapshot on connect and after every change
   example to switch a wall tablet's smart plug on and off.
 - `screen`: the whole screen in pixels, and pixels per CSS pixel at zoom 100, so Home
   Assistant can render dashboards to match (null until the app has been on screen).
+- `display`: whether a display is plugged in, as the device sees its port (HDMI's hot-plug),
+  and since when: `{"connected": false, "since": 1761650000.25}`. `connected` is null where
+  the device can't tell (no such field: an older app). Unplugged, or a display that's off and
+  tells its port so, means nothing on the screen is seen, whatever else the state says: a
+  controller keeping proof of play counts nothing shown while it's `false` (PleatView Light
+  first). Once a display is plugged in again, the app puts what should show back on it.
 - `features`: what the app can do beyond this version of the protocol. Home Assistant only
   sends configuration a feature needs to apps that list it. `render_stream`: the app plays
   `render_stream` (1.0.14 and later; the Linux app from 1.0.17). `home_without_ha`: a full web
