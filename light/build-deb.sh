@@ -21,7 +21,7 @@ Package: pleatview-light
 Version: $version
 Architecture: all
 Maintainer: Hustlesman <privacy@hustlesman.com>
-Depends: python3 (>= 3.11), python3-cryptography, mpv
+Depends: python3 (>= 3.11), python3-cryptography, mpv, v4l-utils
 Section: video
 Priority: optional
 Homepage: https://pleatview.hustlesman.com

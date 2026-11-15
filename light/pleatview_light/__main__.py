@@ -181,12 +181,20 @@ async def main() -> bool:
 
     following = asyncio.create_task(follow_updates())
     watching = asyncio.create_task(screen.watch_display())
+    from .cec import Cec
+    cec = Cec(screen.on_cec, name="PleatView")
+    try:
+        if not await cec.start():
+            _LOGGER.info("No HDMI-CEC here (or nothing on it): whether the TV is on isn't known")
+    except Exception:  # noqa: BLE001 - the screen plays on without it
+        _LOGGER.exception("HDMI-CEC didn't start")
     loop = asyncio.get_running_loop()
     for sig in (signal.SIGTERM, signal.SIGINT):
         loop.add_signal_handler(sig, stop.set)
     await stop.wait()
     following.cancel()
     watching.cancel()
+    await cec.stop()
     await responder.announce(ttl=0)
     responder.stop()
     await connection.stop()
