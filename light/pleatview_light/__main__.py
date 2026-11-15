@@ -180,11 +180,13 @@ async def main() -> bool:
             await asyncio.sleep(5)
 
     following = asyncio.create_task(follow_updates())
+    watching = asyncio.create_task(screen.watch_display())
     loop = asyncio.get_running_loop()
     for sig in (signal.SIGTERM, signal.SIGINT):
         loop.add_signal_handler(sig, stop.set)
     await stop.wait()
     following.cancel()
+    watching.cancel()
     await responder.announce(ttl=0)
     responder.stop()
     await connection.stop()

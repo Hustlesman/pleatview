@@ -6,6 +6,7 @@ import asyncio
 import json
 from pathlib import Path
 import struct
+import tempfile
 import sys
 import unittest
 
@@ -128,6 +129,39 @@ class Screens(unittest.IsolatedAsyncioTestCase):
             await screen.command({"command": "reboot"})
         self.assertEqual(screen.state["features"], ["render_stream", "home_without_ha", "home_playlist", "stream_overlays", "rotation", "protocol_v2", "restart_app", "diagnostics"])
         self.assertEqual(screen.state["screen"]["width"], 1280)
+
+
+class Displays(unittest.IsolatedAsyncioTestCase):
+    def ports(self, folder: Path, **statuses: str) -> None:
+        for name, status in statuses.items():
+            (folder / name).mkdir(parents=True, exist_ok=True)
+            (folder / name / "status").write_text(status + "\n")
+
+    async def test_unplugged_reported_and_shown_again_when_plugged_in(self) -> None:
+        from pleatview_light.screen import display_connected
+        with tempfile.TemporaryDirectory() as tmp:
+            folder = Path(tmp)
+            self.assertIsNone(display_connected(folder))  # no ports: it can't tell
+            self.ports(folder, **{"card0-Writeback-1": "unknown"})
+            self.assertIsNone(display_connected(folder))  # a virtual port says nothing
+            self.ports(folder, **{"card0-HDMI-A-1": "connected", "card0-HDMI-A-2": "disconnected"})
+            self.assertTrue(display_connected(folder))
+            self.ports(folder, **{"card0-HDMI-A-1": "disconnected"})
+            self.assertFalse(display_connected(folder))
+            screen, player, _ = make_screen()
+            await screen.configure({"ha_url": "http://ha:8123", "render_stream": "http://ha:8123/s/index.m3u8", "rev": "1"})
+            watching = asyncio.create_task(screen.watch_display(folder, every=0.02))
+            try:
+                await asyncio.sleep(0.1)
+                self.assertEqual(screen.state["display"]["connected"], False)
+                self.assertIsNotNone(screen.state["display"]["since"])
+                player.calls.clear()
+                self.ports(folder, **{"card0-HDMI-A-1": "connected"})
+                await asyncio.sleep(0.1)
+                self.assertTrue(screen.state["display"]["connected"])
+                self.assertIn(("play", "http://ha:8123/s/index.m3u8", {"live": True, "volume": 1.0}), player.calls)
+            finally:
+                watching.cancel()
 
 
 class Playlists(unittest.IsolatedAsyncioTestCase):

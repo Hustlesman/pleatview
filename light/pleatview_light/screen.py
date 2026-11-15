@@ -11,6 +11,7 @@ import asyncio
 import logging
 import math
 import time
+from pathlib import Path
 from typing import Any, Callable
 
 from .config import Config, is_http
@@ -29,6 +30,24 @@ FEATURES = ["render_stream", "home_without_ha", "home_playlist", "stream_overlay
             "restart_app", "diagnostics"]
 STREAM_RETRY = 2.0
 PIN_SHOWN = 120  # seconds the PIN stays up after someone starts pairing
+DRM = Path("/sys/class/drm")
+DISPLAY_EVERY = 2.0  # seconds between looks at whether a display is plugged in
+
+
+def display_connected(folder: Path = DRM) -> bool | None:
+    """Whether a display is plugged in, as the kernel sees its ports (an HDMI port's status):
+    True or False, or None where no port says (virtual ones, such as Writeback, never do)."""
+    seen: list[bool] = []
+    for status in sorted(folder.glob("card*-*/status")):
+        if "Writeback" in status.parent.name or "Virtual" in status.parent.name:
+            continue
+        try:
+            text = status.read_text().strip()
+        except OSError:
+            continue
+        if text in ("connected", "disconnected"):
+            seen.append(text == "connected")
+    return any(seen) if seen else None
 
 
 def _number(value: Any, low: float, high: float, name: str) -> float | None:
@@ -71,6 +90,9 @@ class Screen:
             "sign_in": None, "battery": None, "app_version": version,
             "screen": {"width": size[0], "height": size[1], "density": 1.0}, "features": features or FEATURES,
             "update": None,
+            # Whether a display is plugged in (None: it can't tell), and since when: what shows
+            # counts only while one is (proof of play).
+            "display": {"connected": None, "since": None},
         }
 
     # State
@@ -88,6 +110,24 @@ class Screen:
         queue: asyncio.Queue = asyncio.Queue(maxsize=20)
         self.listeners.add(queue)
         return queue
+
+    # The display
+
+    async def watch_display(self, folder: Path = DRM, every: float = DISPLAY_EVERY) -> None:
+        """Reports whether a display is plugged in, and puts what should show back on it when one
+        is plugged in again (the player lets go of a display that goes)."""
+        while True:
+            connected = display_connected(folder)
+            if connected != self.state["display"]["connected"]:
+                was = self.state["display"]["connected"]
+                self.update(display={"connected": connected, "since": round(time.time(), 3)})
+                if connected is False:
+                    _LOGGER.warning("No display is plugged in")
+                elif connected and was is False:
+                    _LOGGER.info("A display is plugged in again")
+                    self.playing = None
+                    await self.show()
+            await asyncio.sleep(every)
 
     # What shows
 
