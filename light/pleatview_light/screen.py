@@ -122,7 +122,14 @@ class Screen:
                 was = self.state["display"]["connected"]
                 self.update(display={"connected": connected, "since": round(time.time(), 3)})
                 if connected is False:
-                    _LOGGER.warning("No display is plugged in")
+                    # Nobody would see it: the stream stops (the renderer and the network rest),
+                    # and so does a clip, until a display is back.
+                    _LOGGER.warning("No display is plugged in; nothing plays until one is")
+                    if self.media:
+                        self.media = None
+                        self.update(media=None)
+                    self.playing = None
+                    await self.player.blank()
                 elif connected and was is False:
                     _LOGGER.info("A display is plugged in again")
                     self.playing = None
@@ -135,8 +142,8 @@ class Screen:
         """Puts the right thing on the screen: setup, the stream, or nothing (standby)."""
         config = self.config
         self.update(view="dashboard" if config.configured else "setup", config_rev=config.rev)
-        if self.standby:
-            await self.player.blank()
+        if self.standby or self.state["display"]["connected"] is False:
+            await self.player.blank()  # off, or no display to show it on
             return
         if self.media:
             return

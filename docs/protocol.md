@@ -120,7 +120,8 @@ Events stream that sends the full snapshot on connect and after every change
   the device can't tell (no such field: an older app). Unplugged, or a display that's off and
   tells its port so, means nothing on the screen is seen, whatever else the state says: a
   controller keeping proof of play counts nothing shown while it's `false` (PleatView Light
-  first). Once a display is plugged in again, the app puts what should show back on it.
+  first). While it's `false` the app plays nothing (no stream, no clip): nobody would see it.
+  Once a display is plugged in again, the app puts what should show back on it.
 - `features`: what the app can do beyond this version of the protocol. Home Assistant only
   sends configuration a feature needs to apps that list it. `render_stream`: the app plays
   `render_stream` (1.0.14 and later; the Linux app from 1.0.17). `home_without_ha`: a full web
