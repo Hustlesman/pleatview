@@ -13,5 +13,20 @@ boot: auto
 video: true
 options:
   max_screens: 4
+  controller: ""
+  controller_fingerprint: ""
+  site_pages: []
+  stream_url: ""
 schema:
   max_screens: int(1,8)
+  controller: str?
+  controller_fingerprint: str?
+  site_pages:
+    - str
+  stream_url: str?
+# Where the site's screens fetch their streams, when connecting out to a controller elsewhere
+# (docs/renderer-connect-out.md). Nothing listens there otherwise.
+ports:
+  8781/tcp: 8781
+ports_description:
+  8781/tcp: Streams for this site's screens (only when connecting out to a controller)

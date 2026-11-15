@@ -13,6 +13,7 @@ the log, or when it listens on the network, every request needs that client's to
 from __future__ import annotations
 
 import asyncio
+import base64
 import contextlib
 import ipaddress
 import json
@@ -148,9 +149,191 @@ def parse_overlay(body: Any) -> dict[str, Any] | None:
     raise ValueError("kind must be notify, image or clear")
 
 
+class Full(Exception):
+    """No room for another screen."""
+
+
+# A controller elsewhere names its screens with keys of its own, kept apart from the local
+# API's: its sessions are "~<key>", which no local key can be (KEY has no "~").
+CONTROLLER_KEY = re.compile(r"^[A-Za-z0-9_-]{1,48}$")
+LARGEST_SEGMENT = 4 * 1024 * 1024
+
+
+class Renderer:
+    """The screens this renderer draws: for the controller that reaches it on its network (Home
+    Assistant, over protocol v1) and for one it connects out to (docs/renderer-connect-out.md),
+    whose pages go through the filter and whose streams have secret addresses."""
+
+    def __init__(self, root: Path, encoder: str, max_sessions: int = 4) -> None:
+        self.root, self.encoder, self.max_sessions = root, encoder, max_sessions
+        self.sessions: dict[str, Session] = {}
+        self.streams: dict[str, str] = {}  # a controller's session's stream secret -> its key
+
+    async def show(self, key: str, screen: Screen, proxy: int | None = None) -> Session:
+        session = self.sessions.get(key)
+        if session is None:
+            if len(self.sessions) >= self.max_sessions:
+                raise Full(f"this renderer shows at most {self.max_sessions} screens")
+            session = self.sessions[key] = Session(key, screen, self.root, self.encoder, proxy=proxy)
+            if key.startswith("~"):
+                session.secret = secrets.token_hex(16)
+                self.streams[session.secret] = key
+            session.start()
+        elif session.screen != screen:
+            await session.update(screen)
+        session.last_access = time.monotonic()
+        session.start()
+        return session
+
+    async def stop(self, key: str) -> None:
+        session = self.sessions.pop(key, None)
+        if session:
+            self.streams.pop(getattr(session, "secret", ""), None)
+            await session.stop()
+
+    async def file(self, session: Session, name: str) -> tuple[bytes, str, str]:
+        """A stream's playlist or segment: its bytes, type and caching; FileNotFoundError if
+        there's none (yet, or any more)."""
+        if not FILE.match(name):
+            raise FileNotFoundError(name)
+        session.last_access = time.monotonic()
+        if not session.running:
+            _LOGGER.info("%s: its TV is back; starting", session.key)
+            session.start()
+        path = session.folder / name
+        deadline = time.monotonic() + START_WAIT_SECONDS
+        while not path.exists() and name == "index.m3u8" and time.monotonic() < deadline:
+            await asyncio.sleep(0.25)
+        body = await asyncio.to_thread(path.read_bytes)  # FileNotFoundError: an old segment ffmpeg just deleted
+        cache = "no-cache" if name.endswith(".m3u8") else "max-age=60"
+        content_type = "application/vnd.apple.mpegurl" if name.endswith(".m3u8") else "video/mp2t"
+        return body, content_type, cache
+
+    async def stop_idle(self) -> None:
+        for session in list(self.sessions.values()):
+            if session.running and time.monotonic() - session.last_access > IDLE_SECONDS:
+                _LOGGER.info("%s: nobody watches; stopping until its TV asks again", session.key)
+                await session.stop()
+
+    async def close(self) -> None:
+        for session in self.sessions.values():
+            await session.stop()
+
+
+def controller_calls(renderer: Renderer, info: Any, proxy: Any) -> dict[str, Any]:
+    """What a controller elsewhere may ask of this renderer, each call checked
+    (docs/renderer-connect-out.md#calls). `proxy()` is the filter's port."""
+    from .connect import Refused
+
+    def key_of(params: dict[str, Any]) -> str:
+        key = params.get("key")
+        if not isinstance(key, str) or not CONTROLLER_KEY.match(key):
+            raise Refused("key is 1 to 48 of A-Z a-z 0-9 _ -")
+        return f"~{key}"
+
+    def existing(params: dict[str, Any]) -> Session:
+        session = renderer.sessions.get(key_of(params))
+        if session is None:
+            raise Refused("no such screen")
+        return session
+
+    async def show(params: dict[str, Any]) -> dict[str, Any]:
+        key = key_of(params)
+        if params.get("ha_url") or params.get("token"):
+            raise Refused("a controller elsewhere doesn't send Home Assistant's address or token")
+        port = proxy()
+        if not port:
+            raise Refused("the filter for pages isn't running")
+        try:
+            screen = parse_screen({k: v for k, v in params.items() if k != "key"})
+            session = await renderer.show(key, screen, proxy=port)
+        except ValueError as err:
+            raise Refused(str(err)) from None
+        except Full as err:
+            raise Refused(str(err)) from None
+        return {"stream": f"/stream/{session.secret}/index.m3u8"}
+
+    async def overlay(params: dict[str, Any]) -> dict[str, Any]:
+        session = existing(params)
+        body = {k: v for k, v in params.items() if k != "key"}
+        try:
+            item = parse_overlay(body)
+        except ValueError as err:
+            raise Refused(str(err)) from None
+        await session.overlay(item, kind=str(body.get("clear") or "") if item is None else "")
+        return {}
+
+    async def stop(params: dict[str, Any]) -> dict[str, Any]:
+        await renderer.stop(key_of(params))
+        return {}
+
+    async def segment(params: dict[str, Any]) -> dict[str, Any]:
+        session = existing(params)
+        name = params.get("name")
+        if not isinstance(name, str) or not FILE.match(name):
+            raise Refused("name is index.m3u8 or s<n>.ts")
+        try:
+            body, content_type, _ = await renderer.file(session, name)
+        except FileNotFoundError:
+            raise Refused("not there (yet, or any more)") from None
+        if len(body) > LARGEST_SEGMENT:
+            raise Refused("larger than 4 MB")
+        return {"type": content_type, "data": base64.b64encode(body).decode()}
+
+    async def about(params: dict[str, Any]) -> dict[str, Any]:
+        return info()
+
+    return {"info": about, "show": show, "overlay": overlay, "stop": stop, "segment": segment}
+
+
+def describe_call(method: str, params: dict[str, Any]) -> str | None:
+    """A controller's call as the renderer's log tells it: what changes what it shows."""
+    from .connect import printable
+
+    key = printable(params.get("key", ""), 48)
+    if method == "show":
+        return (f"show {key}: {printable(params.get('url', ''), 200)} "
+                f"({printable(params.get('width', 1920), 6)}×{printable(params.get('height', 1080), 6)})")
+    if method == "overlay":
+        return f"draw {printable(params.get('kind', '?'), 20)} on {key}"
+    if method == "stop":
+        return f"stop {key}"
+    return None
+
+
+def create_stream_app(renderer: Renderer) -> web.Application:
+    """Where the site's screens fetch the streams of a controller's sessions: at secret
+    addresses, and nothing else."""
+
+    @web.middleware
+    async def plain(request: web.Request, handler):
+        response = await handler(request)
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        return response
+
+    app = web.Application(middlewares=[plain])
+
+    async def stream(request: web.Request) -> web.Response:
+        key = renderer.streams.get(request.match_info["secret"])
+        session = renderer.sessions.get(key) if key else None
+        if session is None:
+            raise web.HTTPNotFound()
+        try:
+            body, content_type, cache = await renderer.file(session, request.match_info["name"])
+        except FileNotFoundError:
+            raise web.HTTPNotFound() from None
+        return web.Response(body=body, content_type=content_type, headers={"Cache-Control": cache})
+
+    app.router.add_get(r"/stream/{secret:[0-9a-f]{32}}/{name}", stream)
+    return app
+
+
 def create_app(root: Path, encoder: str, max_sessions: int = 4, *, pairing: Pairing | None = None,
-               require_token: bool = False, identity: dict[str, str] | None = None) -> web.Application:
-    sessions: dict[str, Session] = {}
+               require_token: bool = False, identity: dict[str, str] | None = None,
+               renderer: Renderer | None = None) -> web.Application:
+    renderer = renderer or Renderer(root, encoder, max_sessions)
+    sessions = renderer.sessions
+    max_sessions = renderer.max_sessions
     identity = identity or {}
 
     def authorized(request: web.Request) -> bool:
@@ -180,7 +363,7 @@ def create_app(root: Path, encoder: str, max_sessions: int = 4, *, pairing: Pair
             public["load"] = load()
             public["sessions"] = {
                 key: {"url": s.screen.url, "width": s.screen.width, "height": s.screen.height, "running": s.running}
-                for key, s in sessions.items()
+                for key, s in sessions.items() if not key.startswith("~")  # a controller elsewhere's are its own
             }
         return web.json_response(public)
 
@@ -223,20 +406,19 @@ def create_app(root: Path, encoder: str, max_sessions: int = 4, *, pairing: Pair
             screen = parse_screen(await request.json())
         except ValueError as err:
             raise web.HTTPBadRequest(text=str(err)) from err
-        session = sessions.get(key)
-        if session is None:
-            if len(sessions) >= max_sessions:
-                raise web.HTTPTooManyRequests(text=f"this renderer shows at most {max_sessions} screens")
-            session = sessions[key] = Session(key, screen, root, encoder)
-            session.start()
-        elif session.screen != screen:
-            await session.update(screen)
-        session.last_access = time.monotonic()
-        session.start()
+        try:
+            await renderer.show(key, screen)
+        except Full as err:
+            raise web.HTTPTooManyRequests(text=str(err)) from None
         return web.json_response({"playlist": f"/hls/{key}/index.m3u8"})
 
+    def local(request: web.Request) -> Session | None:
+        """A session of the local API's (never a controller elsewhere's)."""
+        key = request.match_info["key"]
+        return sessions.get(key) if KEY.match(key) else None
+
     async def put_overlay(request: web.Request) -> web.Response:
-        session = sessions.get(request.match_info["key"])
+        session = local(request)
         if session is None:
             raise web.HTTPNotFound()
         try:
@@ -248,50 +430,32 @@ def create_app(root: Path, encoder: str, max_sessions: int = 4, *, pairing: Pair
         return web.json_response({})
 
     async def delete_session(request: web.Request) -> web.Response:
-        session = sessions.pop(request.match_info["key"], None)
-        if session:
-            await session.stop()
+        if local(request):
+            await renderer.stop(request.match_info["key"])
         return web.Response(status=204)
 
     async def hls(request: web.Request) -> web.StreamResponse:
-        session = sessions.get(request.match_info["key"])
-        name = request.match_info["name"]
-        if session is None or not FILE.match(name):
+        session = local(request)
+        if session is None:
             raise web.HTTPNotFound()
-        session.last_access = time.monotonic()
-        if not session.running:
-            _LOGGER.info("%s: its TV is back; starting", session.key)
-            session.start()
-        path = session.folder / name
-        deadline = time.monotonic() + START_WAIT_SECONDS
-        while not path.exists() and name == "index.m3u8" and time.monotonic() < deadline:
-            await asyncio.sleep(0.25)
-        if not path.exists():
-            raise web.HTTPNotFound()
-        cache = "no-cache" if name.endswith(".m3u8") else "max-age=60"
-        content_type = "application/vnd.apple.mpegurl" if name.endswith(".m3u8") else "video/mp2t"
         try:
-            body = await asyncio.to_thread(path.read_bytes)
-        except FileNotFoundError as err:  # an old segment ffmpeg just deleted
-            raise web.HTTPNotFound() from err
+            body, content_type, cache = await renderer.file(session, request.match_info["name"])
+        except FileNotFoundError:
+            raise web.HTTPNotFound() from None
         return web.Response(body=body, content_type=content_type, headers={"Cache-Control": cache})
 
     async def idle(app: web.Application) -> Any:
         async def check() -> None:
             while True:
                 await asyncio.sleep(15)
-                for session in list(sessions.values()):
-                    if session.running and time.monotonic() - session.last_access > IDLE_SECONDS:
-                        _LOGGER.info("%s: nobody watches; stopping until its TV asks again", session.key)
-                        await session.stop()
+                await renderer.stop_idle()
 
         task = asyncio.create_task(check())
         yield
         task.cancel()
         with contextlib.suppress(asyncio.CancelledError):
             await task
-        for session in sessions.values():
-            await session.stop()
+        await renderer.close()
 
     app.cleanup_ctx.append(idle)
     async def packages(request: web.Request) -> web.Response:
@@ -338,7 +502,8 @@ def settings() -> dict[str, str]:
     values = dict(os.environ)
     options = Path("/data/options.json")
     if options.exists():
-        values.update({key.upper(): str(value) for key, value in json.loads(options.read_text()).items()})
+        values.update({key.upper(): ",".join(map(str, value)) if isinstance(value, list) else "" if value is None else str(value)
+                       for key, value in json.loads(options.read_text()).items()})
     return values
 
 
@@ -401,6 +566,65 @@ def certificate_fingerprint(cert: Path) -> str:
     return x509.load_pem_x509_certificate(cert.read_bytes()).fingerprint(hashes.SHA256()).hex(":").upper()
 
 
+def connect_out(app: web.Application, env: dict[str, str], renderer: Renderer, state: Path,
+                identity: dict[str, str], encoder: str, host: str) -> None:
+    """A controller elsewhere (docs/renderer-connect-out.md): the connection out, the filter its
+    pages go through, and the listener the site's screens fetch their streams from."""
+    from .connect import Link
+    from .filter import Filter, Places
+
+    stream_port = int(env.get("STREAM_PORT", "8781"))
+    try:
+        places = Places.parse(env.get("SITE_PAGES", ""))
+        page_filter = Filter(places)
+        # The app can't see its machine's address on the site's network: it's given, or the
+        # controller passes the streams on itself.
+        given = (env.get("STREAM_URL") or "").strip().rstrip("/")
+        if given and (urlsplit(given).scheme not in ("http", "https") or not urlsplit(given).hostname or urlsplit(given).path):
+            raise ValueError("stream_url is http://<this machine's address>:<port>")
+        addon = Path("/data/options.json").exists()
+        streams = [given] if given else [] if addon else [f"http://{local_address()}:{stream_port}"]
+
+        def about() -> dict[str, Any]:
+            return {**identity, "version": VERSION, "encoder": encoder, "max_screens": renderer.max_sessions,
+                    "load": load(), "streams": streams,
+                    "sessions": {key[1:]: {"url": s.screen.url, "width": s.screen.width, "height": s.screen.height,
+                                           "running": s.running}
+                                 for key, s in renderer.sessions.items() if key.startswith("~")}}
+
+        async def removed() -> None:
+            for key in [k for k in renderer.sessions if k.startswith("~")]:
+                await renderer.stop(key)
+
+        link = Link(state, env["CONTROLLER"], env.get("CONTROLLER_FINGERPRINT"),
+                    calls=controller_calls(renderer, about, lambda: page_filter.port), info=about,
+                    write=write_private, describe=describe_call, on_removed=removed)
+    except ValueError as err:
+        _LOGGER.error("Not connecting out: %s", err)
+        return
+
+    async def run(app: web.Application) -> Any:
+        await page_filter.start()
+        streams_runner = web.AppRunner(create_stream_app(renderer), access_log=None)
+        await streams_runner.setup()
+        await web.TCPSite(streams_runner, host, stream_port).start()
+        _LOGGER.info("Connecting out to the controller at %s. Pages from it reach the public internet%s.",
+                     link.url, f" and {', '.join(sorted(f'{h}:{p}' for h, p in places.hosts) + [str(n) for n in places.networks])}"
+                     if places else " only")
+        if streams:
+            _LOGGER.info("The site's screens fetch their streams at %s", streams[0])
+        else:
+            _LOGGER.info("The site's screens get their streams through the controller. To have them fetched here, "
+                         "set the streams address to this machine's address, such as http://192.168.1.10:%d", stream_port)
+        link.start()
+        yield
+        await link.stop()
+        await streams_runner.cleanup()
+        await page_filter.stop()
+
+    app.cleanup_ctx.append(run)
+
+
 def main() -> None:
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
     env = settings()
@@ -445,8 +669,10 @@ def main() -> None:
     _LOGGER.info("In PleatView's options, use the renderer address %s",
                  advertised_address(env, port).replace("http://", f"{scheme}://", 1))
     pin_changed()
-    app = create_app(root, encoder, max_sessions=int(env.get("MAX_SCREENS", "4")), pairing=pairing,
-                     require_token=require_token, identity=identity)
+    renderer = Renderer(root, encoder, int(env.get("MAX_SCREENS", "4")))
+    app = create_app(root, encoder, pairing=pairing, require_token=require_token, identity=identity, renderer=renderer)
+    if (env.get("CONTROLLER") or "").strip():
+        connect_out(app, env, renderer, state, identity, encoder, host)
     if not addon and not is_loopback(host) and env.get("ANNOUNCE", "1") != "0":
         responder = Responder(lambda: {**identity, "version": VERSION, "scheme": scheme}, port,
                               service=SERVICE, keys=("id", "name", "version", "scheme"))

@@ -115,8 +115,27 @@ def ffmpeg_args(encoder: str, screen: Screen, display: str, folder: Path, with_s
     ]
 
 
-def chromium_args(screen: Screen, profile: Path, port: int, alsa_device: str | None = None) -> list[str]:
+def through_filter(proxy: int) -> list[str]:
+    """Chromium's every connection through the filter (filter.py), which looks the names up
+    (SOCKS5 passes names, not addresses): loopback through it too, no WebRTC around it, and none
+    of Chromium's own calls home."""
     return [
+        f"--proxy-server=socks5://127.0.0.1:{proxy}",
+        "--proxy-bypass-list=<-loopback>",
+        "--force-webrtc-ip-handling-policy=disable_non_proxied_udp",
+        "--disable-quic",
+        "--disable-background-networking",
+        "--disable-component-update",
+        "--no-pings",
+    ]
+
+
+def chromium_args(screen: Screen, profile: Path, port: int, alsa_device: str | None = None,
+                  proxy: int | None = None) -> list[str]:
+    return [
+        # A controller's pages: through the filter, on the public internet and the places the
+        # site lists only (docs/renderer-connect-out.md).
+        *(through_filter(proxy) if proxy else []),
         # Chromium's own sandbox needs privileges a container doesn't have; it runs as an
         # unprivileged user instead (see _spawn).
         "--no-sandbox",
@@ -156,8 +175,10 @@ def chromium_args(screen: Screen, profile: Path, port: int, alsa_device: str | N
 class Session:
     """Renders one TV's screen until stopped; restarts what crashes."""
 
-    def __init__(self, key: str, screen: Screen, root: Path, encoder: str) -> None:
+    def __init__(self, key: str, screen: Screen, root: Path, encoder: str, proxy: int | None = None) -> None:
         self.key = key
+        self.proxy = proxy  # the filter's port, for a controller's pages
+        self.secret: str | None = None  # a controller's session's stream address
         self.screen = screen
         self.encoder = encoder
         self.folder = root / key
@@ -267,7 +288,7 @@ class Session:
         env.pop("PULSE_SERVER", None)  # Chromium would play there instead of into the stream
         self._sound = self._open_sound(profile / "sound")
         device = sound.alsa_device(self._sound.fifo) if self._sound else None
-        self._procs.append(await _spawn("chromium", *chromium_args(screen, profile, self.port, device), env=env))
+        self._procs.append(await _spawn("chromium", *chromium_args(screen, profile, self.port, device, self.proxy), env=env))
         self._cdp = await Cdp.connect(self.port)
         self._cdp.on_event = self._on_event
         await self._cdp.call("Page.enable")
