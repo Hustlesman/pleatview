@@ -2,3 +2,26 @@ configuration:
   max_screens:
     name: Max screens
     description: How many TVs this app renders at once. Each one runs a browser here.
+  controller:
+    name: Controller elsewhere
+    description: >-
+      The address of a controller at another place to connect out to, such as
+      controller.example.com. It then renders pages for this site's screens. Leave empty for
+      Home Assistant only.
+  controller_fingerprint:
+    name: Controller's certificate
+    description: >-
+      The SHA-256 fingerprint of the controller's own certificate, only for a controller whose
+      certificate this machine doesn't trust.
+  site_pages:
+    name: Pages on this network
+    description: >-
+      Places on this site's own network that the controller's pages may load, as host:port
+      (homeassistant.local:8123) or an address with a prefix (192.168.1.40/32). Everything
+      else on this network stays closed to them.
+  stream_url:
+    name: Streams address
+    description: >-
+      This machine's address on the site's network for the streams port, such as
+      http://192.168.1.10:8781. Without it, the site's screens get their streams through the
+      controller.

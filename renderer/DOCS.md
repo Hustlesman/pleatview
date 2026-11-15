@@ -16,5 +16,14 @@ a map's view) can carry the steps in their address, after `#pleatview=`: clicks 
 button's text or a CSS selector, clicks at a place, drags and scrolls. See page steps:
 https://github.com/Hustlesman/pleatview/blob/main/docs/page-steps.md
 
+**A controller elsewhere:** set *Controller elsewhere* to its address, and this app
+connects out to it, with nothing opened here, and renders for this site's PleatView Light
+screens. Its log then shows a code to type into the controller. Pages from the controller
+reach the public internet only, plus the places on this network you list under *Pages on this
+network*. Set *Streams address* to this machine's address with port 8781, such as
+`http://192.168.1.10:8781`, so this site's screens fetch their streams here. Every change the
+controller makes is in the log. See
+https://github.com/Hustlesman/pleatview/blob/main/docs/renderer-connect-out.md
+
 The whole guide, with pictures of each step and what to expect on the TV:
 https://github.com/Hustlesman/pleatview/blob/main/docs/render-on-home-assistant.md
