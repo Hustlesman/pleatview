@@ -90,9 +90,12 @@ class Screen:
             "sign_in": None, "battery": None, "app_version": version,
             "screen": {"width": size[0], "height": size[1], "density": 1.0}, "features": features or FEATURES,
             "update": None,
-            # Whether a display is plugged in (None: it can't tell), and since when: what shows
-            # counts only while one is (proof of play).
-            "display": {"connected": None, "since": None},
+            # Whether a display is plugged in (None: it can't tell), and since when; and, from
+            # HDMI-CEC where the TV speaks it, whether it's on and shows this input, and a sound
+            # system's volume: what shows counts only while it's seen (proof of play).
+            "display": {"connected": None, "since": None, "power": None, "input": None, "audio": None},
+            # The last key of the TV's remote that reached this screen (HDMI-CEC).
+            "last_input": None,
         }
 
     # State
@@ -120,7 +123,8 @@ class Screen:
             connected = display_connected(folder)
             if connected != self.state["display"]["connected"]:
                 was = self.state["display"]["connected"]
-                self.update(display={"connected": connected, "since": round(time.time(), 3)})
+                self.update(display={**self.state["display"], "connected": connected, "since": round(time.time(), 3),
+                                     **({"power": None, "input": None} if connected is False else {})})
                 if connected is False:
                     # Nobody would see it: the stream stops (the renderer and the network rest),
                     # and so does a clip, until a display is back.
@@ -135,6 +139,15 @@ class Screen:
                     self.playing = None
                     await self.show()
             await asyncio.sleep(every)
+
+    def on_cec(self, kind: str, value: Any) -> None:
+        """What the TV says over HDMI-CEC (cec.py). The screen plays on whatever it says (a TV
+        that tells it wrongly can't blank it); a controller counts standby, or another input,
+        as nothing seen."""
+        if kind in ("power", "input", "audio"):
+            self.update(display={**self.state["display"], kind: value})
+        elif kind == "key":
+            self.update(last_input=value)
 
     # What shows
 

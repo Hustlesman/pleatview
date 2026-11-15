@@ -92,7 +92,8 @@ Events stream that sends the full snapshot on connect and after every change
   "sign_in": null,
   "battery": {"level": 87, "charging": true},
   "screen": {"width": 1920, "height": 1080, "density": 2.0},
-  "display": {"connected": true, "since": 1761640000.5},
+  "display": {"connected": true, "since": 1761640000.5, "power": "on", "input": "this", "audio": null},
+  "last_input": null,
   "features": ["render_stream"],
   "update": null,
   "app_version": "0.1.0"
@@ -122,6 +123,15 @@ Events stream that sends the full snapshot on connect and after every change
   controller keeping proof of play counts nothing shown while it's `false` (PleatView Light
   first). While it's `false` the app plays nothing (no stream, no clip): nobody would see it.
   Once a display is plugged in again, the app puts what should show back on it.
+  Where the TV speaks HDMI-CEC (PleatView Light first), `display` also says what it tells:
+  `power` (`on` or `standby`), `input` (`this`, or `other` while the TV shows another input),
+  and `audio`, a sound system's `{"muted": true, "volume": 23}`. Each is null while the TV says
+  nothing. A TV in standby, or on another input, shows nobody this screen either; the app
+  plays on whatever it says (a TV that tells it wrongly can't blank the screen).
+- `last_input`: the last key of the TV's remote that reached the screen (HDMI-CEC):
+  `{"key": "volume-up", "from": "tv_remote", "at": 1761650000.25}`, or null. Keys are
+  HDMI-CEC's names (`mute`, `volume-down`, `power`, `select`, …). Keys the TV keeps to itself
+  (often its own volume and mute), and its picture settings, don't reach a screen.
 - `features`: what the app can do beyond this version of the protocol. Home Assistant only
   sends configuration a feature needs to apps that list it. `render_stream`: the app plays
   `render_stream` (1.0.14 and later; the Linux app from 1.0.17). `home_without_ha`: a full web
