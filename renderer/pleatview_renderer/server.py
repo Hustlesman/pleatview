@@ -154,7 +154,9 @@ class Full(Exception):
 
 
 # A controller elsewhere names its screens with keys of its own, kept apart from the local
-# API's: its sessions are "~<key>", which no local key can be (KEY has no "~").
+# API's: its sessions are "c.<key>", which no local key can be (KEY has no "."), and which a
+# path to its sound pipe may hold.
+CONTROLLER = "c."
 CONTROLLER_KEY = re.compile(r"^[A-Za-z0-9_-]{1,48}$")
 LARGEST_SEGMENT = 4 * 1024 * 1024
 
@@ -175,7 +177,7 @@ class Renderer:
             if len(self.sessions) >= self.max_sessions:
                 raise Full(f"this renderer shows at most {self.max_sessions} screens")
             session = self.sessions[key] = Session(key, screen, self.root, self.encoder, proxy=proxy)
-            if key.startswith("~"):
+            if key.startswith(CONTROLLER):
                 session.secret = secrets.token_hex(16)
                 self.streams[session.secret] = key
             session.start()
@@ -229,7 +231,7 @@ def controller_calls(renderer: Renderer, info: Any, proxy: Any) -> dict[str, Any
         key = params.get("key")
         if not isinstance(key, str) or not CONTROLLER_KEY.match(key):
             raise Refused("key is 1 to 48 of A-Z a-z 0-9 _ -")
-        return f"~{key}"
+        return f"{CONTROLLER}{key}"
 
     def existing(params: dict[str, Any]) -> Session:
         session = renderer.sessions.get(key_of(params))
@@ -363,7 +365,7 @@ def create_app(root: Path, encoder: str, max_sessions: int = 4, *, pairing: Pair
             public["load"] = load()
             public["sessions"] = {
                 key: {"url": s.screen.url, "width": s.screen.width, "height": s.screen.height, "running": s.running}
-                for key, s in sessions.items() if not key.startswith("~")  # a controller elsewhere's are its own
+                for key, s in sessions.items() if not key.startswith(CONTROLLER)  # a controller elsewhere's are its own
             }
         return web.json_response(public)
 
@@ -408,8 +410,8 @@ def create_app(root: Path, encoder: str, max_sessions: int = 4, *, pairing: Pair
             raise web.HTTPBadRequest(text=str(err)) from err
         try:
             await renderer.show(key, screen)
-        except Full as err:
-            raise web.HTTPTooManyRequests(text=str(err)) from None
+        except Full:
+            raise web.HTTPTooManyRequests(text=f"this renderer shows at most {renderer.max_sessions} screens") from None
         return web.json_response({"playlist": f"/hls/{key}/index.m3u8"})
 
     def local(request: web.Request) -> Session | None:
@@ -588,12 +590,12 @@ def connect_out(app: web.Application, env: dict[str, str], renderer: Renderer, s
         def about() -> dict[str, Any]:
             return {**identity, "version": VERSION, "encoder": encoder, "max_screens": renderer.max_sessions,
                     "load": load(), "streams": streams,
-                    "sessions": {key[1:]: {"url": s.screen.url, "width": s.screen.width, "height": s.screen.height,
+                    "sessions": {key[len(CONTROLLER):]: {"url": s.screen.url, "width": s.screen.width, "height": s.screen.height,
                                            "running": s.running}
-                                 for key, s in renderer.sessions.items() if key.startswith("~")}}
+                                 for key, s in renderer.sessions.items() if key.startswith(CONTROLLER)}}
 
         async def removed() -> None:
-            for key in [k for k in renderer.sessions if k.startswith("~")]:
+            for key in [k for k in renderer.sessions if k.startswith(CONTROLLER)]:
                 await renderer.stop(key)
 
         link = Link(state, env["CONTROLLER"], env.get("CONTROLLER_FINGERPRINT"),

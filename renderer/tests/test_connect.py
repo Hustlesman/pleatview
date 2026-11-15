@@ -365,7 +365,7 @@ class TheCalls(AioHTTPTestCase):
         shown = await self.calls["show"]({"key": "tv-1", "url": "https://example.com/", "width": 1080, "height": 1920})
         secret = shown["stream"].split("/")[2]
         self.assertRegex(secret, r"^[0-9a-f]{32}$")
-        session_ = self.renderer.sessions["~tv-1"]
+        session_ = self.renderer.sessions["c.tv-1"]
         self.assertEqual((session_.proxy, session_.screen.width), (40000, 1080))  # through the filter
         for bad in ({"key": "tv-1", "url": "https://x/", "ha_url": "http://ha:8123", "token": "t"},
                     {"key": "../x", "url": "https://x/"}, {"key": "tv-2", "url": "file:///data/renderer-key.pem"}):
@@ -377,12 +377,12 @@ class TheCalls(AioHTTPTestCase):
         # The local API neither sees nor touches them.
         info = await (await self.client.get("/api/info")).json()
         self.assertEqual(info["sessions"], {})
-        self.assertEqual((await self.client.delete("/api/sessions/~tv-1")).status, 204)
-        self.assertIn("~tv-1", self.renderer.sessions)
-        folder = Path(self.root.name) / "~tv-1"
+        self.assertEqual((await self.client.delete("/api/sessions/c.tv-1")).status, 204)
+        self.assertIn("c.tv-1", self.renderer.sessions)
+        folder = Path(self.root.name) / "c.tv-1"
         folder.mkdir(parents=True, exist_ok=True)
         (folder / "s3.ts").write_bytes(b"\x47" * 188)
-        self.assertEqual((await self.client.get("/hls/~tv-1/s3.ts")).status, 404)
+        self.assertEqual((await self.client.get("/hls/c.tv-1/s3.ts")).status, 404)
         # The site's screens fetch it at its secret address, and nothing else there.
         async with aiohttp.ClientSession() as client:
             ok = await client.get(self.streams.make_url(f"/stream/{secret}/s3.ts"))
@@ -395,8 +395,13 @@ class TheCalls(AioHTTPTestCase):
         with self.assertRaises(connect.Refused):
             await self.calls["segment"]({"key": "tv-1", "name": "../../renderer-key.pem"})
         await self.calls["stop"]({"key": "tv-1"})
-        self.assertNotIn("~tv-1", self.renderer.sessions)
+        self.assertNotIn("c.tv-1", self.renderer.sessions)
         self.assertNotIn(secret, self.renderer.streams)
+
+    def test_a_controllers_screen_keeps_its_sound(self) -> None:
+        from pleatview_renderer import sound
+        fifo = Path(self.root.name) / "profiles" / "c.tv-1" / "sound"
+        self.assertTrue(sound.alsa_device(fifo))  # its key goes into the sound pipe's path
 
     def test_the_log_tells_what_changes(self) -> None:
         self.assertEqual(server.describe_call("show", {"key": "tv", "url": "https://x/"}), "show tv: https://x/ (1920×1080)")
