@@ -46,7 +46,12 @@ PleatView device.
 **A controller elsewhere** ([protocol v2](../docs/protocol-v2.md)): with
 `pleatview-kiosk connect wss://controller.example/api/pleatview/v2`, run on the screen's
 computer, PleatView connects out to that controller and shows a code to add it there with.
-No port has to be open to the screen. A controller on the local network that pairs with
+No port has to be open to the screen. A package built with a controller's address
+(`PLEATVIEW_CONTROLLER` when running `npm run dist`) connects to that one with
+`pleatview-kiosk connect` alone. Once the code is typed into the controller, the screen asks
+*Allow … to manage this screen?*: Enter allows it, Escape or `pleatview-kiosk decline` doesn't,
+and `pleatview-kiosk allow` allows it from the computer. Until it's added, the screen says only
+what it is (not its name), and it stops trying after an hour nobody adds it. A controller on the local network that pairs with
 the PIN moves the screen to v2 by itself.
 
 **Restarts and updates from the controller** ([Upkeep](../docs/protocol.md#upkeep)): a

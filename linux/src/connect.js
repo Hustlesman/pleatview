@@ -3,6 +3,7 @@
 // only: no extra packages.
 
 import { createHash, createPrivateKey, createPublicKey, generateKeyPairSync, sign } from "node:crypto";
+import { builtIn } from "./builtin.js";
 import { connect as wsConnect } from "./websocket.js";
 
 export const SUBPROTOCOL = "pleatview.v2";
@@ -15,7 +16,15 @@ const FIRST_WAIT_MS = 2000;
 const LONGEST_WAIT_MS = 60_000;
 const LONGEST_RETRY_S = 3600;
 export const MOVE_TRIES = 3;
-export const timing = { firstWaitMs: FIRST_WAIT_MS };
+// Enrolling with a code: given up when nobody adds the screen within an hour (six codes); and
+// what the screen says of itself until it's added (no name: it often holds a person's).
+export const CODES_MOST = 6;
+export const BEFORE_ADDED = ["id", "manufacturer", "model", "app_version", "api_version"];
+export const timing = {
+  firstWaitMs: FIRST_WAIT_MS,
+  enrolForMs: 3600_000,
+  allowWaitMs: 290_000, // the person at the screen has this long to allow it (the controller waits longer)
+};
 export const CLOSE = { UNKNOWN_KEY: 4401, REVOKED: 4403, CODE_EXPIRED: 4408, REPLACED: 4409 };
 
 /** A controller's address as signatures name it: wss, host in lower case, no :443. */
@@ -42,9 +51,13 @@ export class Connection {
    * @param {() => string} screen.stateJson
    * @param {(listener: (json: string) => void) => () => void} screen.onState
    * @param {(code: string | null, host: string) => void} screen.showCode
+   * @param {(organisation: string, host: string, how: {signal: AbortSignal, waitMs: number}) => Promise<boolean | null>} [screen.askAllow]
+   *   the person at the screen allows an organisation (true), or not (false), or nobody answers (null)
+   * @param {(host: string, why: string) => void} [screen.notAdded] tells the person at the screen it wasn't added, and why
+   * @param {() => string | null} [screen.builtIn] the controller's address this build was made with
    */
-  constructor({ store, info, call, stateJson, onState, showCode }) {
-    Object.assign(this, { store, info, call, stateJson, onState, showCode });
+  constructor({ store, info, call, stateJson, onState, showCode, askAllow = null, notAdded = null, builtIn: built = builtIn }) {
+    Object.assign(this, { store, info, call, stateJson, onState, showCode, askAllow, notAdded, builtIn: built });
     this.key = this.loadKey();
     const der = createPublicKey(this.key).export({ type: "spki", format: "der" });
     this.public = der.toString("base64");
@@ -59,6 +72,7 @@ export class Connection {
     this.retryAfter = null; // the controller's own wait, from `retry` or a 503
     this.moving = null; // a new address, until it lets this screen in
     this.moveTries = 0;
+    this.codesShown = 0;
   }
 
   loadKey() {
@@ -79,14 +93,34 @@ export class Connection {
     return sign("sha256", Buffer.from(signedText(controller, nonce)), { key: this.key, dsaEncoding: "der" }).toString("base64");
   }
 
-  /** Connect to this controller: with a token from one paired over v1, or to show a code. */
-  enrol(url, token = null, pin = null) {
+  /**
+   * Connect to this controller: with a token from one paired over v1, or to show a code. No
+   * address: the one this build was made with, if any.
+   */
+  enrol(url = null, token = null, pin = null) {
     if (pin !== null && (typeof pin !== "string" || !PIN.test(pin.toLowerCase()))) {
       throw new RangeError("fingerprint is the hex of the certificate's SHA-256");
     }
-    this.save({ url: address(url), pin: pin ? pin.toLowerCase() : null, enrolled: false });
+    if (!url) url = this.builtIn();
+    if (!url) throw new RangeError("this build has no controller's address: give one");
+    // Since when it's been waiting to be added: kept, so starting again doesn't make it longer.
+    this.save({ url: address(url), pin: pin ? pin.toLowerCase() : null, enrolled: false, since: Date.now() });
     this.token = token;
+    this.codesShown = 0;
     this.restart();
+  }
+
+  /** Not added: nothing more connects until someone chooses to connect again. */
+  giveUp(why) {
+    let host = "";
+    try {
+      host = new URL(this.controller.url).hostname;
+    } catch {
+      // no address: nothing to name
+    }
+    console.log(`PleatView: not added to the controller at ${host}: ${why}`);
+    this.forget();
+    this.notAdded?.(host, why);
   }
 
   forget() {
@@ -206,11 +240,13 @@ export class Connection {
     this.ws = ws;
     return new Promise((resolve) => {
       let welcomed = false;
+      let asking = null; // the person at the screen is asked to allow the controller in
       let heard = Date.now();
       let removeListener = null;
       const timers = [];
       const greet = setTimeout(() => ws.close(1001), 15_000);
       ws.on("close", (code) => {
+        asking?.abort(); // the question goes with the connection
         clearTimeout(greet);
         timers.forEach(clearInterval);
         removeListener?.();
@@ -224,9 +260,22 @@ export class Connection {
           clearTimeout(greet);
           const hello = { signature: this.sign(url, message.nonce), info: this.info() };
           if (this.controller.enrolled) return ws.send({ type: "auth", key: this.keyId, ...hello });
-          return ws.send({ type: "enrol", key: this.public, ...hello, ...(this.token ? { token: this.token } : {}) });
+          return ws.send({ type: "enrol", key: this.public, ...hello, info: this.before(hello.info),
+            ...(this.token ? { token: this.token } : {}) });
         }
-        if (message.type === "code") return this.showCode(String(message.code ?? ""), new URL(url).hostname);
+        if (message.type === "code" && !welcomed) {
+          this.codesShown += 1;
+          const since = this.controller.since ?? Date.now();
+          if (this.codesShown > CODES_MOST || Date.now() - since > timing.enrolForMs) {
+            this.giveUp("nobody added it within an hour");
+            return ws.close(1000);
+          }
+          return this.showCode(String(message.code ?? ""), new URL(url).hostname);
+        }
+        if (message.type === "confirm" && !welcomed && !asking) {
+          asking = new AbortController();
+          return this.allow(ws, String(message.organisation || "an organisation").slice(0, 80), new URL(url).hostname, asking.signal);
+        }
         if (message.type === "ping") return ws.send({ type: "pong" });
         if (message.type === "welcome" && !welcomed) {
           welcomed = true;
@@ -258,6 +307,43 @@ export class Connection {
         if (message.type === "move" && welcomed) return this.move(message);
       });
     });
+  }
+
+  /** Until it's added, little about itself: no name. */
+  before(info) {
+    const said = Object.fromEntries(BEFORE_ADDED.filter((k) => k in info).map((k) => [k, info[k]]));
+    let features = [];
+    try {
+      features = JSON.parse(this.stateJson()).features ?? [];
+    } catch {
+      // no state yet: no features
+    }
+    return { ...said, features };
+  }
+
+  /** The controller asks whether the person at the screen allows it in (enrol_confirm). */
+  async allow(ws, organisation, host, signal) {
+    let answer = null;
+    if (this.askAllow) {
+      let timer;
+      // Nobody answering, or the controller no longer waiting, ends it too.
+      const late = new Promise((resolve) => {
+        timer = setTimeout(() => resolve(null), timing.allowWaitMs + 1000);
+        signal.addEventListener("abort", () => resolve(null), { once: true });
+      });
+      try {
+        answer = await Promise.race([this.askAllow(organisation, host, { signal, waitMs: timing.allowWaitMs }), late]);
+      } catch {
+        answer = null;
+      } finally {
+        clearTimeout(timer);
+      }
+    }
+    if (ws.closed || signal.aborted) return; // the controller stopped waiting: it closed
+    if (answer === true) return ws.send({ type: "confirmed" });
+    if (answer === false) ws.send({ type: "declined" });
+    this.giveUp(answer === false ? "not allowed on the screen" : "nobody allowed it in time");
+    ws.close(1000);
   }
 
   async answer(ws, request) {

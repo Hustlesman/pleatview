@@ -24,6 +24,7 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 import { needsDisplay } from "./command.js";
 import { isFrontendPath, pathOf } from "./config.js";
 import { displayPower } from "./power.js";
+import { Question } from "./question.js";
 import { rotateDisplay } from "./rotation.js";
 import { SignInFlow } from "./signins.js";
 import { Stepper } from "./steps.js";
@@ -52,6 +53,7 @@ export class Display {
     this.qrCode = qrCode;
     this.signInFlow = null;
     this.pairing = pairing;
+    this.question = new Question(() => this.ui && this.showApproval());
     this.config = config;
     this.setup = setup;
     this.quit = quit;
@@ -186,7 +188,9 @@ export class Display {
           this.wake();
           break;
         case "approval":
-          this.pairing?.decide(String(message.id ?? ""), Boolean(message.allow));
+          if (!this.question.answer(Boolean(message.allow), String(message.id ?? ""))) {
+            this.pairing?.decide(String(message.id ?? ""), Boolean(message.allow));
+          }
           break;
         case "sign-in":
           if (typeof message.password === "string" && message.password) {
@@ -235,7 +239,8 @@ export class Display {
       if (approval) {
         this.pairing.decide(approval.id, false); // "Don't allow"
         this.showApproval();
-      } else if (this.signInFlow?.pending) this.signInFlow.dismiss(); // "Not now"
+      } else if (this.question.pending) this.question.answer(false); // "Don't allow"
+      else if (this.signInFlow?.pending) this.signInFlow.dismiss(); // "Not now"
       else if (this.menuOpen) this.toUi({ type: "close-menu" });
       else this.openMenu();
     } else if (input.key === "MediaPlayPause" || input.key === "MediaStop") {
@@ -443,15 +448,26 @@ export class Display {
     else this.dashboard.webContents.loadURL("about:blank");
   }
 
-  /** Asks the person at the screen to allow a client to pair (or hides the question). */
+  /**
+   * Asks the person at the screen to allow a client to pair, or (protocol v2) a controller to
+   * manage this screen; or hides the question. Pairing first, should both ask at once.
+   */
   showApproval() {
     const approval = this.pairing?.pendingApproval;
-    this.toUi({ type: "approval", approval: approval ? { id: approval.id, client: approval.client, address: approval.address } : null });
+    const asking = this.question.pending;
+    const shown = approval ? { id: approval.id, client: approval.client, address: approval.address }
+      : asking ? { id: asking.id, organisation: asking.organisation, host: asking.host } : null;
+    this.toUi({ type: "approval", approval: shown });
+    if (shown) this.ui.webContents.focus();
     if (approval) {
-      this.ui.webContents.focus();
       clearTimeout(this.timers.approval);
       this.timers.approval = setTimeout(() => this.showApproval(), Math.max(0, approval.expires - Date.now()) + 500);
     }
+  }
+
+  /** Protocol v2: may this organisation manage the screen? (enrol_confirm, question.js) */
+  askAllow(organisation, host, how) {
+    return this.question.ask(organisation, host, how);
   }
 
   /** The setup screen's PIN, name or address changed. */
