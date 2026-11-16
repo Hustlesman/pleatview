@@ -73,12 +73,35 @@ accepts a token once, for a few minutes, and only from the screen it gave it to 
 anything beyond the pairing they already did.
 
 **With a code, anywhere.** The screen is given the controller's address (typed in its menu,
-or from its phone page). Its `enrol` has no `token`, and the controller answers
-`{"type": "code", "code": "K7RM-W2XD", "expires_in": 600}`. The screen shows the code, and
-someone allowed to add screens types it into the controller, which then sends `welcome`. Codes
-are 8 characters from `23456789ABCDEFGHJKMNPQRSTUVWXYZ` (no 0, O, 1, I or L), shown as two
-groups of four. What people type is read in upper case without spaces or dashes. The
-controller limits how many codes it hands out and how many guesses it takes.
+or from its phone page), or uses the one it was built with (below). Its `enrol` has no `token`,
+and the controller answers `{"type": "code", "code": "K7RM-W2XD", "expires_in": 600}`. The
+screen shows the code, with the controller's host name so the person in front of it sees where
+it's connecting, and someone allowed to add screens types it into the controller, which then
+sends `welcome`. Codes are 8 characters from `23456789ABCDEFGHJKMNPQRSTUVWXYZ` (no 0, O, 1, I
+or L), shown as two groups of four: about 850 billion, so they're guessed no better than a
+password. What people type is read in upper case without spaces or dashes. The controller
+limits how many codes it hands out and how many guesses it takes.
+
+- **Allowed on the screen** (apps with `enrol_confirm`). Once the code is typed, the controller
+  asks the screen before letting it in: `{"type": "confirm", "organisation": "Acme"}`. The
+  screen asks the person in front of it, *Allow Acme to manage this screen?*, and answers
+  `{"type": "confirmed"}` or `{"type": "declined"}`. The controller answers `confirmed` with
+  `welcome`, and `declined` by closing with 4403 and forgetting the code. A photographed code
+  alone isn't enough: someone at the screen agrees too. A screen that isn't answered within
+  the code's time closes the connection and shows that it wasn't added.
+- **Little said before it's added.** Until `welcome`, the `info` in `enrol` is only the
+  screen's `id`, `manufacturer`, `model`, `app_version`, `api_version` and `features`: no
+  name, which often holds a person's name. The controller reads the rest with `info` once the
+  screen is in.
+- **Not for ever.** A screen that isn't added within an hour (six codes) stops connecting and
+  shows that it wasn't added, until someone chooses to connect again. Nothing keeps calling a
+  controller nobody is adding it to.
+
+**A built-in address.** An app may be built with a controller's address, so the person
+connecting a screen only chooses to connect and passes on the code. It's the app's
+build setting, not in its source; connecting stays a choice made at the screen (nothing
+connects by itself), the screen shows the host it connects to, and any other address can be
+typed instead.
 
 After `welcome`, an enrolled screen keeps the controller's address (and pinned certificate)
 and signs in with `auth` from then on.
@@ -94,6 +117,8 @@ and signs in with `auth` from then on.
 | Either | `{"type": "ping"}` / `{"type": "pong"}` | Every 20 seconds; a minute without either closes the connection |
 | Controller | `{"type": "retry", "after": 30}` | It's about to close the connection (a restart, or too busy): come back after a random wait of up to `after` seconds (1–3600) |
 | Controller | `{"type": "move", "url": "wss://…/api/pleatview/v2", "fingerprint"?: "…"}` | Use this address from now on ([Moving a controller](#moving-a-controller)) |
+| Controller | `{"type": "confirm", "organisation": "…"}` | Before `welcome`, once the code is typed: ask the person at the screen ([Enrolment](#enrolment); apps with `enrol_confirm`) |
+| Screen | `{"type": "confirmed"}` / `{"type": "declined"}` | Their answer |
 
 | Method | Same as in v1 | `params` |
 | --- | --- | --- |
@@ -116,7 +141,7 @@ v1's pairing, `verify` and `unpair` have no v2 method: enrolment and revocation 
 | 4400 | A message it couldn't read | Reconnects |
 | 4401 | Unknown key | Forgets the controller (it was removed while the screen was away) |
 | 4403 | Revoked, or enrolment refused | Forgets the controller |
-| 4408 | The enrolment code expired | Asks for a new one by connecting again |
+| 4408 | The enrolment code expired | Asks for a new one by connecting again, for up to an hour from the first |
 | 4409 | The same screen connected again | Stays away until it's told otherwise |
 
 Otherwise the screen reconnects with growing waits, from 2 seconds doubling to a minute,
