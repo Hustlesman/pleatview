@@ -177,6 +177,15 @@ export function createApi(backend, pairing, { local = (req) => LOOPBACK.has(req.
           }
           json(res, 202, {});
         });
+      // Someone on this computer answers the question on the screen, whether to let a controller
+      // in (pleatview-kiosk allow, or decline): from this computer only.
+      case "/api/allow":
+        return post(req, async () => {
+          const request = await body(req);
+          if (!local(req) || !backend.answerAllow) throw new HttpError(404, "not found");
+          if (!backend.answerAllow(request.allow === true)) throw new HttpError(409, "the screen isn't asking");
+          json(res, 200, {});
+        });
     }
     if (path.startsWith("/api/pair/request/")) {
       return get(req, () => {

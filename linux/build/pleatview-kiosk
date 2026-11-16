@@ -5,8 +5,10 @@
 #                                        cage, a kiosk compositor, on the first console, as USER
 #   pleatview-kiosk autostart            a desktop (Ubuntu, Raspberry Pi OS): open it when you log in
 #   sudo pleatview-kiosk disable         undo either
-#   pleatview-kiosk connect URL          connect out to a controller at URL (wss://…) and show
-#                                        the code to add this screen there with
+#   pleatview-kiosk connect [URL]        connect out to a controller at URL (wss://…), or the one
+#                                        this package was made with, and show the code to add
+#                                        this screen there with
+#   pleatview-kiosk allow | decline      answer the screen's question: let that controller in?
 #   sudo pleatview-kiosk upkeep [USER]   let its controller restart this computer and update
 #                                        PleatView (enable does this too)
 set -eu
@@ -14,7 +16,7 @@ set -eu
 unit=/etc/systemd/system/pleatview-kiosk.service
 
 usage() {
-  sed -n '2,12p' "$0" | sed 's/^# \{0,1\}//'
+  sed -n '2,14p' "$0" | sed 's/^# \{0,1\}//'
   exit 2
 }
 
@@ -147,8 +149,7 @@ disable() {
 
 # The running app does it (protocol v2); its control API takes this from this computer only.
 connect() {
-  [ -n "${1:-}" ] || usage
-  python3 - "$1" "${PLEATVIEW_PORT:-8765}" <<'PY'
+  python3 - "${1:-}" "${PLEATVIEW_PORT:-8765}" <<'PY'
 import json, sys, urllib.error, urllib.request
 request = urllib.request.Request(f"http://127.0.0.1:{sys.argv[2]}/api/connect", method="POST",
                                  data=json.dumps({"url": sys.argv[1]}).encode(), headers={"Content-Type": "application/json"})
@@ -162,9 +163,25 @@ print("The screen now shows a code. Add the screen in the controller with it.")
 PY
 }
 
+answer() {
+  python3 - "$1" "${PLEATVIEW_PORT:-8765}" <<'PY'
+import json, sys, urllib.error, urllib.request
+request = urllib.request.Request(f"http://127.0.0.1:{sys.argv[2]}/api/allow", method="POST",
+                                 data=json.dumps({"allow": sys.argv[1] == "allow"}).encode(), headers={"Content-Type": "application/json"})
+try:
+    urllib.request.urlopen(request, timeout=5).close()
+except urllib.error.HTTPError as err:
+    sys.exit(json.loads(err.read() or b"{}").get("error", str(err)))
+except OSError as err:
+    sys.exit(f"PleatView isn't running here: {err}")
+print("Allowed." if sys.argv[1] == "allow" else "Not allowed.")
+PY
+}
+
 case "${1:-}" in
   enable) shift; enable "${1:-}" ;;
   connect) shift; connect "${1:-}" ;;
+  allow|decline) answer "$1" ;;
   upkeep) shift; allow_upkeep "${1:-}" ;;
   autostart) autostart ;;
   disable) disable ;;

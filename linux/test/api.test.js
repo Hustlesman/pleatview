@@ -25,8 +25,11 @@ const backend = {
     enrolments.push({ url, token, fingerprint });
   },
   connectOut: (url) => enrolments.push({ url }),
+  answerAllow: (allow) => (asking ? (answers.push(allow), true) : false),
 };
 const enrolments = [];
+const answers = [];
+let asking = false;
 const server = createApi(backend, pairing);
 let base;
 
@@ -185,5 +188,24 @@ test("protocol v2: from another computer, connecting out needs the PIN or a pair
     assert.equal((await post({ url }, await paired())).status, 202);
   } finally {
     remote.close();
+  }
+});
+
+test("protocol v2: the screen's question answered from this computer only", async () => {
+  assert.equal((await call("POST", "/api/allow", { allow: true })).status, 409); // nothing asked
+  asking = true;
+  assert.equal((await call("POST", "/api/allow", { allow: true })).status, 200);
+  assert.equal((await call("POST", "/api/allow", { allow: "yes" })).status, 200);
+  assert.deepEqual(answers, [true, false]); // only true allows
+  const remote = createApi(backend, pairing, { local: () => false });
+  await new Promise((resolve) => remote.listen(0, "127.0.0.1", resolve));
+  try {
+    const response = await fetch(`http://127.0.0.1:${remote.address().port}/api/allow`, { method: "POST",
+      body: JSON.stringify({ allow: true }), headers: { "Content-Type": "application/json", Authorization: `Bearer ${await paired()}` } });
+    assert.equal(response.status, 404);
+    assert.equal(answers.length, 2);
+  } finally {
+    remote.close();
+    asking = false;
   }
 });

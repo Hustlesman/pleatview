@@ -57,8 +57,11 @@ const pairing = new Pairing({
 });
 
 const name = () => config.deviceName || defaultName();
-// Protocol v2: the code to type into a controller while it hasn't let this screen in yet.
+// Protocol v2: the code to type into a controller while it hasn't let this screen in yet; and,
+// for a minute, that a controller didn't add it, and why.
 let enrolCode = null;
+let notAdded = null;
+let notAddedTimer = null;
 
 /** What the setup screen and the menu show. The QR code opens the phone page with the PIN filled in. */
 function setupInfo() {
@@ -72,7 +75,7 @@ function setupInfo() {
       display?.refreshSetup();
     });
   }
-  return { name: name(), address, port: PORT, pin: pairing.pin, version, qr: qr.svg, enrol: enrolCode };
+  return { name: name(), address, port: PORT, pin: pairing.pin, version, qr: qr.svg, enrol: enrolCode, notAdded };
 }
 
 function updateConfig(update) {
@@ -154,7 +157,8 @@ const backend = {
   setupPage: () => readFileSync(join(assets, "setup.html")),
   approvalRequested: () => display?.showApproval(),
   enrol: (url, token, fingerprint) => connection.enrol(url, token, fingerprint),
-  connectOut: (url) => connection.enrol(url),
+  connectOut: (url) => connection.enrol(url || null),
+  answerAllow: (allow) => display?.question.answer(allow) ?? false,
 };
 const api = createApi(backend, pairing);
 // Protocol v2: one connection out to a controller anywhere, once one is given.
@@ -166,7 +170,18 @@ const connection = new Connection({
   onState: (listener) => hub.onState(listener),
   showCode: (code, host) => {
     enrolCode = code ? { code, host } : null;
+    if (code) notAdded = null;
     display?.refreshSetup();
+  },
+  askAllow: (organisation, host, how) => (display ? display.askAllow(organisation, host, how) : Promise.resolve(null)),
+  notAdded: (host, why) => {
+    notAdded = { host, why };
+    display?.refreshSetup();
+    clearTimeout(notAddedTimer);
+    notAddedTimer = setTimeout(() => {
+      notAdded = null;
+      display?.refreshSetup();
+    }, 60_000);
   },
 });
 

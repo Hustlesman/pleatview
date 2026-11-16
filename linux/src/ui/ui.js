@@ -42,16 +42,29 @@ new MutationObserver(regionsChanged).observe(screenEl, { subtree: true, childLis
 
 // ---- Setup screen ---------------------------------------------------------------------
 
+// Whether the app shows the setup screen (nothing set up yet); it also shows, over what's set
+// up, while a controller elsewhere waits for this screen's code, or didn't add it (protocol v2).
+let setupWanted = false;
+let setupInfo = null;
+
+function showSetup() {
+  $("setup").hidden = !(setupWanted || setupInfo?.enrol || setupInfo?.notAdded);
+}
+
 function showSetupInfo(info) {
   if (!info) return;
+  setupInfo = info;
   $("setup-address").textContent = info.address ? `Host  ${info.address}\nPort  ${info.port}` : "Not connected to a network";
   // Protocol v2: while a controller elsewhere waits for this screen's code, the code instead.
-  $("setup-pin-label").textContent = info.enrol ? `Connecting to ${info.enrol.host}. Add this screen there with its code` : "When Home Assistant asks for a PIN, enter";
+  $("setup-pin-label").textContent = info.enrol ? `Connecting to ${info.enrol.host}. Add this screen there with its code`
+    : info.notAdded ? `Not added to ${info.notAdded.host}: ${info.notAdded.why}. To try again: pleatview-kiosk connect. When Home Assistant asks for a PIN, enter`
+      : "When Home Assistant asks for a PIN, enter";
   $("setup-pin").textContent = info.enrol ? info.enrol.code : info.pin.replace(/(\d{3})(\d{3})/, "$1 $2");
   $("setup-manual").textContent = `No integration? Scan the code, or open http://${info.address}:${info.port} on your phone.`;
   $("setup-device").textContent = `${info.name} · v${info.version} · Help: pleatview.hustlesman.com`;
   $("setup-qr").innerHTML = info.qr || "";
   if (!$("menu").hidden) $("menu-info").textContent = menuInfo(info);
+  showSetup();
 }
 
 // ---- Notification cards -----------------------------------------------------------------
@@ -333,8 +346,9 @@ window.pleatview.onMessage((message) => {
       screenEl.style.transform = `translate(${-message.x}px, ${-message.y}px)`;
       break;
     case "setup":
+      setupWanted = Boolean(message.visible);
       showSetupInfo(message.info);
-      $("setup").hidden = !message.visible;
+      showSetup();
       break;
     case "setup-info":
       showSetupInfo(message.info);
@@ -410,7 +424,13 @@ let approvalId = null;
 function showApproval(approval) {
   approvalId = approval?.id ?? null;
   $("approval").hidden = !approval;
-  if (approval) {
+  if (approval?.organisation) {
+    // Protocol v2: this screen's code was typed into a controller elsewhere.
+    $("approval-title").textContent = `Allow ${approval.organisation} to manage this screen?`;
+    $("approval-text").textContent = `This screen's code was typed in at ${approval.host}, for ${approval.organisation}. ` +
+      "Press Enter to allow it. Only allow it if you're adding this screen there yourself, or someone you trust is.";
+    $("approval-allow").focus();
+  } else if (approval) {
     $("approval-title").textContent = `Pair with ${approval.client}?`;
     $("approval-text").textContent = `${approval.client} at ${approval.address} asks to control this screen. ` +
       `Press Enter to allow it. Only allow it if you just set this screen up in ${approval.client}.`;
