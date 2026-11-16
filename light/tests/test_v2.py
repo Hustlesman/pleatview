@@ -12,6 +12,7 @@ import ssl
 import sys
 import tempfile
 import unittest
+from unittest import mock
 from pathlib import Path
 
 from cryptography import x509
@@ -73,6 +74,8 @@ class FakeController:
         self.answers: asyncio.Queue = asyncio.Queue()
         self.states: list[dict] = []
         self.give_code = True
+        self.confirm = False  # ask the screen to allow it once its code is "typed"
+        self.confirm_answers: list[dict] = []
         self.close_with: int | None = None
         self.port = 0
 
@@ -105,6 +108,15 @@ class FakeController:
             if self.give_code and "token" not in hello:
                 await self.send({"type": "code", "code": "K7RM-W2XD", "expires_in": 600})
                 await asyncio.sleep(0.2)
+                if self.confirm:
+                    await self.send({"type": "confirm", "organisation": "Acme"})
+                    try:
+                        answer = await self.receive()
+                    except (asyncio.IncompleteReadError, ConnectionError):
+                        return
+                    self.confirm_answers.append(answer)
+                    if answer.get("type") != "confirmed":
+                        return await self.close(4403)
         else:
             public = self.keys[hello["key"]]
         key = serialization.load_der_public_key(base64.b64decode(public))
@@ -164,10 +176,21 @@ class ConnectsOut(unittest.IsolatedAsyncioTestCase):
             self.listeners.add(queue)
             return queue
 
+        self.allow: bool | None = True
+        self.asked: list[tuple] = []
+        self.not_added: list[tuple] = []
+
+        async def ask_allow(organisation, host):  # noqa: ANN001, ANN202
+            self.asked.append((organisation, host))
+            return self.allow
+
+        async def not_added(host, why):  # noqa: ANN001, ANN202
+            self.not_added.append((host, why))
+
         self.connection = connect.Connection(
             self.folder, info=lambda: {"id": "light-1", "name": "Hall", "app_version": "1.0.19"},
-            route=route, state=lambda: {"power": "on", "features": ["protocol_v2"]}, subscribe=subscribe,
-            unsubscribe=self.listeners.discard, show_code=show_code, write=write)
+            route=route, state=lambda: {"power": "on", "features": ["protocol_v2", "enrol_confirm"]}, subscribe=subscribe,
+            unsubscribe=self.listeners.discard, show_code=show_code, write=write, ask_allow=ask_allow, not_added=not_added)
 
     async def asyncTearDown(self) -> None:
         await self.connection.stop()
@@ -189,6 +212,8 @@ class ConnectsOut(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(self.codes[-1], (None, ""))  # the code goes once it's let in
         hello = self.controller.hellos[0]
         self.assertEqual((hello["type"], hello["info"]["id"]), ("enrol", "light-1"))
+        self.assertNotIn("name", hello["info"])  # little said until it's added: no name
+        self.assertIn("enrol_confirm", hello["info"]["features"])
         self.assertNotIn("token", hello)
         self.assertTrue(json.loads((self.folder / "controller.json").read_text())["enrolled"])
         await self.until(lambda: self.controller.states)
@@ -209,6 +234,44 @@ class ConnectsOut(unittest.IsolatedAsyncioTestCase):
         await self.until(lambda: len(self.controller.hellos) == 2)
         self.assertEqual(self.controller.hellos[1]["type"], "auth")
         self.assertEqual(self.controller.hellos[1]["key"], self.connection.key_id)
+
+    async def test_allowed_on_the_screen(self) -> None:
+        self.controller.confirm = True
+        self.connection.start()
+        self.connection.enrol(self.controller.url, pin=self.controller.pin)
+        await self.until(lambda: self.connection.online)
+        self.assertEqual(self.asked, [("Acme", "127.0.0.1")])
+        self.assertEqual(self.controller.confirm_answers, [{"type": "confirmed"}])
+
+    async def test_declined_on_the_screen_is_not_added(self) -> None:
+        self.controller.confirm = True
+        self.allow = False
+        self.connection.start()
+        self.connection.enrol(self.controller.url, pin=self.controller.pin)
+        await self.until(lambda: self.not_added)
+        self.assertEqual(self.controller.confirm_answers, [{"type": "declined"}])
+        self.assertEqual(self.not_added, [("127.0.0.1", "not allowed on the screen")])
+        self.assertEqual(json.loads((self.folder / "controller.json").read_text()), {})  # forgotten: it stays away
+        await asyncio.sleep(0.3)
+        self.assertEqual(len(self.controller.hellos), 1)
+
+    async def test_given_up_after_an_hour_of_codes(self) -> None:
+        self.connection.start()
+        self.connection.enrol(self.controller.url, pin=self.controller.pin)
+        self.connection.codes_shown = connect.CODES_MOST  # six codes nobody typed already
+        await self.until(lambda: self.not_added)
+        self.assertEqual(self.not_added, [("127.0.0.1", "nobody added it within an hour")])
+        self.assertFalse(self.connection.online)
+
+    async def test_the_address_built_in(self) -> None:
+        from pleatview_light import builtin
+        with self.assertRaises(ValueError):
+            self.connection.enrol()  # a build from the source has none
+        encoded = builtin.encode(self.controller.url)
+        self.assertNotIn("127.0.0.1", base64.b64decode(encoded).decode(errors="replace"))
+        with mock.patch.object(builtin, "ADDRESS", encoded):
+            self.connection.enrol(pin=self.controller.pin)
+        self.assertEqual(json.loads((self.folder / "controller.json").read_text())["url"], connect.address(self.controller.url))
 
     async def test_with_a_token_no_code_and_removed_means_forgotten(self) -> None:
         self.connection.start()

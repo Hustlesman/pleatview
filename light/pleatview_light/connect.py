@@ -48,6 +48,12 @@ METHODS = {
 }
 MOVE_TRIES = 3
 LONGEST_RETRY = 3600
+# Enrolling with a code: given up when nobody adds the screen within an hour (six codes); and
+# what the screen says of itself until it's added (no name: it often holds a person's).
+ENROL_FOR = 3600
+CODES_MOST = 6
+BEFORE_ADDED = ("id", "manufacturer", "model", "app_version", "api_version")
+ALLOW_WAIT = 290  # seconds the person at the screen has to allow it (the controller waits longer)
 
 
 def address(given: str) -> str:
@@ -72,7 +78,9 @@ class Connection:
                  route: Callable[..., Awaitable[tuple[int, dict[str, Any]]]],
                  state: Callable[[], dict[str, Any]], subscribe: Callable[[], asyncio.Queue],
                  unsubscribe: Callable[[asyncio.Queue], None], show_code: Callable[[str | None, str], Awaitable[None]],
-                 write: Callable[[Path, str], None]) -> None:
+                 write: Callable[[Path, str], None],
+                 ask_allow: Callable[[str, str], Awaitable[bool | None]] | None = None,
+                 not_added: Callable[[str, str], Awaitable[None]] | None = None) -> None:
         self.folder = folder
         self.info = info
         self.route = route
@@ -81,6 +89,10 @@ class Connection:
         self.unsubscribe = unsubscribe
         self.show_code = show_code
         self.write = write
+        self.ask_allow = ask_allow  # the person at the screen allows an organisation, or not
+        self.not_added = not_added  # tells the person at the screen it wasn't added, and why
+        self.enrolling_since: float | None = None
+        self.codes_shown = 0
         self.key = self._load_key()
         der = self.key.public_key().public_bytes(serialization.Encoding.DER,
                                                  serialization.PublicFormat.SubjectPublicKeyInfo)
@@ -120,13 +132,29 @@ class Connection:
 
     # What controllers ask for
 
-    def enrol(self, url: str, token: str | None = None, pin: str | None = None) -> None:
-        """Connect to this controller: with a token from one paired over v1, or to show a code."""
+    def enrol(self, url: str | None = None, token: str | None = None, pin: str | None = None) -> None:
+        """Connect to this controller: with a token from one paired over v1, or to show a code.
+        No address: the one this build was made with, if any."""
         if pin is not None and not PIN.match(pin.lower()):
             raise ValueError("fingerprint is the hex of the certificate's SHA-256")
+        if not url:
+            from .builtin import address as built_in
+            url = built_in()
+            if not url:
+                raise ValueError("this build has no controller's address: give one")
         self._save({"url": address(url), "pin": pin.lower() if pin else None, "enrolled": False})
         self.token = token
+        self.enrolling_since = time.monotonic()
+        self.codes_shown = 0
         self._restart()
+
+    async def _give_up(self, why: str) -> None:
+        """Not added: nothing more connects until someone chooses to connect again."""
+        host = urlsplit(self.controller.get("url", "")).hostname or ""
+        _LOGGER.info("Not added to the controller at %s: %s", host, why)
+        self.forget()
+        if self.not_added:
+            await self.not_added(host, why)
 
     def forget(self) -> None:
         self._save({})
@@ -227,17 +255,44 @@ class Connection:
             nonce = challenge.get("nonce")
             if challenge.get("type") != "challenge" or not isinstance(nonce, str) or not NONCE.match(nonce):
                 raise ValueError("expected a challenge")
-            hello = {"signature": self.sign(url, nonce), "info": self.info()}
+            info = self.info()
+            hello = {"signature": self.sign(url, nonce), "info": info}
             if self.controller.get("enrolled"):
                 await ws.send_json({"type": "auth", "key": self.key_id, **hello})
             else:
-                await ws.send_json({"type": "enrol", "key": self.public, **hello,
+                # Until it's added, little about itself: no name.
+                before = {k: info[k] for k in BEFORE_ADDED if k in info}
+                before["features"] = list(self.state().get("features") or [])
+                await ws.send_json({"type": "enrol", "key": self.public, **hello, "info": before,
                                     **({"token": self.token} if self.token else {})})
-            while True:  # a code first, perhaps, then welcome
+            host = urlsplit(url).hostname or ""
+            while True:  # a code first, perhaps, the person at the screen allowing it, then welcome
                 message = await ws.receive_json()
                 kind = message.get("type")
                 if kind == "code":
-                    await self.show_code(str(message.get("code", "")), urlsplit(url).hostname or "")
+                    self.codes_shown += 1
+                    since = self.enrolling_since or time.monotonic()
+                    if self.codes_shown > CODES_MOST or time.monotonic() - since > ENROL_FOR:
+                        await self.show_code(None, "")
+                        await self._give_up("nobody added it within an hour")
+                        return
+                    await self.show_code(str(message.get("code", "")), host)
+                elif kind == "confirm":
+                    organisation = str(message.get("organisation") or "an organisation")[:80]
+                    answer = None
+                    if self.ask_allow:
+                        try:
+                            answer = await asyncio.wait_for(self.ask_allow(organisation, host), ALLOW_WAIT)
+                        except asyncio.TimeoutError:
+                            answer = None
+                    if answer:
+                        await ws.send_json({"type": "confirmed"})
+                    else:
+                        if answer is False:
+                            await ws.send_json({"type": "declined"})
+                        await self.show_code(None, "")
+                        await self._give_up("not allowed on the screen" if answer is False else "nobody allowed it in time")
+                        return
                 elif kind == "ping":
                     await ws.send_json({"type": "pong"})
                 elif kind == "welcome":

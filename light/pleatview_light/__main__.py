@@ -147,7 +147,8 @@ async def main() -> bool:
     # Protocol v2: the connection out to a controller anywhere, once one is given.
     connection = Connection(folder, info=info, route=api.route, state=lambda: screen.state,
                             subscribe=screen.subscribe, unsubscribe=screen.listeners.discard,
-                            show_code=screen.show_code, write=write_private)
+                            show_code=screen.show_code, write=write_private,
+                            ask_allow=screen.ask_allow, not_added=screen.not_added)
     api.connection = connection
     responder = Responder(lambda: {"id": device["id"], "name": name(), "api": str(API_VERSION), "version": VERSION},
                           PORT)
@@ -203,13 +204,14 @@ async def main() -> bool:
     return again[0]
 
 
-def connect(url: str) -> int:
-    """pleatview-light connect URL: the running screen connects out to that controller and
-    shows a code to type there (protocol v2)."""
+def connect(url: str | None, path: str = "/api/connect", body: dict | None = None) -> int:
+    """pleatview-light connect [URL]: the running screen connects out to that controller (or
+    the one this build was made with) and shows a code to type there (protocol v2).
+    pleatview-light allow / decline: the answer to the question on the screen."""
     import urllib.error
     import urllib.request
-    request = urllib.request.Request(f"http://127.0.0.1:{PORT}/api/connect", method="POST",
-                                     data=json.dumps({"url": url}).encode(),
+    request = urllib.request.Request(f"http://127.0.0.1:{PORT}{path}", method="POST",
+                                     data=json.dumps(body if body is not None else {"url": url or ""}).encode(),
                                      headers={"Content-Type": "application/json"})
     try:
         urllib.request.urlopen(request, timeout=5).close()
@@ -219,14 +221,17 @@ def connect(url: str) -> int:
     except OSError as err:
         print(f"PleatView Light isn't running here: {err}")
         return 1
-    print("The screen now shows a code. Add the screen in the controller with it.")
+    print("The screen now shows a code. Add the screen in the controller with it." if path == "/api/connect"
+          else "Answered.")
     return 0
 
 
 if __name__ == "__main__":
     import sys
-    if sys.argv[1:2] == ["connect"] and len(sys.argv) == 3:
-        sys.exit(connect(sys.argv[2]))
+    if sys.argv[1:2] == ["connect"] and len(sys.argv) in (2, 3):
+        sys.exit(connect(sys.argv[2] if len(sys.argv) == 3 else None))
+    if sys.argv[1:] in (["allow"], ["decline"]):
+        sys.exit(connect(None, "/api/allow", {"allow": sys.argv[1] == "allow"}))
     logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s: %(message)s")
     logging.getLogger().addHandler(RECENT)
     if asyncio.run(main()):

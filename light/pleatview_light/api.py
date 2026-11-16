@@ -115,12 +115,17 @@ class Api:
                 await self.screen.pin_requested()
             return 200, {**self.info(), "paired": self.pairing.paired}
         if (method, path) == ("POST", "/api/connect") and local and self.connection:
-            # Someone on this computer (pleatview-light connect URL): connect out and show a code.
+            # Someone on this computer (pleatview-light connect [URL]): connect out and show a code.
             try:
-                self.connection.enrol(str(body.get("url", "")))
+                self.connection.enrol(str(body.get("url") or "") or None)
             except ValueError as err:
                 return 400, {"error": str(err)}
             return 202, {}
+        if (method, path) == ("POST", "/api/allow") and local:
+            # Someone on this computer answers the question on the screen (pleatview-light allow).
+            if not self.screen.answer_allow(body.get("allow") is True):
+                return 409, {"error": "the screen isn't asking"}
+            return 200, {}
         if (method, path) == ("POST", "/api/pair"):
             result = self.pairing.pair(body.get("pin"), body.get("client"))
             if result["result"] == "paired":
