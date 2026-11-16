@@ -10,6 +10,7 @@ import { Config } from "./config.js";
 import { Connection } from "./connect.js";
 import { defaultName, deviceId, hardware, lanAddress } from "./device.js";
 import { Display } from "./display.js";
+import { Cec, DisplayWatch } from "./hdmi.js";
 import { Hub } from "./hub.js";
 import { Advertiser } from "./mdns.js";
 import { Pairing } from "./pairing.js";
@@ -187,6 +188,19 @@ const connection = new Connection({
 
 let display = null;
 
+// Whether a display is plugged in, and what the TV says over HDMI-CEC (hdmi.js). The TV
+// remote's OK answers the question on the screen too, and Back declines.
+const ALLOW_KEYS = ["select", "ok", "enter"];
+const DECLINE_KEYS = ["exit", "back", "clear", "power-off-function"];
+const displayWatch = new DisplayWatch(hub, {
+  onKey: (key) => {
+    if (!display?.question.pending) return;
+    if (ALLOW_KEYS.includes(key)) display.question.answer(true);
+    else if (DECLINE_KEYS.includes(key)) display.question.answer(false);
+  },
+});
+const cec = new Cec((kind, value) => displayWatch.onCec(kind, value));
+
 app.whenReady().then(() => {
   const qrCode = (text) => QRCode.toString(text, { type: "svg", errorCorrectionLevel: "M", margin: 2 });
   display = new Display({ hub, config: () => config, setup: setupInfo, assets, quit: () => app.quit(), pairing, signIns, qrCode });
@@ -196,10 +210,14 @@ app.whenReady().then(() => {
   api.on("error", (e) => console.error(`PleatView: can't listen on port ${PORT}: ${e.message}`));
   announce();
   connection.start();
+  displayWatch.start();
+  cec.start().catch((e) => console.warn("PleatView: HDMI-CEC:", e.message));
 });
 
 app.on("before-quit", () => {
   connection.stop();
+  displayWatch.stop();
+  cec.stop();
   api.close();
   advertiser.shutdown();
 });

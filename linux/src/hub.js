@@ -37,6 +37,12 @@ export class Hub {
       features: ["render_stream", "home_without_ha", "rotation", "protocol_v2", "enrol_confirm", "restart_app", "diagnostics", ...features],
       screen: null,
       update: null,
+      // Whether a display is plugged in (null: it can't tell), and since when; and, from HDMI-CEC
+      // where the TV speaks it, whether it's on and shows this input, and a sound system's
+      // volume: what shows counts only while it's seen (proof of play). hdmi.js.
+      display: { connected: null, since: null, power: null, input: null, audio: null },
+      // The last key of the TV's remote that reached this screen (HDMI-CEC).
+      last_input: null,
     };
   }
 
