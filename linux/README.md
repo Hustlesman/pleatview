@@ -78,6 +78,14 @@ doesn't find the TV's speakers. Restart the Pi with the TV on, or run
   desktop and other wlroots ones; `wlr-randr` under cage) or `xset` (X11), and puts a TV
   in standby over HDMI-CEC, on whichever HDMI port it's connected to, when `cec-ctl`
   (package `v4l-utils`) is installed.
+
+- The screen reports whether a display is plugged in (from the kernel's HDMI ports), and,
+  over HDMI-CEC with `cec-ctl`, whether the TV is on or in standby, whether it shows this
+  input or another, the TV remote's keys and a sound system's volume
+  ([State](../docs/protocol.md#state): `display`, `last_input`). A controller keeping proof of
+  play counts on these. PleatView never switches the TV to its own input by itself: it only
+  answers when the TV asks for it. The TV remote's OK answers the screen's question about
+  letting a controller in, and Back declines.
 - Sign-ins for dashboards behind a login form or a password prompt work as on Android:
   the screen asks, with fields to type them in and a code to scan with a phone, and keeps
   each sign-in for its own site only. They're encrypted with a key of the screen's own,
