@@ -29,8 +29,13 @@ and pairings, so Home Assistant carries on without pairing again.
 **A controller elsewhere** ([protocol v2](../docs/protocol-v2.md)): with
 `pleatview-light connect wss://controller.example/api/pleatview/v2`, the screen connects out
 to that controller and shows a code to add it there with. No port has to be open to the
-screen. A controller on the local network that pairs with the PIN moves the screen to v2 by
-itself.
+screen. A package built with a controller's address (`PLEATVIEW_CONTROLLER` when running
+`build-deb.sh`) connects to that one with `pleatview-light connect` alone. Once the code is
+typed into the controller, the screen asks *Allow … to manage this screen?*: OK on the TV's
+remote (HDMI-CEC) or `pleatview-light allow` allows it, Back or `pleatview-light decline`
+doesn't. Until it's added, the screen says only what it is (not its name), and it stops trying
+after an hour nobody adds it. A controller on the local network that pairs with the PIN moves
+the screen to v2 by itself.
 
 ## Settings
 

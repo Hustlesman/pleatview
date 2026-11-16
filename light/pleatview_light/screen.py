@@ -27,7 +27,10 @@ _LOGGER = logging.getLogger(__name__)
 # restart_app, diagnostics: upkeep (docs/protocol.md); restart_device and update join them
 # where the package's helper takes requests (upkeep.Helper).
 FEATURES = ["render_stream", "home_without_ha", "home_playlist", "stream_overlays", "rotation", "protocol_v2",
-            "restart_app", "diagnostics"]
+            "restart_app", "diagnostics", "enrol_confirm"]
+# HDMI-CEC keys that answer the question on the screen.
+ALLOW_KEYS = ("select", "ok", "enter")
+DECLINE_KEYS = ("exit", "back", "clear", "power-off-function")
 STREAM_RETRY = 2.0
 PIN_SHOWN = 120  # seconds the PIN stays up after someone starts pairing
 DRM = Path("/sys/class/drm")
@@ -74,6 +77,7 @@ class Screen:
         self.standby = False
         self.pin_until = 0.0
         self.enrol_code: tuple[str, str] | None = None
+        self.asking: tuple[str, str, asyncio.Future] | None = None  # organisation, host, the answer
         self.playing: str | None = None  # "stream", "playlist" or "media"
         self.playlist_index = 0
         self.playlist_failures = 0
@@ -148,6 +152,11 @@ class Screen:
             self.update(display={**self.state["display"], kind: value})
         elif kind == "key":
             self.update(last_input=value)
+            key = (value or {}).get("key") if isinstance(value, dict) else None
+            if self.asking and key in ALLOW_KEYS:
+                self.answer_allow(True)
+            elif self.asking and key in DECLINE_KEYS:
+                self.answer_allow(False)
 
     # What shows
 
@@ -212,6 +221,11 @@ class Screen:
             await self.show()
 
     def setup_text(self) -> str:
+        if self.asking:
+            organisation, host, _ = self.asking
+            return (f"PleatView\n\nAllow {organisation} to manage this screen?\n({host})\n\n"
+                    "OK on the TV's remote: allow · Back: don't\n"
+                    "or on this computer: pleatview-light allow (or decline)")
         if self.enrol_code:
             code, host = self.enrol_code
             return (f"PleatView\n\nConnecting to {host}\nAdd this screen there with its code:\n\n"
@@ -229,6 +243,32 @@ class Screen:
         else:
             self.pin_until = 0.0
         await self.show()
+
+    async def ask_allow(self, organisation: str, host: str) -> bool | None:
+        """Protocol v2: someone typed this screen's code into a controller; the person in front
+        of it allows that organisation, or not (enrol_confirm)."""
+        answer: asyncio.Future = asyncio.get_running_loop().create_future()
+        self.asking = (organisation, host, answer)
+        self.pin_until = time.monotonic() + 300
+        await self.show()
+        try:
+            return await answer
+        finally:
+            self.asking = None
+            self.pin_until = 0.0
+            await self.show()
+
+    def answer_allow(self, allow: bool) -> bool:
+        """The person's answer (the TV's remote, or this computer). False: nothing was asked."""
+        if not self.asking or self.asking[2].done():
+            return False
+        self.asking[2].set_result(bool(allow))
+        return True
+
+    async def not_added(self, host: str, why: str) -> None:
+        """Not added to a controller: said on the screen for a while."""
+        self.pin_until = time.monotonic() + 60
+        await self.player.text(f"PleatView\n\nNot added to {host}: {why}.\n\nTo try again: pleatview-light connect", 60)
 
     async def pin_requested(self) -> None:
         """Someone asked who this screen is, which comes before pairing: show the PIN a while."""

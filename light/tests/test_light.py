@@ -127,7 +127,7 @@ class Screens(unittest.IsolatedAsyncioTestCase):
             await screen.command({"command": "play_media", "url": "file:///etc/passwd"})
         with self.assertRaises(ValueError):
             await screen.command({"command": "reboot"})
-        self.assertEqual(screen.state["features"], ["render_stream", "home_without_ha", "home_playlist", "stream_overlays", "rotation", "protocol_v2", "restart_app", "diagnostics"])
+        self.assertEqual(screen.state["features"], ["render_stream", "home_without_ha", "home_playlist", "stream_overlays", "rotation", "protocol_v2", "restart_app", "diagnostics", "enrol_confirm"])
         self.assertEqual(screen.state["screen"]["width"], 1280)
 
 
@@ -166,6 +166,27 @@ class Displays(unittest.IsolatedAsyncioTestCase):
                 self.assertIn(("play", "http://ha:8123/s/index.m3u8", {"live": True, "volume": 1.0}), player.calls)
             finally:
                 watching.cancel()
+
+
+class AllowedOnTheScreen(unittest.IsolatedAsyncioTestCase):
+    async def test_asked_on_the_screen_and_answered_with_the_remote_or_here(self) -> None:
+        screen, player, _ = make_screen()
+        asking = asyncio.create_task(screen.ask_allow("Acme", "controller.example"))
+        await asyncio.sleep(0.05)
+        self.assertIn("Allow Acme to manage this screen?", player.calls[-1][1])
+        screen.on_cec("key", {"key": "select", "from": "tv_remote", "at": 1.0})  # OK on the TV's remote
+        self.assertTrue(await asyncio.wait_for(asking, 1))
+        asking = asyncio.create_task(screen.ask_allow("Acme", "controller.example"))
+        await asyncio.sleep(0.05)
+        screen.on_cec("key", {"key": "exit", "from": "tv_remote", "at": 2.0})
+        self.assertFalse(await asyncio.wait_for(asking, 1))
+        self.assertFalse(screen.answer_allow(True))  # nothing asked now
+        asking = asyncio.create_task(screen.ask_allow("Acme", "controller.example"))
+        await asyncio.sleep(0.05)
+        api = Api(screen, Pairing(lambda: None, lambda text: None), lambda: {"id": "x"})
+        self.assertEqual(await api.route("POST", "/api/allow", {"allow": True}, None), (401, {"error": "unauthorized"}))  # not from here
+        self.assertEqual((await api.route("POST", "/api/allow", {"allow": True}, None, local=True))[0], 200)
+        self.assertTrue(await asyncio.wait_for(asking, 1))
 
 
 class Playlists(unittest.IsolatedAsyncioTestCase):

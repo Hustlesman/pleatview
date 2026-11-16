@@ -10,6 +10,12 @@ trap 'rm -rf "$root"' EXIT
 chmod 755 "$root"
 mkdir -p "$root/DEBIAN" "$root/usr/share/pleatview-light/pleatview_light" "$root/usr/bin" "$root/usr/share/doc/pleatview-light"
 cp "$here"/pleatview_light/*.py "$root/usr/share/pleatview-light/pleatview_light/"
+# A controller's address built in (protocol v2), from the build's settings only, encoded.
+if [ -n "${PLEATVIEW_CONTROLLER:-}" ]; then
+  PYTHONPATH="$here" python3 -c 'import os, sys; from pleatview_light import builtin; print(builtin.encode(os.environ["PLEATVIEW_CONTROLLER"]))' > "$root/encoded"
+  sed -i "s|^ADDRESS = \"\"|ADDRESS = \"$(cat "$root/encoded")\"|" "$root/usr/share/pleatview-light/pleatview_light/builtin.py"
+  rm "$root/encoded"
+fi
 install -m 755 "$here/build/pleatview-light" "$root/usr/bin/pleatview-light"
 # The helper that restarts and updates on a controller's request, shared with the Linux app.
 install -m 755 "$here/../linux/build/pleatview-helper" "$root/usr/share/pleatview-light/helper"
