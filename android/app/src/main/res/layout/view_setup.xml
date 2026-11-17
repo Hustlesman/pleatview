@@ -56,6 +56,16 @@
             android:textSize="22sp"
             android:textStyle="bold" />
 
+        <!-- Protocol v2: why a controller didn't add this screen, until it connects again. -->
+        <TextView
+            android:id="@+id/setup_notice"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="14dp"
+            android:textColor="@color/accent"
+            android:textSize="17sp"
+            android:visibility="gone" />
+
         <TextView
             android:id="@+id/setup_pin_label"
             android:layout_width="match_parent"
@@ -97,12 +107,28 @@
             android:textSize="13sp" />
 
         <!-- No Home Assistant yet: a sample home and a tour. Focused on TVs, so OK starts it. -->
-        <Button
-            android:id="@+id/setup_demo"
-            style="@style/PleatView.MenuButton"
+        <!-- Side by side on wide screens (both within a 1080p TV's height); stacked on narrow ones. -->
+        <LinearLayout
+            android:id="@+id/setup_buttons"
             android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
             android:layout_marginTop="22dp"
-            android:text="@string/setup_demo" />
+            android:orientation="horizontal">
+
+            <Button
+                android:id="@+id/setup_demo"
+                style="@style/PleatView.MenuButton"
+                android:layout_width="wrap_content"
+                android:layout_marginEnd="12dp"
+                android:text="@string/setup_demo" />
+
+            <!-- Managed from elsewhere: a controller's address, typed here or built in (protocol v2). -->
+            <Button
+                android:id="@+id/setup_connect"
+                style="@style/PleatView.MenuButton"
+                android:layout_width="wrap_content"
+                android:text="@string/setup_connect" />
+        </LinearLayout>
     </LinearLayout>
 
     <LinearLayout

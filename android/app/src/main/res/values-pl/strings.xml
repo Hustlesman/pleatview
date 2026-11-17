@@ -61,4 +61,14 @@
     <string name="approve_message">%1$s pod adresem %2$s chce sterować tym ekranem. Naciśnij OK, aby zezwolić. Zezwól tylko wtedy, gdy właśnie konfigurujesz ten ekran w %1$s.</string>
     <string name="approve_allow">Zezwól</string>
     <string name="approve_deny">Nie zezwalaj</string>
+    <string name="setup_connect">Połącz z systemem zarządzania</string>
+    <string name="connect_title">Połącz z systemem zarządzania</string>
+    <string name="connect_message">Wpisz adres systemu, który zarządza twoimi ekranami, na przykład screens.example.com. Ten ekran pokaże wtedy kod, by go tam dodać.</string>
+    <string name="connect_ok">Połącz</string>
+    <string name="connect_bad">To nie jest adres: wpisz nazwę hosta, na przykład screens.example.com</string>
+    <string name="confirm_title">Zezwolić %1$s na zarządzanie tym ekranem?</string>
+    <string name="confirm_message">%1$s pod adresem %2$s chce zarządzać tym ekranem: tym, co pokazuje, i jego ustawieniami. Naciśnij OK, aby zezwolić, lub Wstecz, aby odmówić. Zezwól tylko wtedy, gdy właśnie dodajesz ten ekran do %1$s.</string>
+    <string name="not_added_declined">Nie dodano: odmówiono tutaj. Połącz ponownie, aby spróbować jeszcze raz.</string>
+    <string name="not_added_unanswered">Nie dodano: nikt nie odpowiedział na czas. Połącz ponownie, aby spróbować jeszcze raz.</string>
+    <string name="not_added_gave_up">Nie dodano: nikt nie dodał tego ekranu w ciągu godziny, więc przestał się łączyć. Połącz ponownie, aby spróbować jeszcze raz.</string>
 </resources>

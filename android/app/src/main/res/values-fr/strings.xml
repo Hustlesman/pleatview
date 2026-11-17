@@ -61,4 +61,14 @@
     <string name="approve_message">%1$s à l\'adresse %2$s demande à contrôler cet écran. Appuie sur OK pour l\'autoriser. Ne l\'autorise que si tu viens de configurer cet écran dans %1$s.</string>
     <string name="approve_allow">Autoriser</string>
     <string name="approve_deny">Ne pas autoriser</string>
+    <string name="setup_connect">Se connecter à un système de gestion</string>
+    <string name="connect_title">Se connecter à un système de gestion</string>
+    <string name="connect_message">Saisis l\'adresse du système qui gère tes écrans, par exemple screens.example.com. Cet écran affiche ensuite un code pour l\'y ajouter.</string>
+    <string name="connect_ok">Se connecter</string>
+    <string name="connect_bad">Ce n\'est pas une adresse : saisis un nom d\'hôte, par exemple screens.example.com</string>
+    <string name="confirm_title">Autoriser %1$s à gérer cet écran ?</string>
+    <string name="confirm_message">%1$s à l\'adresse %2$s demande à gérer cet écran : ce qu\'il affiche et ses réglages. Appuie sur OK pour l\'autoriser, ou sur Retour pour refuser. Ne l\'autorise que si tu ajoutes maintenant cet écran à %1$s.</string>
+    <string name="not_added_declined">Non ajouté : la demande a été refusée ici. Connecte-toi à nouveau pour réessayer.</string>
+    <string name="not_added_unanswered">Non ajouté : personne n\'a répondu à temps. Connecte-toi à nouveau pour réessayer.</string>
+    <string name="not_added_gave_up">Non ajouté : personne n\'a ajouté cet écran en une heure, il a donc arrêté de se connecter. Connecte-toi à nouveau pour réessayer.</string>
 </resources>

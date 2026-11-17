@@ -61,4 +61,14 @@
     <string name="approve_message">%1$s på %2$s vill styra den här skärmen. Tryck på OK för att tillåta det. Tillåt det bara om du just ställer in skärmen i %1$s.</string>
     <string name="approve_allow">Tillåt</string>
     <string name="approve_deny">Tillåt inte</string>
+    <string name="setup_connect">Anslut till ett styrsystem</string>
+    <string name="connect_title">Anslut till ett styrsystem</string>
+    <string name="connect_message">Skriv adressen till styrsystemet som hanterar dina skärmar, till exempel screens.example.com. Den här skärmen visar sedan en kod för att lägga till den där.</string>
+    <string name="connect_ok">Anslut</string>
+    <string name="connect_bad">Det är ingen adress: skriv ett värdnamn, till exempel screens.example.com</string>
+    <string name="confirm_title">Tillåta %1$s att hantera den här skärmen?</string>
+    <string name="confirm_message">%1$s på %2$s vill hantera den här skärmen: vad den visar och dess inställningar. Tryck på OK för att tillåta det, eller Tillbaka för att neka. Tillåt det bara om du just nu lägger till skärmen i %1$s.</string>
+    <string name="not_added_declined">Inte tillagd: det nekades här. Anslut igen för att försöka en gång till.</string>
+    <string name="not_added_unanswered">Inte tillagd: ingen svarade i tid. Anslut igen för att försöka en gång till.</string>
+    <string name="not_added_gave_up">Inte tillagd: ingen lade till skärmen inom en timme, så den slutade ansluta. Anslut igen för att försöka en gång till.</string>
 </resources>

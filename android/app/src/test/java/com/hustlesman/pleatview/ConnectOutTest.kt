@@ -6,6 +6,7 @@ import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
 import org.junit.Assert.fail
 import org.junit.Test
@@ -138,6 +139,12 @@ class ConnectOutTest {
         val hellos = LinkedBlockingQueue<JSONObject>()
         val messages = LinkedBlockingQueue<JSONObject>()
         @Volatile var closeWith: Int? = null
+        /** Ask the person at the screen first, as this organisation ("Allowed on the screen"). */
+        @Volatile var confirm: String? = null
+        /** Hand out a code, then close with this (4408: it expired) instead of letting it in. */
+        @Volatile var codeThenClose: Int? = null
+        @Volatile var expiresIn = 600
+        @Volatile var codesSent = 0
         @Volatile var socket: Socket? = null
         private val nonce = "ab".repeat(32)
 
@@ -183,7 +190,25 @@ class ConnectOutTest {
             val public = if (hello.getString("type") == "enrol") hello.getString("key") else keys.getValue(hello.getString("key"))
             assertTrue(verifies(public, hello.getString("signature"), ProtocolV2.signedText(ProtocolV2.address(url), nonce)))
             keys[ProtocolV2.sha256Hex(B64.decode(public))] = public
-            if (hello.getString("type") == "enrol" && !hello.has("token")) send(JSONObject().put("type", "code").put("code", "K7RM-W2XD").put("expires_in", 600))
+            if (hello.getString("type") == "enrol" && !hello.has("token")) {
+                send(JSONObject().put("type", "code").put("code", "K7RM-W2XD").put("expires_in", expiresIn))
+                codesSent++
+                codeThenClose?.let { code ->
+                    s.getOutputStream().write(WebSocketClient.encode(WebSocketClient.CLOSE, byteArrayOf((code shr 8).toByte(), code.toByte()), mask = false))
+                    s.close()
+                    return
+                }
+                confirm?.let { organisation ->
+                    send(JSONObject().put("type", "confirm").put("organisation", organisation))
+                    val answer = receive(input)
+                    messages.put(answer)
+                    if (answer.getString("type") != "confirmed") {
+                        s.getOutputStream().write(WebSocketClient.encode(WebSocketClient.CLOSE, byteArrayOf((ProtocolV2.REVOKED shr 8).toByte(), ProtocolV2.REVOKED.toByte()), mask = false))
+                        s.close()
+                        return
+                    }
+                }
+            }
             send(JSONObject().put("type", "welcome"))
             while (true) messages.put(receive(input))
         }
@@ -222,6 +247,8 @@ class ConnectOutTest {
         }
     }
 
+    private var now = 1_000_000L
+
     private fun newConnection(firstWaitMs: Long = 2000): ConnectOut = ConnectOut(
         prefs = prefs,
         signer = SoftwareSigner.fresh(),
@@ -238,6 +265,7 @@ class ConnectOutTest {
         // The fake controller has no TLS: the tests check the protocol, the device the TLS.
         connector = { url, _ -> WebSocketClient.open(Watched(URI(url).port), URI(url), ProtocolV2.SUBPROTOCOL) },
         firstWaitMs = firstWaitMs,
+        clock = { now },
     ).also { connection = it }
 
     @After
@@ -260,11 +288,12 @@ class ConnectOutTest {
         c.start()
         c.enrol(controller.url)
         until { c.online }
-        assertEquals("K7RM-W2XD" to "127.0.0.1", codes.first())
+        assertTrue(("K7RM-W2XD" to "127.0.0.1") in codes) // shown while the controller waited
         assertNull(c.code) // gone once it's let in
         val hello = controller.hellos.take()
         assertEquals("enrol", hello.getString("type"))
         assertEquals("tv-1", hello.getJSONObject("info").getString("id"))
+        assertFalse("no name before it's added", hello.getJSONObject("info").has("name"))
         assertFalse(hello.has("token"))
         assertEquals(true, prefs.values["v2_enrolled"])
         assertEquals("on", controller.next("state").getJSONObject("state").getString("power"))
@@ -279,6 +308,80 @@ class ConnectOutTest {
         controller.socket!!.close() // dropped: back by itself, with its key
         val again = controller.hellos.poll(8, TimeUnit.SECONDS)!!
         assertEquals("auth", again.getString("type"))
+        assertEquals("Den TV", again.getJSONObject("info").getString("name")) // all of it, once it's in
+    }
+
+    @Test
+    fun `allowed on the screen, asked, allowed and let in`() {
+        controller.confirm = "Acme"
+        val c = newConnection()
+        c.start()
+        c.enrol("127.0.0.1:${controller.server.localPort}") // a host, as typed on the TV
+        until { c.asking != null }
+        assertEquals("Acme", c.asking)
+        c.decide(true)
+        assertEquals("confirmed", controller.next("confirmed").getString("type"))
+        until { c.online }
+        assertNull(c.asking)
+        assertNull(c.notAdded)
+    }
+
+    @Test
+    fun `declined on the screen, refused, forgotten and said so`() {
+        controller.confirm = "Acme"
+        val c = newConnection()
+        c.start()
+        c.enrol(controller.url)
+        until { c.asking != null }
+        c.decide(false)
+        assertEquals("declined", controller.next("declined").getString("type"))
+        until { c.url == null }
+        assertEquals(ConnectOut.DECLINED, c.notAdded)
+        assertNull(c.code)
+        c.enrol(controller.url) // connecting again clears it
+        assertNull(c.notAdded)
+    }
+
+    @Test
+    fun `unanswered within the code's time, it stops and says so`() {
+        controller.confirm = "Acme"
+        controller.expiresIn = 1
+        val c = newConnection()
+        c.start()
+        c.enrol(controller.url)
+        until { c.asking != null }
+        until { c.notAdded == ConnectOut.UNANSWERED }
+        until { c.url == null }
+        assertNull(c.asking)
+    }
+
+    @Test
+    fun `not for ever, after six codes or an hour it stops connecting`() {
+        controller.codeThenClose = ProtocolV2.CODE_EXPIRED
+        val c = newConnection(firstWaitMs = 20)
+        c.start()
+        c.enrol(controller.url)
+        until { c.notAdded == ConnectOut.GAVE_UP }
+        assertEquals(6, controller.codesSent)
+        assertNull(c.url)
+        // An hour since connecting, however few codes.
+        controller.codesSent = 0
+        c.enrol(controller.url)
+        until { controller.codesSent >= 1 }
+        now += 3_600_001
+        until { c.notAdded == ConnectOut.GAVE_UP }
+        assertTrue(controller.codesSent < 6)
+    }
+
+    @Test
+    fun `addresses as typed, and the one built in`() {
+        assertEquals("wss://screens.example.com/api/pleatview/v2", ProtocolV2.typed(" screens.example.com "))
+        assertEquals("wss://screens.example.com:8790/api/pleatview/v2", ProtocolV2.typed("https://Screens.example.com:8790/anything"))
+        assertEquals("wss://screens.example.com/api/pleatview/v2", ProtocolV2.typed("wss://screens.example.com/api/pleatview/v2"))
+        for (bad in listOf("", "ftp://x", "http://screens.example.com")) assertThrows(IllegalArgumentException::class.java) { ProtocolV2.typed(bad) }
+        val encoded = Base64.getEncoder().encodeToString("wss://screens.example.com/api/pleatview/v2".toByteArray().reversedArray())
+        assertEquals("wss://screens.example.com/api/pleatview/v2", ProtocolV2.builtIn(encoded))
+        assertNull(ProtocolV2.builtIn(""))
     }
 
     @Test
@@ -347,7 +450,7 @@ class ConnectOutTest {
     @Test
     fun `wrong addresses and fingerprints are refused`() {
         val c = newConnection()
-        for (bad in listOf<() -> Unit>({ c.enrol("https://c.example/") }, { c.enrol(controller.url, pin = "not-hex") })) {
+        for (bad in listOf<() -> Unit>({ c.enrol("http://c.example/") }, { c.enrol("ftp://c.example/") }, { c.enrol(controller.url, pin = "not-hex") })) {
             try {
                 bad()
                 fail("expected a refusal")

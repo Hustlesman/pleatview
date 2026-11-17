@@ -61,4 +61,14 @@
     <string name="approve_message">%1$s at %2$s asks to control this screen. Press OK to allow it. Only allow it if you just set this screen up in %1$s.</string>
     <string name="approve_allow">Allow</string>
     <string name="approve_deny">Don\'t allow</string>
+    <string name="setup_connect">Connect to a controller</string>
+    <string name="connect_title">Connect to a controller</string>
+    <string name="connect_message">Type the address of the controller that manages your screens, such as screens.example.com. This screen then shows a code to add it there.</string>
+    <string name="connect_ok">Connect</string>
+    <string name="connect_bad">That isn\'t an address: type a host name, such as screens.example.com</string>
+    <string name="confirm_title">Allow %1$s to manage this screen?</string>
+    <string name="confirm_message">%1$s at %2$s asks to manage this screen: what it shows and its settings. Press OK to allow it, or Back to refuse. Only allow it if you\'re adding this screen to %1$s now.</string>
+    <string name="not_added_declined">Not added: it was refused here. Connect again to try once more.</string>
+    <string name="not_added_unanswered">Not added: nobody answered in time. Connect again to try once more.</string>
+    <string name="not_added_gave_up">Not added: nobody added this screen within an hour, so it stopped connecting. Connect again to try once more.</string>
 </resources>

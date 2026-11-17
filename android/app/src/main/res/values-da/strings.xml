@@ -61,4 +61,14 @@
     <string name="approve_message">%1$s på %2$s vil styre denne skærm. Tryk på OK for at tillade det. Tillad det kun, hvis du lige er ved at sætte skærmen op i %1$s.</string>
     <string name="approve_allow">Tillad</string>
     <string name="approve_deny">Tillad ikke</string>
+    <string name="setup_connect">Forbind til et styringssystem</string>
+    <string name="connect_title">Forbind til et styringssystem</string>
+    <string name="connect_message">Skriv adressen på det styringssystem, der administrerer dine skærme, for eksempel screens.example.com. Skærmen viser derefter en kode, så den kan tilføjes der.</string>
+    <string name="connect_ok">Forbind</string>
+    <string name="connect_bad">Det er ikke en adresse: skriv et værtsnavn, for eksempel screens.example.com</string>
+    <string name="confirm_title">Tillad %1$s at administrere denne skærm?</string>
+    <string name="confirm_message">%1$s på %2$s vil administrere denne skærm: hvad den viser, og dens indstillinger. Tryk på OK for at tillade det, eller Tilbage for at afvise. Tillad det kun, hvis du lige nu tilføjer skærmen til %1$s.</string>
+    <string name="not_added_declined">Ikke tilføjet: det blev afvist her. Forbind igen for at prøve en gang til.</string>
+    <string name="not_added_unanswered">Ikke tilføjet: ingen svarede i tide. Forbind igen for at prøve en gang til.</string>
+    <string name="not_added_gave_up">Ikke tilføjet: ingen tilføjede skærmen inden for en time, så den holdt op med at forbinde. Forbind igen for at prøve en gang til.</string>
 </resources>

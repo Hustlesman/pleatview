@@ -61,4 +61,14 @@
     <string name="approve_message">%1$s op %2$s wil dit scherm bedienen. Druk op OK om dat toe te staan. Sta het alleen toe als je dit scherm net in %1$s instelt.</string>
     <string name="approve_allow">Toestaan</string>
     <string name="approve_deny">Niet toestaan</string>
+    <string name="setup_connect">Verbinden met een beheersysteem</string>
+    <string name="connect_title">Verbinden met een beheersysteem</string>
+    <string name="connect_message">Typ het adres van het beheersysteem dat je schermen beheert, bijvoorbeeld screens.example.com. Dit scherm toont daarna een code om het daar toe te voegen.</string>
+    <string name="connect_ok">Verbinden</string>
+    <string name="connect_bad">Dat is geen adres: typ een hostnaam, bijvoorbeeld screens.example.com</string>
+    <string name="confirm_title">%1$s toestaan dit scherm te beheren?</string>
+    <string name="confirm_message">%1$s op %2$s wil dit scherm beheren: wat het toont en de instellingen. Druk op OK om dat toe te staan, of op Terug om het te weigeren. Sta het alleen toe als je dit scherm nu aan %1$s toevoegt.</string>
+    <string name="not_added_declined">Niet toegevoegd: het is hier geweigerd. Verbind opnieuw om het nog eens te proberen.</string>
+    <string name="not_added_unanswered">Niet toegevoegd: niemand antwoordde op tijd. Verbind opnieuw om het nog eens te proberen.</string>
+    <string name="not_added_gave_up">Niet toegevoegd: niemand voegde dit scherm binnen een uur toe, dus het maakt geen verbinding meer. Verbind opnieuw om het nog eens te proberen.</string>
 </resources>

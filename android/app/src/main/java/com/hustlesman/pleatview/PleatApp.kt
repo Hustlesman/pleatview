@@ -28,7 +28,9 @@ class PleatApp : Application() {
             ConnectOut(
                 prefs = getSharedPreferences("connect_out", MODE_PRIVATE),
                 signer = ConnectOut.KeystoreSigner(),
-                info = hub::info,
+                // What it says when it connects (docs/protocol-v2.md): with its features, which tell
+                // a controller it asks the person at the screen first (enrol_confirm).
+                info = { hub.info().put("features", org.json.JSONArray(StateModel.FEATURES)) },
                 call = api::call,
                 stateJson = hub::stateJson,
                 addStateListener = hub::addStateListener,

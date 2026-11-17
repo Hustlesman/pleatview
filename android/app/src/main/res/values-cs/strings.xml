@@ -61,4 +61,14 @@
     <string name="approve_message">%1$s na adrese %2$s chce ovládat tuto obrazovku. Stiskněte OK pro povolení. Povolte to jen tehdy, pokud tuto obrazovku právě nastavujete v %1$s.</string>
     <string name="approve_allow">Povolit</string>
     <string name="approve_deny">Nepovolit</string>
+    <string name="setup_connect">Připojit k ovládacímu systému</string>
+    <string name="connect_title">Připojit k ovládacímu systému</string>
+    <string name="connect_message">Zadejte adresu systému, který spravuje vaše obrazovky, například screens.example.com. Tato obrazovka pak zobrazí kód, abyste ji tam přidali.</string>
+    <string name="connect_ok">Připojit</string>
+    <string name="connect_bad">To není adresa: zadejte název hostitele, například screens.example.com</string>
+    <string name="confirm_title">Povolit %1$s spravovat tuto obrazovku?</string>
+    <string name="confirm_message">%1$s na adrese %2$s chce spravovat tuto obrazovku: co zobrazuje a její nastavení. Stiskněte OK pro povolení, nebo Zpět pro odmítnutí. Povolte to jen tehdy, pokud tuto obrazovku právě přidáváte do %1$s.</string>
+    <string name="not_added_declined">Nepřidáno: zde to bylo odmítnuto. Připojte se znovu a zkuste to ještě jednou.</string>
+    <string name="not_added_unanswered">Nepřidáno: nikdo neodpověděl včas. Připojte se znovu a zkuste to ještě jednou.</string>
+    <string name="not_added_gave_up">Nepřidáno: nikdo tuto obrazovku do hodiny nepřidal, a tak se přestala připojovat. Připojte se znovu a zkuste to ještě jednou.</string>
 </resources>

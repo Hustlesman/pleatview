@@ -40,6 +40,10 @@ jobs:
       - run: npm ci
       - run: npm test
       - name: Packages for x86-64 and ARM64
+        # The controller's address the apps are built with (docs/protocol-v2.md, "A built-in
+        # address"): a secret, so it's in no file here; encoded in what's built. Unset: none.
+        env:
+          PLEATVIEW_CONTROLLER: ${{ secrets.PLEATVIEW_CONTROLLER }}
         run: npm run dist
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
@@ -90,6 +94,7 @@ jobs:
           PLEATVIEW_KEYSTORE_PASSWORD: ${{ secrets.PLEATVIEW_KEYSTORE_PASSWORD }}
           PLEATVIEW_KEY_ALIAS: ${{ secrets.PLEATVIEW_KEY_ALIAS }}
           PLEATVIEW_KEY_PASSWORD: ${{ secrets.PLEATVIEW_KEY_PASSWORD }}
+          PLEATVIEW_CONTROLLER: ${{ secrets.PLEATVIEW_CONTROLLER }}
         # The bundle goes to Google Play; the APK is the GitHub download.
         run: |
           ./gradlew --no-daemon bundleRelease
@@ -111,6 +116,8 @@ jobs:
           path: linux-packages
 
       - name: Package the release files
+        env:
+          PLEATVIEW_CONTROLLER: ${{ secrets.PLEATVIEW_CONTROLLER }}  # PleatView Light's built-in address
         run: |
           cp android/app/build/outputs/apk/release/app-release.apk pleatview.apk
           (cd custom_components && zip -qr ../pleatview-integration.zip pleatview -x "*/__pycache__/*")
