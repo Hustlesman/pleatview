@@ -44,7 +44,7 @@ _SAFE_PATH = re.compile(r"^/[A-Za-z0-9_./-]+$")
 
 def alsa_device(fifo: Path) -> str | None:
     """Chromium's --alsa-output-device for this pipe (None if its path can't be passed)."""
-    return f"pleatview:PIPE={fifo}" if _SAFE_PATH.match(str(fifo)) else None
+    return f"pleatview:PIPE={fifo}" if _SAFE_PATH.fullmatch(str(fifo)) else None
 
 
 class Sound:

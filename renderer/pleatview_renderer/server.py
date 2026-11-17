@@ -33,7 +33,7 @@ from aiohttp import web
 from . import actions
 from .mdns import Responder, local_address
 from .pairing import Pairing
-from .session import Screen, Session
+from .session import Folders, Screen, Session
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -168,6 +168,7 @@ class Renderer:
 
     def __init__(self, root: Path, encoder: str, max_sessions: int = 4) -> None:
         self.root, self.encoder, self.max_sessions = root, encoder, max_sessions
+        self.folders = Folders(root)
         self.sessions: dict[str, Session] = {}
         self.streams: dict[str, str] = {}  # a controller's session's stream secret -> its key
 
@@ -176,7 +177,7 @@ class Renderer:
         if session is None:
             if len(self.sessions) >= self.max_sessions:
                 raise Full(f"this renderer shows at most {self.max_sessions} screens")
-            session = self.sessions[key] = Session(key, screen, self.root, self.encoder, proxy=proxy)
+            session = self.sessions[key] = Session(key, screen, self.folders, self.encoder, proxy=proxy)
             if key.startswith(CONTROLLER):
                 session.secret = secrets.token_hex(16)
                 self.streams[session.secret] = key
@@ -196,7 +197,7 @@ class Renderer:
     async def file(self, session: Session, name: str) -> tuple[bytes, str, str]:
         """A stream's playlist or segment: its bytes, type and caching; FileNotFoundError if
         there's none (yet, or any more)."""
-        if not FILE.match(name):
+        if not FILE.fullmatch(name):
             raise FileNotFoundError(name)
         session.last_access = time.monotonic()
         if not session.running:
@@ -229,7 +230,7 @@ def controller_calls(renderer: Renderer, info: Any, proxy: Any) -> dict[str, Any
 
     def key_of(params: dict[str, Any]) -> str:
         key = params.get("key")
-        if not isinstance(key, str) or not CONTROLLER_KEY.match(key):
+        if not isinstance(key, str) or not CONTROLLER_KEY.fullmatch(key):
             raise Refused("key is 1 to 48 of A-Z a-z 0-9 _ -")
         return f"{CONTROLLER}{key}"
 
@@ -272,7 +273,7 @@ def controller_calls(renderer: Renderer, info: Any, proxy: Any) -> dict[str, Any
     async def segment(params: dict[str, Any]) -> dict[str, Any]:
         session = existing(params)
         name = params.get("name")
-        if not isinstance(name, str) or not FILE.match(name):
+        if not isinstance(name, str) or not FILE.fullmatch(name):
             raise Refused("name is index.m3u8 or s<n>.ts")
         try:
             body, content_type, _ = await renderer.file(session, name)
@@ -402,7 +403,7 @@ def create_app(root: Path, encoder: str, max_sessions: int = 4, *, pairing: Pair
 
     async def put_session(request: web.Request) -> web.Response:
         key = request.match_info["key"]
-        if not KEY.match(key):
+        if not KEY.fullmatch(key):
             raise web.HTTPNotFound()
         try:
             screen = parse_screen(await request.json())
@@ -417,7 +418,7 @@ def create_app(root: Path, encoder: str, max_sessions: int = 4, *, pairing: Pair
     def local(request: web.Request) -> Session | None:
         """A session of the local API's (never a controller elsewhere's)."""
         key = request.match_info["key"]
-        return sessions.get(key) if KEY.match(key) else None
+        return sessions.get(key) if KEY.fullmatch(key) else None
 
     async def put_overlay(request: web.Request) -> web.Response:
         session = local(request)

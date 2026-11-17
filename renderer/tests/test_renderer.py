@@ -80,6 +80,53 @@ class ChromiumTest(unittest.TestCase):
         self.assertIn("1500000", session.encoder_args("x264", Screen("http://a", 640, 360)))
 
 
+class FoldersTest(unittest.TestCase):
+    def setUp(self) -> None:
+        self.dir = tempfile.TemporaryDirectory()
+        self.root = Path(self.dir.name)
+
+    def tearDown(self) -> None:
+        self.dir.cleanup()
+
+    def test_names_are_made_here_and_kept(self) -> None:
+        folders = session.Folders(self.root)
+        self.assertEqual((folders.name("tv-1"), folders.name("c.tv-1"), folders.name("tv-1")), ("s1", "s2", "s1"))
+        self.assertEqual(folders.stream("s1"), self.root / "screens" / "s1" / "stream")
+        self.assertEqual(folders.profile("s2"), self.root / "screens" / "s2" / "profile")
+        again = session.Folders(self.root)  # after a restart
+        self.assertEqual((again.name("c.tv-1"), again.name("tv-1"), again.name("tv-2")), ("s2", "s1", "s3"))
+
+    def test_a_key_never_becomes_a_path(self) -> None:
+        folders = session.Folders(self.root)
+        for key in ("../x", "/etc", "s1", ".."):
+            name = folders.name(key)
+            self.assertRegex(name, r"^s\d+$")
+            self.assertEqual(folders.profile(name).parent.parent, self.root / "screens")
+
+    def test_an_older_renderers_profile_moves_over(self) -> None:
+        old = self.root / "profiles" / "tv-1"
+        (old / "Default").mkdir(parents=True)
+        (old / "Default" / "Cookies").write_text("signed in")
+        (self.root / "profiles" / "s1").mkdir()  # an old key named like a new folder stays its own
+        stream = self.root / "tv-1"
+        stream.mkdir()
+        for name in ("index.m3u8", "s7.ts"):
+            (stream / name).write_text("x")
+        folders = session.Folders(self.root)
+        name = folders.name("tv-1")
+        self.assertEqual((folders.profile(name) / "Default" / "Cookies").read_text(), "signed in")
+        self.assertFalse(old.exists() or stream.exists())
+        self.assertTrue((self.root / "profiles" / "s1").exists())
+        self.assertFalse(folders.profile(folders.name("tv-2")).exists())  # nothing to adopt
+
+    def test_a_damaged_list_starts_again(self) -> None:
+        (self.root / "folders.json").write_text('{"tv-1": "../etc", "tv-2": "s4", "tv-3": 5}')
+        folders = session.Folders(self.root)
+        self.assertEqual((folders.name("tv-2"), folders.name("tv-1")), ("s4", "s1"))
+        (self.root / "folders.json").write_text("[")
+        self.assertEqual(session.Folders(self.root).names, {})
+
+
 class SoundTest(unittest.IsolatedAsyncioTestCase):
     def test_the_page_plays_into_the_stream(self) -> None:
         device = sound.alsa_device(Path("/data/profiles/tv-1/sound"))
@@ -191,7 +238,8 @@ class ApiTest(AioHTTPTestCase):
 
     async def test_only_stream_files_are_served(self) -> None:
         await self.client.put("/api/sessions/tv-1", json={"url": "http://ha.local:8123/home"})
-        folder = Path(self.root.name) / "tv-1"
+        folders = session.Folders(Path(self.root.name))  # what the renderer wrote down
+        folder = folders.stream(folders.name("tv-1"))
         folder.mkdir(parents=True, exist_ok=True)
         (folder / "s3.ts").write_bytes(b"\x47" * 188)
         response = await self.client.get("/hls/tv-1/s3.ts")
