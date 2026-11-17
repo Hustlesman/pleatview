@@ -1,3 +1,5 @@
+import java.util.Base64
+
 plugins {
     alias(libs.plugins.android.application)
 }
@@ -12,6 +14,13 @@ fun signingValue(name: String): String? =
 // "Support PleatView" in the menu: a QR code for the donation page, in every build.
 val donateUrl = "https://pleatview.hustlesman.com/donate"
 
+// A controller's address built in (docs/protocol-v2.md, "A built-in address"): from the Gradle
+// property pleatview.controller or PLEATVIEW_CONTROLLER, never the source; kept encoded (its bytes
+// reversed, then Base64), so what scans apps for addresses doesn't list it. Builds from the source
+// and the project's releases have none.
+val builtInController: String = (providers.gradleProperty("pleatview.controller").orNull ?: System.getenv("PLEATVIEW_CONTROLLER") ?: "")
+    .trim().let { if (it.isEmpty()) "" else Base64.getEncoder().encodeToString(it.toByteArray().reversedArray()) }
+
 android {
     namespace = "com.hustlesman.pleatview"
     compileSdk = 37
@@ -23,6 +32,7 @@ android {
         versionCode = 22
         versionName = "1.0.19"
         buildConfigField("String", "DONATE_URL", "\"$donateUrl\"")
+        buildConfigField("String", "CONTROLLER", "\"$builtInController\"")
     }
 
     signingConfigs {

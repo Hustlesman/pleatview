@@ -132,6 +132,7 @@ class MainActivity : Activity(), Hub.Display, DashboardController.Callbacks, Med
         caption = findViewById(R.id.demo_caption)
         captionText = findViewById(R.id.demo_caption_text)
         findViewById<Button>(R.id.setup_demo).setOnClickListener { startDemo() }
+        findViewById<Button>(R.id.setup_connect).setOnClickListener { showConnectDialog() }
         fitLayouts()
 
         if (Build.VERSION.SDK_INT >= 33) {
@@ -277,6 +278,10 @@ class MainActivity : Activity(), Hub.Display, DashboardController.Callbacks, Med
 
     override fun onPairingChanged() {
         showApproval()
+        showControllerQuestion()
+        // A code waiting, or why it wasn't added: shown over a configured screen too (protocol v2).
+        val wanted = !app.settings.config.isConfigured || waitingOnController()
+        if (demo == null && wanted != (setupScreen.visibility == View.VISIBLE)) showSetup(wanted)
         if (setupScreen.visibility == View.VISIBLE) refreshSetup()
         dashboard.signInRequest?.let(::showSignInCard) // the code on the card carries the PIN
         if (menuVisible) openMenu()
@@ -284,6 +289,68 @@ class MainActivity : Activity(), Hub.Display, DashboardController.Callbacks, Med
 
     private var approvalDialog: AlertDialog? = null
     private var approvalShown: String? = null
+    private var questionDialog: AlertDialog? = null
+    private var questionShown: String? = null
+
+    /** A controller elsewhere waits for this screen's code, or didn't add it (protocol v2). */
+    private fun waitingOnController(): Boolean = app.connectOut?.let { it.code != null || it.notAdded != null } == true
+
+    /**
+     * Protocol v2, "Allowed on the screen": once someone types this screen's code, the person in
+     * front of it allows the organisation (OK) or doesn't (Back, or Don't allow).
+     */
+    private fun showControllerQuestion() {
+        val out = app.connectOut
+        val asking = out?.asking
+        if (asking == null) {
+            questionDialog?.dismiss()
+            questionDialog = null
+            questionShown = null
+            return
+        }
+        if (questionShown == asking && questionDialog?.isShowing == true) return
+        questionDialog?.dismiss()
+        questionShown = asking
+        val host = out.url?.let { runCatching { java.net.URI(it).host }.getOrNull() } ?: ""
+        var answered = false
+        val dialog = AlertDialog.Builder(this, android.R.style.Theme_DeviceDefault_Dialog_Alert)
+            .setTitle(getString(R.string.confirm_title, asking))
+            .setMessage(getString(R.string.confirm_message, asking, host))
+            .setPositiveButton(R.string.approve_allow) { _, _ -> answered = true; out.decide(true) }
+            .setNegativeButton(R.string.approve_deny) { _, _ -> answered = true; out.decide(false) }
+            .setOnCancelListener { if (!answered) out.decide(false) }
+            .show()
+        dialog.getButton(AlertDialog.BUTTON_POSITIVE)?.requestFocus() // one press of OK allows it
+        questionDialog = dialog
+    }
+
+    /** A controller's address, typed with the remote (a host name is enough) or the one built in. */
+    private fun showConnectDialog() {
+        val out = app.connectOut ?: return
+        val field = EditText(this).apply {
+            inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_URI
+            isSingleLine = true
+            hint = "screens.example.com"
+            setText(ProtocolV2.builtIn()?.let { runCatching { java.net.URI(it).host }.getOrNull() } ?: "")
+            setSelection(text.length)
+        }
+        val dialog = AlertDialog.Builder(this, android.R.style.Theme_DeviceDefault_Dialog_Alert)
+            .setTitle(R.string.connect_title)
+            .setMessage(R.string.connect_message)
+            .setView(field)
+            .setPositiveButton(R.string.connect_ok, null)
+            .setNegativeButton(android.R.string.cancel, null)
+            .show()
+        dialog.getButton(AlertDialog.BUTTON_POSITIVE)?.setOnClickListener {
+            try {
+                out.enrol(field.text.toString())
+                dialog.dismiss()
+            } catch (e: IllegalArgumentException) {
+                field.error = getString(R.string.connect_bad)
+            }
+        }
+        field.requestFocus()
+    }
 
     /** Home Assistant (or another client) asks to pair without the PIN: Allow, with OK, or not. */
     private fun showApproval() {
@@ -412,7 +479,7 @@ class MainActivity : Activity(), Hub.Display, DashboardController.Callbacks, Med
             if (!new.isConfigured) return // the demo carries on until Home Assistant takes over
             endDemo()
         }
-        showSetup(!new.isConfigured)
+        showSetup(!new.isConfigured || waitingOnController())
         if (new.isConfigured) {
             if (!started || old == null) {
                 dashboard.start(new)
@@ -436,7 +503,10 @@ class MainActivity : Activity(), Hub.Display, DashboardController.Callbacks, Med
         main.removeCallbacks(setupRefresh)
         if (show) {
             main.post(setupRefresh)
-            findViewById<View>(R.id.setup_demo).requestFocus() // a TV remote's OK starts the demo
+            // A TV remote's OK starts the demo; over a configured screen (a code waiting), connecting.
+            val demoButton = findViewById<View>(R.id.setup_demo)
+            demoButton.visibility = if (app.settings.config.isConfigured) View.GONE else View.VISIBLE
+            (if (demoButton.visibility == View.VISIBLE) demoButton else findViewById(R.id.setup_connect)).requestFocus()
         }
         app.hub.update { view = if (show) StateModel.VIEW_SETUP else StateModel.VIEW_DASHBOARD }
     }
@@ -450,6 +520,17 @@ class MainActivity : Activity(), Hub.Display, DashboardController.Callbacks, Med
             else "Host  $ip" + (if (isWide) "     " else "\n") + "Port  $port"
         // Protocol v2: while a controller elsewhere waits for this screen's code, the code instead.
         val code = app.connectOut?.code
+        val notice = findViewById<TextView>(R.id.setup_notice)
+        val why = app.connectOut?.notAdded
+        notice.text = when (why) {
+            ConnectOut.DECLINED -> getString(R.string.not_added_declined)
+            ConnectOut.UNANSWERED -> getString(R.string.not_added_unanswered)
+            ConnectOut.GAVE_UP -> getString(R.string.not_added_gave_up)
+            else -> ""
+        }
+        notice.visibility = if (why != null && code == null) View.VISIBLE else View.GONE
+        // The demo is for a screen nothing manages yet.
+        findViewById<View>(R.id.setup_demo).visibility = if (app.settings.config.isConfigured) View.GONE else View.VISIBLE
         findViewById<TextView>(R.id.setup_pin_label).text =
             if (code != null) getString(R.string.setup_step_code, code.second) else getString(R.string.setup_step_pin)
         findViewById<TextView>(R.id.setup_pin).text = code?.first ?: formatPin(app.pairing.pin)

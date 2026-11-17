@@ -42,6 +42,29 @@ object ProtocolV2 {
         return "wss://${uri.host.lowercase()}$port$PATH"
     }
 
+    /**
+     * An address as a person types it, on the TV or the phone page: a host (`screens.example.com`,
+     * `host:8790`), `https://…` or `wss://…`. Always the controller's v2 endpoint.
+     */
+    fun typed(text: String): String {
+        val given = text.trim()
+        require(given.isNotEmpty()) { "Type the controller's address" }
+        val withScheme = when {
+            given.startsWith("wss://", ignoreCase = true) -> given
+            given.startsWith("https://", ignoreCase = true) -> "wss://" + given.substring(8)
+            given.contains("://") -> throw IllegalArgumentException("a controller's address is a host name, https:// or wss://")
+            else -> "wss://$given"
+        }
+        return address(withScheme)
+    }
+
+    /**
+     * The address this build was made with (Gradle's `pleatview.controller`, never the source):
+     * kept encoded, so what scans apps for addresses doesn't list it. Empty in builds from the source.
+     */
+    fun builtIn(encoded: String = BuildConfig.CONTROLLER): String? =
+        if (encoded.isEmpty()) null else runCatching { String(B64.decode(encoded).reversedArray()) }.getOrNull()?.takeIf { it.isNotBlank() }
+
     fun signedText(controller: String, nonce: String) = "pleatview-v2\n$controller\n$nonce"
 
     fun isHex64(text: String) = HEX64.matches(text)
@@ -65,6 +88,7 @@ class ConnectOut(
     private val codeChanged: () -> Unit,
     private val connector: (String, String?) -> WebSocketClient = { url, pin -> WebSocketClient.connect(url, ProtocolV2.SUBPROTOCOL, pin) },
     private val firstWaitMs: Long = FIRST_WAIT_MS,
+    private val clock: () -> Long = System::currentTimeMillis,
 ) {
     interface Signer {
         /** Base64 of the public key's DER SubjectPublicKeyInfo. */
@@ -83,6 +107,14 @@ class ConnectOut(
     @Volatile
     var online = false
         private set
+
+    /** The organisation that asks to be allowed, while someone at the screen decides (`confirm`). */
+    @Volatile
+    var asking: String? = null
+        private set
+
+    /** Why it wasn't added (declined, unanswered, gave up after an hour), until it connects again. */
+    val notAdded: String? get() = prefs.getString(NOT_ADDED, null)
 
     val url: String? get() = prefs.getString(URL, null)
 
@@ -130,18 +162,51 @@ class ConnectOut(
     /** Connect to this controller: with a token from one paired over v1, or to show a code. */
     fun enrol(url: String, token: String? = null, pin: String? = null) {
         require(pin == null || ProtocolV2.isHex64(pin.lowercase())) { "fingerprint is the hex of the certificate's SHA-256" }
-        prefs.edit().putString(URL, ProtocolV2.address(url)).putString(PIN, pin?.lowercase()).putBoolean(ENROLLED, false).apply()
+        prefs.edit().putString(URL, ProtocolV2.typed(url)).putString(PIN, pin?.lowercase()).putBoolean(ENROLLED, false)
+            .putLong(SINCE, clock()).putInt(CODES, 0).remove(NOT_ADDED).apply()
         this.token = token
         waitMs = firstWaitMs
         moving = null
         socket?.close(1000)
         wake.offer(Unit)
+        codeChanged()
+    }
+
+    /** The person at the screen allows the organisation that asked, or doesn't. */
+    fun decide(allow: Boolean) {
+        val ws = socket ?: return
+        if (asking == null) return
+        asking = null
+        if (!allow) prefs.edit().putString(NOT_ADDED, DECLINED).apply()
+        codeChanged()
+        Thread({
+            try {
+                ws.send(JSONObject().put("type", if (allow) "confirmed" else "declined"))
+            } catch (_: IOException) {
+            }
+        }, "pleatview-decide").start()
     }
 
     private fun forget() {
-        prefs.edit().remove(URL).remove(PIN).remove(ENROLLED).apply()
+        prefs.edit().remove(URL).remove(PIN).remove(ENROLLED).remove(SINCE).remove(CODES).apply()
         token = null
+        asking = null
         setCode(null)
+    }
+
+    /** Not added: forget the controller, stop connecting, and say why until it connects again. */
+    private fun giveUp(why: String) {
+        Log.i(TAG, "Not added to the controller at $url: $why")
+        forget()
+        prefs.edit().putString(NOT_ADDED, why).apply()
+        codeChanged()
+    }
+
+    /** Before it's added: no name, which often holds a person's; the rest once it's in. */
+    private fun littleSaid(full: JSONObject): JSONObject {
+        val out = JSONObject()
+        for (key in BEFORE_ADDED) if (full.has(key)) out.put(key, full.get(key))
+        return out
     }
 
     private fun setCode(value: Pair<String, String>?) {
@@ -205,6 +270,11 @@ class ConnectOut(
                     waitMs = firstWaitMs
                 }
                 moving != null && wasMoving == null -> continue // just told to move: go now
+                notAdded != null && !prefs.getBoolean(ENROLLED, false) -> { // declined, or nobody answered
+                    forget()
+                    codeChanged()
+                    continue
+                }
                 closeCode == ProtocolV2.UNKNOWN_KEY || closeCode == ProtocolV2.REVOKED -> {
                     Log.i(TAG, "The controller removed this screen ($closeCode)")
                     forget()
@@ -215,6 +285,12 @@ class ConnectOut(
                     continue
                 }
                 closeCode == ProtocolV2.CODE_EXPIRED -> waitMs = firstWaitMs
+            }
+            if (url != null && !prefs.getBoolean(ENROLLED, false) && token == null &&
+                (prefs.getInt(CODES, 0) >= MOST_CODES || clock() - prefs.getLong(SINCE, clock()) > ENROL_HOUR_MS)
+            ) {
+                giveUp(GAVE_UP) // nobody added it in an hour: nothing keeps calling a controller
+                continue
             }
             val retry = retryAfter
             val pauseMs = if (retry != null) {
@@ -241,23 +317,44 @@ class ConnectOut(
             val challenge = ws.receive()
             val nonce = challenge.optString("nonce")
             if (challenge.optString("type") != "challenge" || !ProtocolV2.isHex64(nonce)) throw IOException("expected a challenge")
-            val hello = JSONObject().put("signature", signer.sign(ProtocolV2.signedText(address, nonce))).put("info", info())
-            if (prefs.getBoolean(ENROLLED, false)) {
+            val enrolled = prefs.getBoolean(ENROLLED, false)
+            val hello = JSONObject().put("signature", signer.sign(ProtocolV2.signedText(address, nonce)))
+                .put("info", if (enrolled) info() else littleSaid(info()))
+            if (enrolled) {
                 ws.send(hello.put("type", "auth").put("key", signer.keyId))
             } else {
                 ws.send(hello.put("type", "enrol").put("key", signer.public).apply { token?.let { put("token", it) } })
             }
+            var codeEnds = clock() + DEFAULT_CODE_MS
             while (true) { // a code first, perhaps, then welcome
                 val message = ws.receive()
                 when (message.optString("type")) {
-                    "code" -> setCode(message.optString("code") to (URI(address).host ?: ""))
+                    "code" -> {
+                        prefs.edit().putInt(CODES, prefs.getInt(CODES, 0) + 1).apply()
+                        codeEnds = clock() + message.optInt("expires_in", 600).coerceIn(1, 3600) * 1000L
+                        setCode(message.optString("code") to (URI(address).host ?: ""))
+                    }
+                    "confirm" -> { // the code was typed: the person at the screen allows it, or not
+                        asking = message.optString("organisation").take(100).ifBlank { URI(address).host ?: "" }
+                        codeChanged()
+                        val asked = asking
+                        pinger.schedule({
+                            if (asking != null && asking === asked) { // unanswered for the code's time
+                                asking = null
+                                prefs.edit().putString(NOT_ADDED, UNANSWERED).apply()
+                                codeChanged()
+                                ws.close(1000)
+                            }
+                        }, maxOf(codeEnds - clock(), 1000L), TimeUnit.MILLISECONDS)
+                    }
                     "ping" -> ws.send(JSONObject().put("type", "pong"))
                     "welcome" -> break
                 }
             }
+            asking = null
             if (target != null && moving === target) moved(true)
             if (!prefs.getBoolean(ENROLLED, false)) {
-                prefs.edit().putBoolean(ENROLLED, true).apply()
+                prefs.edit().putBoolean(ENROLLED, true).remove(SINCE).remove(CODES).remove(NOT_ADDED).apply()
                 token = null
                 Log.i(TAG, "Enrolled with the controller at $address")
             }
@@ -307,6 +404,10 @@ class ConnectOut(
         } catch (closed: WebSocketClient.Closed) {
             return closed.code
         } finally {
+            if (asking != null) {
+                asking = null // the controller stopped waiting: the question goes
+                codeChanged()
+            }
             listener?.let(removeStateListener)
             pinger.shutdownNow()
             answers.shutdownNow()
@@ -363,16 +464,26 @@ class ConnectOut(
         }
     }
 
-    private companion object {
-        const val TAG = "PleatView"
-        const val URL = "v2_url"
-        const val PIN = "v2_pin"
-        const val ENROLLED = "v2_enrolled"
-        const val PING_MS = 20_000L
-        const val SILENCE_MS = 60_000L
-        const val FIRST_WAIT_MS = 2_000L
-        const val LONGEST_WAIT_MS = 60_000L
-        const val LONGEST_RETRY_S = 3600
-        const val MOVE_TRIES = 3
+    companion object {
+        const val DECLINED = "declined"
+        const val UNANSWERED = "unanswered"
+        const val GAVE_UP = "gave_up"
+        private const val TAG = "PleatView"
+        private const val URL = "v2_url"
+        private const val PIN = "v2_pin"
+        private const val ENROLLED = "v2_enrolled"
+        private const val SINCE = "v2_since"
+        private const val CODES = "v2_codes"
+        private const val NOT_ADDED = "v2_not_added"
+        private const val MOST_CODES = 6
+        private const val ENROL_HOUR_MS = 3_600_000L
+        private const val DEFAULT_CODE_MS = 600_000L
+        private val BEFORE_ADDED = listOf("id", "manufacturer", "model", "app_version", "api_version", "features")
+        private const val PING_MS = 20_000L
+        private const val SILENCE_MS = 60_000L
+        private const val FIRST_WAIT_MS = 2_000L
+        private const val LONGEST_WAIT_MS = 60_000L
+        private const val LONGEST_RETRY_S = 3600
+        private const val MOVE_TRIES = 3
     }
 }

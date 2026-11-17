@@ -61,4 +61,14 @@
     <string name="approve_message">%1$s all\'indirizzo %2$s chiede di controllare questo schermo. Premi OK per consentirlo. Consentilo solo se hai appena configurato questo schermo in %1$s.</string>
     <string name="approve_allow">Consenti</string>
     <string name="approve_deny">Non consentire</string>
+    <string name="setup_connect">Connetti a un sistema di gestione</string>
+    <string name="connect_title">Connetti a un sistema di gestione</string>
+    <string name="connect_message">Digita l\'indirizzo del sistema che gestisce i tuoi schermi, ad esempio screens.example.com. Questo schermo mostrerà poi un codice per aggiungerlo lì.</string>
+    <string name="connect_ok">Connetti</string>
+    <string name="connect_bad">Non è un indirizzo: digita un nome host, ad esempio screens.example.com</string>
+    <string name="confirm_title">Consentire a %1$s di gestire questo schermo?</string>
+    <string name="confirm_message">%1$s all\'indirizzo %2$s chiede di gestire questo schermo: cosa mostra e le sue impostazioni. Premi OK per consentirlo, o Indietro per rifiutare. Consentilo solo se stai aggiungendo ora questo schermo a %1$s.</string>
+    <string name="not_added_declined">Non aggiunto: è stato rifiutato qui. Connetti di nuovo per riprovare.</string>
+    <string name="not_added_unanswered">Non aggiunto: nessuno ha risposto in tempo. Connetti di nuovo per riprovare.</string>
+    <string name="not_added_gave_up">Non aggiunto: nessuno ha aggiunto questo schermo entro un\'ora, quindi ha smesso di connettersi. Connetti di nuovo per riprovare.</string>
 </resources>

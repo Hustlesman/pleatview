@@ -335,7 +335,7 @@ class StateModel {
         /** What this app can do beyond protocol version 1, so Home Assistant only asks for that. */
         // protocol_v2: it connects out to a controller anywhere (docs/protocol-v2.md).
         // restart_app, diagnostics: upkeep (docs/protocol.md).
-        val FEATURES = listOf("render_stream", "home_without_ha", "home_playlist", "protocol_v2", "restart_app", "diagnostics")
+        val FEATURES = listOf("render_stream", "home_without_ha", "home_playlist", "protocol_v2", "restart_app", "diagnostics", "enrol_confirm")
     }
 }
 

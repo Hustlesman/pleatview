@@ -56,6 +56,16 @@
             android:textSize="22sp"
             android:textStyle="bold" />
 
+        <!-- Protocol v2: why a controller didn't add this screen, until it connects again. -->
+        <TextView
+            android:id="@+id/setup_notice"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="14dp"
+            android:textColor="@color/accent"
+            android:textSize="17sp"
+            android:visibility="gone" />
+
         <TextView
             android:id="@+id/setup_pin_label"
             android:layout_width="match_parent"
@@ -103,6 +113,14 @@
             android:layout_width="wrap_content"
             android:layout_marginTop="22dp"
             android:text="@string/setup_demo" />
+
+        <!-- Managed from elsewhere: a controller's address, typed here or built in (protocol v2). -->
+        <Button
+            android:id="@+id/setup_connect"
+            style="@style/PleatView.MenuButton"
+            android:layout_width="wrap_content"
+            android:layout_marginTop="10dp"
+            android:text="@string/setup_connect" />
     </LinearLayout>
 
     <LinearLayout

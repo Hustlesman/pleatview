@@ -61,4 +61,14 @@
     <string name="approve_message">%1$s em %2$s pede para controlar esta tela. Pressione OK para permitir. Só permita se você acabou de configurar esta tela em %1$s.</string>
     <string name="approve_allow">Permitir</string>
     <string name="approve_deny">Não permitir</string>
+    <string name="setup_connect">Conectar a um controlador</string>
+    <string name="connect_title">Conectar a um controlador</string>
+    <string name="connect_message">Digite o endereço do controlador que gerencia suas telas, por exemplo screens.example.com. Esta tela mostrará então um código para adicioná-la lá.</string>
+    <string name="connect_ok">Conectar</string>
+    <string name="connect_bad">Isso não é um endereço: digite um nome de host, por exemplo screens.example.com</string>
+    <string name="confirm_title">Permitir que %1$s gerencie esta tela?</string>
+    <string name="confirm_message">%1$s em %2$s pede para gerenciar esta tela: o que ela mostra e suas configurações. Pressione OK para permitir, ou Voltar para recusar. Só permita se você estiver adicionando esta tela a %1$s agora.</string>
+    <string name="not_added_declined">Não adicionada: foi recusado aqui. Conecte de novo para tentar outra vez.</string>
+    <string name="not_added_unanswered">Não adicionada: ninguém respondeu a tempo. Conecte de novo para tentar outra vez.</string>
+    <string name="not_added_gave_up">Não adicionada: ninguém adicionou esta tela em uma hora, então ela parou de se conectar. Conecte de novo para tentar outra vez.</string>
 </resources>
