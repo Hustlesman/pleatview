@@ -164,24 +164,49 @@ object Upkeep {
     }
 }
 
-/** Ends the app's main process and opens the app again, from a process of its own. */
+/**
+ * Ends the app's main process and opens the app again, from a process of its own. After a crash
+ * ([EXTRA_CRASHED], PleatApp) the process ends by itself once Android has noted the crash, which
+ * is what reaches the crash reports: it's waited for, and ended here only if it hangs.
+ */
 class RestartActivity : Activity() {
+    private val main = Handler(Looper.getMainLooper())
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        val pid = intent.getIntExtra(EXTRA_PID, -1)
-        if (pid > 0 && pid != Process.myPid()) Process.killProcess(pid)
-        Handler(Looper.getMainLooper()).postDelayed({
-            startActivity(
-                Intent(this, MainActivity::class.java)
-                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK or Intent.FLAG_ACTIVITY_NO_ANIMATION),
-            )
-            finish()
-            Process.killProcess(Process.myPid())
-        }, 600)
+        val pid = intent.getIntExtra(EXTRA_PID, -1).takeIf { it > 0 && it != Process.myPid() }
+        if (pid == null || !intent.getBooleanExtra(EXTRA_CRASHED, false)) {
+            pid?.let(Process::killProcess)
+            main.postDelayed(::open, 600)
+            return
+        }
+        val since = SystemClock.uptimeMillis()
+        main.post(object : Runnable {
+            override fun run() {
+                val ended = !File("/proc/$pid").exists()
+                if (!ended && SystemClock.uptimeMillis() - since < CRASH_WAIT_MS) {
+                    main.postDelayed(this, 100)
+                    return
+                }
+                if (!ended) Process.killProcess(pid)
+                main.postDelayed(::open, 600)
+            }
+        })
+    }
+
+    private fun open() {
+        startActivity(
+            Intent(this, MainActivity::class.java)
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK or Intent.FLAG_ACTIVITY_NO_ANIMATION),
+        )
+        finish()
+        Process.killProcess(Process.myPid())
     }
 
     companion object {
         const val EXTRA_PID = "pid"
+        const val EXTRA_CRASHED = "crashed"
         const val PROCESS_SUFFIX = ":restart"
+        private const val CRASH_WAIT_MS = 5000L
     }
 }

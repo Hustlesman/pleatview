@@ -26,6 +26,7 @@ class ControlService : Service() {
     private var server: HttpServer? = null
     private var advertiser: NsdAdvertiser? = null
     private var advertisedName: String? = null
+    private var inForeground = false
     private val nameListener: (Config, Config) -> Unit = { _, _ ->
         val app = PleatApp.from(this)
         if (app.settings.deviceName != advertisedName) advertise(app)
@@ -34,7 +35,14 @@ class ControlService : Service() {
     override fun onCreate() {
         super.onCreate()
         val app = PleatApp.from(this)
-        startInForeground(app.settings.port)
+        if (!startInForeground(app.settings.port)) {
+            // Android 12+ restarts this service by itself after ending the app for memory, and
+            // then may not let it into the foreground while PleatView is in the background. It
+            // stops instead of stopping the app; opening PleatView starts it again.
+            stopSelf()
+            return
+        }
+        inForeground = true
 
         server = HttpServer(app.settings.port, app.api::handle).also {
             try {
@@ -49,7 +57,9 @@ class ControlService : Service() {
         app.connectOut?.start()
     }
 
-    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int = START_STICKY
+    // Not restarted by Android when it couldn't come to the foreground: it would only be refused again.
+    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int =
+        if (inForeground) START_STICKY else START_NOT_STICKY
 
     override fun onBind(intent: Intent?): IBinder? = null
 
@@ -77,7 +87,8 @@ class ControlService : Service() {
         }
     }
 
-    private fun startInForeground(port: Int) {
+    /** False when Android doesn't let it into the foreground now. */
+    private fun startInForeground(port: Int): Boolean {
         val manager = getSystemService(NotificationManager::class.java)
         if (Build.VERSION.SDK_INT >= 26) {
             manager.createNotificationChannel(
@@ -96,7 +107,16 @@ class ControlService : Service() {
             .setPriority(NotificationCompat.PRIORITY_MIN)
             .build()
         val type = if (Build.VERSION.SDK_INT >= 29) ServiceInfo.FOREGROUND_SERVICE_TYPE_CONNECTED_DEVICE else 0
-        ServiceCompat.startForeground(this, NOTIFICATION_ID, notification, type)
+        return try {
+            ServiceCompat.startForeground(this, NOTIFICATION_ID, notification, type)
+            true
+        } catch (e: IllegalStateException) { // ForegroundServiceStartNotAllowedException
+            Log.w(TAG, "Android doesn't allow the control service in the foreground now", e)
+            false
+        } catch (e: SecurityException) {
+            Log.w(TAG, "Android doesn't allow the control service in the foreground", e)
+            false
+        }
     }
 
     companion object {
