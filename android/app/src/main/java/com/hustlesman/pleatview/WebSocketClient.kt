@@ -158,6 +158,9 @@ class WebSocketClient private constructor(private val socket: Socket, rest: Byte
                 socket.connect(InetSocketAddress(host, port), timeoutMs)
                 socket.soTimeout = timeoutMs
                 val ssl = context.socketFactory.createSocket(socket, host, port, true) as SSLSocket
+                // Protocol v2: TLS 1.3, and 1.2 only where there's nothing newer (Android 9 and older,
+                // which would otherwise offer 1.0 and 1.1 too).
+                ssl.enabledProtocols = arrayOf(if ("TLSv1.3" in ssl.supportedProtocols) "TLSv1.3" else "TLSv1.2")
                 ssl.startHandshake()
                 if (pin == null && !HttpsURLConnection.getDefaultHostnameVerifier().verify(host, ssl.session)) {
                     throw IOException("the server's certificate isn't for $host")

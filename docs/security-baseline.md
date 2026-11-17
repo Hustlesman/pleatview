@@ -48,5 +48,5 @@ project's owner. If it does, or for businesses that ship PleatView in a product 
 | Someone on the internet reaches a screen | Screens open no port to the internet: they connect out, and only to the controller whose certificate they enrolled with |
 | A stolen or copied screen token | Tokens are short-lived and renewed with the device key, which never leaves the screen's key store; removing a screen revokes its key at once |
 | Someone poses as a screen | A screen proves its key on every connection; enrolment needs a code shown on the screen and approval in the controller |
-| A network in between reads or changes traffic | TLS 1.3 only, with the controller's certificate checked (or pinned) |
+| A network in between reads or changes traffic | TLS 1.3 (1.2 only on Android 9 and older, which have nothing newer), with the controller's certificate checked (or pinned) |
 | A compromised controller | It can only do what the protocol allows: show pages, play media, change settings; screens run no code from it beyond the pages they show |

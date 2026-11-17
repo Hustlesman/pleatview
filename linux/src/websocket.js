@@ -159,7 +159,7 @@ export function connect(address, { subprotocol, pin = null, timeoutMs = 15000 })
     const options = {
       host,
       port: Number(url.port) || 443,
-      minVersion: "TLSv1.2",
+      minVersion: "TLSv1.3", // protocol v2: TLS 1.3, which every Electron has
       ALPNProtocols: ["http/1.1"],
       rejectUnauthorized: !pin,
       ...(pin ? { checkServerIdentity: () => undefined } : {}),
