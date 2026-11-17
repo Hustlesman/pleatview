@@ -313,6 +313,21 @@ class ConnectOutTest {
     }
 
     @Test
+    fun `Connect pressed again while a code shows starts over, off the main thread`() {
+        controller.confirm = "Acme" // the controller holds the connection open while it asks
+        val c = newConnection()
+        c.start()
+        c.enrol(controller.url)
+        until { c.asking != null }
+        assertEquals("enrol", controller.hellos.take().getString("type"))
+        // Connect is pressed on Android's main thread, where touching the network stops the app.
+        Thread({ c.enrol(controller.url) }, "main-thread").apply { start(); join() }
+        val again = controller.hellos.poll(8, TimeUnit.SECONDS)!!
+        assertEquals("enrol", again.getString("type")) // a new code for the address given
+        assertFalse("closed from the main thread", "main-thread" in writers)
+    }
+
+    @Test
     fun `allowed on the screen, asked, allowed and let in`() {
         controller.confirm = "Acme"
         val c = newConnection()
