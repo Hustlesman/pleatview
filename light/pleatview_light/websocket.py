@@ -136,7 +136,7 @@ async def connect(url: str, *, subprotocol: str, pin: str | None = None, timeout
         raise ValueError("only wss:// addresses")
     if context is None:
         context = ssl.create_default_context()
-        context.minimum_version = ssl.TLSVersion.TLSv1_2
+        context.minimum_version = ssl.TLSVersion.TLSv1_3  # protocol v2: TLS 1.3, which every Python here has
         if pin:
             context.check_hostname = False
             context.verify_mode = ssl.CERT_NONE  # the pin below decides instead
