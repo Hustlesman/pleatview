@@ -379,7 +379,7 @@ class TheCalls(AioHTTPTestCase):
         self.assertEqual(info["sessions"], {})
         self.assertEqual((await self.client.delete("/api/sessions/c.tv-1")).status, 204)
         self.assertIn("c.tv-1", self.renderer.sessions)
-        folder = Path(self.root.name) / "c.tv-1"
+        folder = self.renderer.sessions["c.tv-1"].folder
         folder.mkdir(parents=True, exist_ok=True)
         (folder / "s3.ts").write_bytes(b"\x47" * 188)
         self.assertEqual((await self.client.get("/hls/c.tv-1/s3.ts")).status, 404)
@@ -400,8 +400,9 @@ class TheCalls(AioHTTPTestCase):
 
     def test_a_controllers_screen_keeps_its_sound(self) -> None:
         from pleatview_renderer import sound
-        fifo = Path(self.root.name) / "profiles" / "c.tv-1" / "sound"
-        self.assertTrue(sound.alsa_device(fifo))  # its key goes into the sound pipe's path
+        folders = self.renderer.folders
+        fifo = folders.profile(folders.name("c.tv-1")) / "sound"
+        self.assertTrue(sound.alsa_device(fifo))  # a path the renderer named, which ALSA takes
 
     def test_the_log_tells_what_changes(self) -> None:
         self.assertEqual(server.describe_call("show", {"key": "tv", "url": "https://x/"}), "show tv: https://x/ (1920×1080)")

@@ -10,6 +10,7 @@ import json
 import logging
 import os
 from pathlib import Path
+import re
 import shutil
 import time
 from typing import Any, Callable
@@ -33,6 +34,73 @@ AUDIO_ARGS = ["-c:a", "aac", "-b:a", "128k"]
 _displays = itertools.count(10)
 # The user that Xvfb and Chromium run as, when the renderer itself runs as root.
 UNPRIVILEGED = os.environ.get("RENDER_USER", "render")
+
+
+class Folders:
+    """The folders a renderer keeps for its screens: screens/<name>/stream (the HLS stream, made
+    again at each start) and screens/<name>/profile (Chromium's profile, kept). The names are
+    made here (s1, s2, …) and kept in folders.json, so a screen keeps its profile across restarts
+    and a key a request brings never becomes part of a path."""
+
+    NAME = re.compile(r"s[1-9][0-9]{0,8}")
+    LEFTOVER = re.compile(r"index\.m3u8(\.tmp)?|s\d{1,9}\.ts")
+
+    def __init__(self, root: Path) -> None:
+        self.root = root
+        self.file = root / "folders.json"
+        try:
+            known = json.loads(self.file.read_text())
+        except (OSError, ValueError):
+            known = {}
+        self.names: dict[str, str] = {
+            key: name for key, name in (known.items() if isinstance(known, dict) else ())
+            if isinstance(key, str) and isinstance(name, str) and self.NAME.fullmatch(name)
+        }
+
+    def name(self, key: str) -> str:
+        """The key's folder name, made the first time it's asked for."""
+        name = self.names.get(key)
+        if name is None:
+            taken = {int(n[1:]) for n in self.names.values()}
+            name = f"s{next(n for n in itertools.count(1) if n not in taken)}"
+            self.names[key] = name
+            self._adopt(key, name)
+            self.root.mkdir(parents=True, exist_ok=True)
+            part = self.file.with_name(self.file.name + ".tmp")
+            part.write_text(json.dumps(self.names))
+            part.replace(self.file)
+        return name
+
+    def stream(self, name: str) -> Path:
+        return self.root / "screens" / name / "stream"
+
+    def profile(self, name: str) -> Path:
+        return self.root / "screens" / name / "profile"
+
+    def _adopt(self, key: str, name: str) -> None:
+        """What an older renderer kept by key: its profile (profiles/<key>) becomes this name's,
+        sign-ins and all, and its stream folder (<key>) goes. Found by listing, never by a path
+        made from the key."""
+        try:
+            for entry in (self.root / "profiles").iterdir():
+                if entry.name == key and entry.is_dir() and not entry.is_symlink():
+                    target = self.profile(name)
+                    if not target.exists():
+                        target.parent.mkdir(parents=True, exist_ok=True)
+                        entry.rename(target)
+                    break
+        except OSError:
+            pass
+        try:
+            for entry in self.root.iterdir():
+                if entry.name == key and entry.name not in ("screens", "profiles") and entry.is_dir() and not entry.is_symlink():
+                    for item in entry.iterdir():
+                        if self.LEFTOVER.fullmatch(item.name) and item.is_file():
+                            item.unlink()
+                    entry.rmdir()  # only if nothing else was in it
+                    break
+        except OSError:
+            pass
 
 
 @dataclass(frozen=True)
@@ -175,13 +243,15 @@ def chromium_args(screen: Screen, profile: Path, port: int, alsa_device: str | N
 class Session:
     """Renders one TV's screen until stopped; restarts what crashes."""
 
-    def __init__(self, key: str, screen: Screen, root: Path, encoder: str, proxy: int | None = None) -> None:
+    def __init__(self, key: str, screen: Screen, folders: Folders, encoder: str, proxy: int | None = None) -> None:
         self.key = key
         self.proxy = proxy  # the filter's port, for a controller's pages
         self.secret: str | None = None  # a controller's session's stream address
         self.screen = screen
         self.encoder = encoder
-        self.folder = root / key
+        name = folders.name(key)
+        self.folder = folders.stream(name)
+        self.profile = folders.profile(name)
         self.display = next(_displays)
         self.port = 9300 + self.display
         self.last_access = time.monotonic()
@@ -271,7 +341,7 @@ class Session:
         if self.folder.exists():
             shutil.rmtree(self.folder)
         self.folder.mkdir(parents=True)
-        profile = self.folder.parent / "profiles" / self.key
+        profile = self.profile
         profile.mkdir(parents=True, exist_ok=True)
         if UNPRIVILEGED and os.geteuid() == 0:
             shutil.chown(profile, UNPRIVILEGED, UNPRIVILEGED)

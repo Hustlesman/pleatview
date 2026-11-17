@@ -229,7 +229,7 @@ class Link:
                 raise ValueError(f"the controller doesn't speak {SUBPROTOCOL}")
             challenge = await self._receive(ws, 15)
             nonce = challenge.get("nonce")
-            if challenge.get("type") != "challenge" or not isinstance(nonce, str) or not NONCE.match(nonce):
+            if challenge.get("type") != "challenge" or not isinstance(nonce, str) or not NONCE.fullmatch(nonce):
                 raise ValueError("expected a challenge")
             hello = {"signature": self.sign(nonce), "info": self.info()}
             if self.state.get("enrolled"):
@@ -241,7 +241,7 @@ class Link:
                 kind = message.get("type")
                 if kind == "code":
                     code = str(message.get("code", ""))
-                    if CODE.match(code) and code != self.code:
+                    if CODE.fullmatch(code) and code != self.code:
                         self.code = code
                         _LOGGER.warning("To add this renderer, type the code %s into the controller at %s",
                                         code, urlsplit(self.url).hostname)
@@ -324,7 +324,7 @@ class Link:
     async def _answer(self, ws: aiohttp.ClientWebSocketResponse, request: dict[str, Any]) -> None:
         ident = request.get("id")
         if not ((isinstance(ident, int) and not isinstance(ident, bool) and 0 <= ident < 2**53)
-                or (isinstance(ident, str) and REQUEST_ID.match(ident))):
+                or (isinstance(ident, str) and REQUEST_ID.fullmatch(ident))):
             return  # nothing to answer to
         method = request.get("method")
         params = request.get("params", {})
