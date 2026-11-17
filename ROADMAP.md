@@ -27,7 +27,7 @@ and there's one place to fix and to audit.
 
 ## Status
 
-Last updated 14 November 2026. **Current milestone: M1** (M0 finished early).
+Last updated 17 November 2026. **Current milestone: M1** (M0 finished early).
 
 | Milestone | Target | Needs first | Status |
 | --- | --- | --- | --- |
@@ -36,7 +36,7 @@ Last updated 14 November 2026. **Current milestone: M1** (M0 finished early).
 | [L1](#l1--linux-app) Linux app for mini PCs and Raspberry Pi, alongside M1 and M2 | Fri 18 Dec 2026 | — | In progress |
 | [M2](#m2--public-beta) Public beta, Google Play closed test, phones and tablets | Fri 4 Dec 2026 | M1, 12 beta testers | In progress |
 | [R1](#r1--rendering-for-many-screens) Rendering for many screens: several renderers, chosen per TV | To be scheduled | — | Not started |
-| [S1](#s1--secure-remote-management) Secure remote management: over the internet, a VPN or zero-trust access | To be scheduled | M3's encryption, M4's protocol v2 | Not started |
+| [S1](#s1--secure-remote-management) Secure remote management: over the internet, a VPN or zero-trust access | To be scheduled | M3's encryption, M4's protocol v2 | In progress |
 | [M3](#m3--google-play-and-amazon-appstore) Google Play and Amazon Appstore | Fri 15 Jan 2027 | M2, store reviews | In progress |
 | [M4](#m4--web-player) Web player for any TV browser | Fri 29 Jan 2027 | M3 submitted | Not started |
 | [M5](#m5--lg-and-samsung-apps) LG and Samsung apps submitted | Fri 5 Mar 2027 | M4, test TVs | Not started |
@@ -247,7 +247,7 @@ and policies live in the controller.
 - [ ] **Screens connect out**, over TLS 1.3 only. Nothing on a screen listens for the
       internet, so no port is opened, and it works behind NAT, a VPN or a ZTNA connector. The
       local server is only for setup on the home network, and can be turned off
-- [ ] **A key for each screen and renderer,** made on the device and kept in its key store
+- [x] **A key for each screen and renderer,** made on the device and kept in its key store
       (the Android Keystore, for one). Pairing registers its public key, and the device
       proves who it is with it on every connection. No shared secret travels
 - [ ] **Short-lived, revocable credentials:** tokens expire and renew by themselves, a
@@ -261,13 +261,13 @@ and policies live in the controller.
       verify, not a certificate, with its gaps listed
 - [ ] **Protocol v2** ([specification](docs/protocol-v2.md)): screens connect out over TLS
       1.3, enrol with a token after pairing or with a code from anywhere, and prove their key
-      (P-256) on every connection. Being built: the Android and Linux apps and PleatView Light
-      first, Home Assistant with M4
+      (P-256) on every connection. Done in 1.1: the Android and Linux apps and PleatView Light,
+      with each new screen allowed by the person in front of it. Next: Home Assistant, with M4
 - [ ] **A renderer at the site connects out** ([specification](docs/renderer-connect-out.md)):
       it renders for the site's PleatView Light screens there, for a controller elsewhere, over
       one connection out with its own key. The site decides what the controller gets; pages
-      from the controller go through a filter that keeps them off the site's network. Being
-      built: rendering first, then Home Assistant at the site and screens set up with it
+      from the controller go through a filter that keeps them off the site's network. Done in
+      1.1: rendering. Next: Home Assistant at the site, and screens set up with it
 
 **Exit:** a screen on another network is paired, controlled and removed through a ZTNA
 connector and over the open internet, with no open port at the screen's end, and the
