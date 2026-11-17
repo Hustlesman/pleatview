@@ -37,7 +37,7 @@ from .session import Folders, Screen, Session
 
 _LOGGER = logging.getLogger(__name__)
 
-VERSION = "1.1.1"
+VERSION = "1.1.2"
 KEY = re.compile(r"^[A-Za-z0-9_-]{1,64}$")
 FILE = re.compile(r"^(index\.m3u8|s\d{1,9}\.ts)$")
 KIOSK_MODES = ("full", "sidebar", "off")
