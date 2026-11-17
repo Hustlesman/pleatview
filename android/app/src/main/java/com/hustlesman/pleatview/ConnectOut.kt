@@ -169,8 +169,18 @@ class ConnectOut(
 
     fun stop() {
         stopped = true
-        socket?.close(1001)
+        hangUp(1001)
         wake.offer(Unit)
+    }
+
+    /**
+     * Ends the connection there is, from a thread of its own: Connect is pressed on Android's
+     * main thread, where Android allows no network (over TLS it stops the app). Pressed again
+     * while a code shows, it used to.
+     */
+    private fun hangUp(code: Int) {
+        val ws = socket ?: return
+        Thread({ ws.close(code) }, "pleatview-hang-up").start()
     }
 
     /** Connect to this controller: with a token from one paired over v1, or to show a code. */
@@ -181,7 +191,7 @@ class ConnectOut(
         this.token = token
         waitMs = firstWaitMs
         moving = null
-        socket?.close(1000)
+        hangUp(1000)
         wake.offer(Unit)
         codeChanged()
     }
