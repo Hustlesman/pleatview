@@ -71,4 +71,11 @@
     <string name="not_added_declined">Non aggiunto: è stato rifiutato qui. Connetti di nuovo per riprovare.</string>
     <string name="not_added_unanswered">Non aggiunto: nessuno ha risposto in tempo. Connetti di nuovo per riprovare.</string>
     <string name="not_added_gave_up">Non aggiunto: nessuno ha aggiunto questo schermo entro un\'ora, quindi ha smesso di connettersi. Connetti di nuovo per riprovare.</string>
+    <string name="setup_step_code_builtin">Per aggiungere questo schermo, digita questo codice dove gestisci i tuoi schermi:</string>
+    <string name="connect_message_builtin">Lascia vuoto l\'indirizzo per connetterti al sistema fornito con questa app, oppure digitane un altro, ad esempio screens.example.com. Questo schermo mostrerà poi un codice per aggiungerlo lì.</string>
+    <string name="confirm_message_builtin">%1$s chiede di gestire questo schermo: cosa mostra e le sue impostazioni. Premi OK per consentirlo, o Indietro per rifiutare. Consentilo solo se stai aggiungendo ora questo schermo a %1$s.</string>
+    <string name="confirm_title_unnamed">Consentire a questo sistema di gestire questo schermo?</string>
+    <string name="confirm_message_unnamed">Il sistema a cui ti sei connesso chiede di gestire questo schermo: cosa mostra e le sue impostazioni. Premi OK per consentirlo, o Indietro per rifiutare. Consentilo solo se stai aggiungendo ora questo schermo.</string>
+    <string name="added_to">Aggiunto a %1$s. Questo schermo mostra ciò che è impostato lì per lui.</string>
+    <string name="added">Aggiunto al sistema. Questo schermo mostra ciò che è impostato lì per lui.</string>
 </resources>

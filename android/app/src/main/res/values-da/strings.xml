@@ -71,4 +71,11 @@
     <string name="not_added_declined">Ikke tilføjet: det blev afvist her. Forbind igen for at prøve en gang til.</string>
     <string name="not_added_unanswered">Ikke tilføjet: ingen svarede i tide. Forbind igen for at prøve en gang til.</string>
     <string name="not_added_gave_up">Ikke tilføjet: ingen tilføjede skærmen inden for en time, så den holdt op med at forbinde. Forbind igen for at prøve en gang til.</string>
+    <string name="setup_step_code_builtin">Tilføj skærmen ved at skrive denne kode der, hvor dine skærme administreres:</string>
+    <string name="connect_message_builtin">Lad adressen være tom for at forbinde til det styringssystem, appen leveres med, eller skriv en anden, for eksempel screens.example.com. Skærmen viser derefter en kode, så den kan tilføjes der.</string>
+    <string name="confirm_message_builtin">%1$s vil administrere denne skærm: hvad den viser, og dens indstillinger. Tryk på OK for at tillade det, eller Tilbage for at afvise. Tillad det kun, hvis du lige nu tilføjer skærmen til %1$s.</string>
+    <string name="confirm_title_unnamed">Tillad dette styringssystem at administrere denne skærm?</string>
+    <string name="confirm_message_unnamed">Det styringssystem, du forbandt til, vil administrere denne skærm: hvad den viser, og dens indstillinger. Tryk på OK for at tillade det, eller Tilbage for at afvise. Tillad det kun, hvis du lige nu tilføjer skærmen.</string>
+    <string name="added_to">Tilføjet til %1$s. Skærmen viser det, der er sat op til den der.</string>
+    <string name="added">Tilføjet til styringssystemet. Skærmen viser det, der er sat op til den der.</string>
 </resources>

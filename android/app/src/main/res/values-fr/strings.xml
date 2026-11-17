@@ -71,4 +71,11 @@
     <string name="not_added_declined">Non ajouté : la demande a été refusée ici. Connecte-toi à nouveau pour réessayer.</string>
     <string name="not_added_unanswered">Non ajouté : personne n\'a répondu à temps. Connecte-toi à nouveau pour réessayer.</string>
     <string name="not_added_gave_up">Non ajouté : personne n\'a ajouté cet écran en une heure, il a donc arrêté de se connecter. Connecte-toi à nouveau pour réessayer.</string>
+    <string name="setup_step_code_builtin">Pour ajouter cet écran, saisissez ce code là où vos écrans sont gérés :</string>
+    <string name="connect_message_builtin">Laisse l\'adresse vide pour te connecter au système fourni avec cette appli, ou saisis-en une autre, par exemple screens.example.com. Cet écran affiche ensuite un code pour l\'y ajouter.</string>
+    <string name="confirm_message_builtin">%1$s demande à gérer cet écran : ce qu\'il affiche et ses réglages. Appuie sur OK pour l\'autoriser, ou sur Retour pour refuser. Ne l\'autorise que si tu ajoutes maintenant cet écran à %1$s.</string>
+    <string name="confirm_title_unnamed">Autoriser ce système à gérer cet écran ?</string>
+    <string name="confirm_message_unnamed">Le système auquel tu t\'es connecté demande à gérer cet écran : ce qu\'il affiche et ses réglages. Appuie sur OK pour l\'autoriser, ou sur Retour pour refuser. Ne l\'autorise que si tu ajoutes maintenant cet écran.</string>
+    <string name="added_to">Ajouté à %1$s. Cet écran affiche ce qui y est configuré pour lui.</string>
+    <string name="added">Ajouté au système. Cet écran affiche ce qui y est configuré pour lui.</string>
 </resources>

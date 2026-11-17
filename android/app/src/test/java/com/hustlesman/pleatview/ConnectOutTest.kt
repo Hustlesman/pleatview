@@ -249,7 +249,7 @@ class ConnectOutTest {
 
     private var now = 1_000_000L
 
-    private fun newConnection(firstWaitMs: Long = 2000): ConnectOut = ConnectOut(
+    private fun newConnection(firstWaitMs: Long = 2000, builtIn: String? = null): ConnectOut = ConnectOut(
         prefs = prefs,
         signer = SoftwareSigner.fresh(),
         info = { JSONObject().put("id", "tv-1").put("name", "Den TV").put("app_version", "1.0.19") },
@@ -266,6 +266,7 @@ class ConnectOutTest {
         connector = { url, _ -> WebSocketClient.open(Watched(URI(url).port), URI(url), ProtocolV2.SUBPROTOCOL) },
         firstWaitMs = firstWaitMs,
         clock = { now },
+        builtInAddress = { builtIn },
     ).also { connection = it }
 
     @After
@@ -324,6 +325,41 @@ class ConnectOutTest {
         until { c.online }
         assertNull(c.asking)
         assertNull(c.notAdded)
+    }
+
+    @Test
+    fun `the built-in address is never shown, and who it was added to is`() {
+        controller.confirm = "Acme"
+        val c = newConnection(builtIn = controller.url)
+        c.start()
+        c.enrol(c.builtIn!!)
+        until { c.asking != null }
+        assertTrue("the code without the host", ("K7RM-W2XD" to "") in codes)
+        assertEquals("", c.shownHost())
+        assertNull(c.addedTo) // not yet
+        c.decide(true)
+        until { c.online }
+        assertEquals("Acme", c.addedTo)
+        c.enrol(controller.url) // connecting again: not added there yet
+        assertNull(c.addedTo)
+    }
+
+    @Test
+    fun `a typed address is shown, and an unnamed organisation is named by it unless built in`() {
+        controller.confirm = ""
+        val c = newConnection(builtIn = "wss://screens.example.com/api/pleatview/v2")
+        c.start()
+        c.enrol("127.0.0.1:${controller.server.localPort}")
+        until { c.asking != null }
+        assertEquals("127.0.0.1", c.asking)
+        assertEquals("127.0.0.1", c.shownHost())
+        assertTrue(("K7RM-W2XD" to "127.0.0.1") in codes)
+        c.stop()
+        val built = newConnection(builtIn = controller.url)
+        built.start()
+        built.enrol(controller.url) // the built-in one, typed: still not shown
+        until { built.asking != null }
+        assertEquals("", built.asking)
     }
 
     @Test

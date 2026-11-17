@@ -273,6 +273,19 @@ class ConnectsOut(unittest.IsolatedAsyncioTestCase):
             self.connection.enrol(pin=self.controller.pin)
         self.assertEqual(json.loads((self.folder / "controller.json").read_text())["url"], connect.address(self.controller.url))
 
+    async def test_the_address_built_in_is_never_shown(self) -> None:
+        from pleatview_light import builtin
+        given = "wss://devices.example/api/pleatview/v2"
+        with mock.patch.object(builtin, "ADDRESS", builtin.encode(given)):
+            self.assertEqual(self.connection.shown_host(given), "")
+            self.assertEqual(self.connection.shown_host("wss://DEVICES.example:443/api/pleatview/v2"), "")
+            self.assertEqual(self.connection.shown_host(self.controller.url), "127.0.0.1")
+            self.connection.start()
+            self.connection.enrol(self.controller.url, pin=self.controller.pin)
+            await self.until(lambda: any(code for code, _ in self.codes))
+            self.assertIn("127.0.0.1", [host for code, host in self.codes if code])
+        self.assertEqual(self.connection.shown_host(given), "devices.example")  # a build without it: just an address
+
     async def test_with_a_token_no_code_and_removed_means_forgotten(self) -> None:
         self.connection.start()
         self.connection.enrol(self.controller.url, token="one-time", pin=self.controller.pin)

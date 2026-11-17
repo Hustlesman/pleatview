@@ -71,4 +71,11 @@
     <string name="not_added_declined">Niet toegevoegd: het is hier geweigerd. Verbind opnieuw om het nog eens te proberen.</string>
     <string name="not_added_unanswered">Niet toegevoegd: niemand antwoordde op tijd. Verbind opnieuw om het nog eens te proberen.</string>
     <string name="not_added_gave_up">Niet toegevoegd: niemand voegde dit scherm binnen een uur toe, dus het maakt geen verbinding meer. Verbind opnieuw om het nog eens te proberen.</string>
+    <string name="setup_step_code_builtin">Voeg dit scherm toe door deze code te typen waar je schermen beheerd worden:</string>
+    <string name="connect_message_builtin">Laat het adres leeg om te verbinden met het beheersysteem dat bij deze app hoort, of typ een ander, bijvoorbeeld screens.example.com. Dit scherm toont daarna een code om het daar toe te voegen.</string>
+    <string name="confirm_message_builtin">%1$s wil dit scherm beheren: wat het toont en de instellingen. Druk op OK om dat toe te staan, of op Terug om het te weigeren. Sta het alleen toe als je dit scherm nu aan %1$s toevoegt.</string>
+    <string name="confirm_title_unnamed">Dit beheersysteem toestaan dit scherm te beheren?</string>
+    <string name="confirm_message_unnamed">Het beheersysteem waarmee je verbonden bent, wil dit scherm beheren: wat het toont en de instellingen. Druk op OK om dat toe te staan, of op Terug om het te weigeren. Sta het alleen toe als je dit scherm nu toevoegt.</string>
+    <string name="added_to">Toegevoegd aan %1$s. Dit scherm toont wat daar voor het scherm is ingesteld.</string>
+    <string name="added">Toegevoegd aan het beheersysteem. Dit scherm toont wat daar voor het scherm is ingesteld.</string>
 </resources>

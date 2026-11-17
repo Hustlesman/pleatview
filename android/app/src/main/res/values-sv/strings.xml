@@ -71,4 +71,11 @@
     <string name="not_added_declined">Inte tillagd: det nekades här. Anslut igen för att försöka en gång till.</string>
     <string name="not_added_unanswered">Inte tillagd: ingen svarade i tid. Anslut igen för att försöka en gång till.</string>
     <string name="not_added_gave_up">Inte tillagd: ingen lade till skärmen inom en timme, så den slutade ansluta. Anslut igen för att försöka en gång till.</string>
+    <string name="setup_step_code_builtin">Lägg till skärmen genom att skriva den här koden där dina skärmar hanteras:</string>
+    <string name="connect_message_builtin">Lämna adressen tom för att ansluta till styrsystemet som följer med appen, eller skriv en annan, till exempel screens.example.com. Den här skärmen visar sedan en kod för att lägga till den där.</string>
+    <string name="confirm_message_builtin">%1$s vill hantera den här skärmen: vad den visar och dess inställningar. Tryck på OK för att tillåta det, eller Tillbaka för att neka. Tillåt det bara om du just nu lägger till skärmen i %1$s.</string>
+    <string name="confirm_title_unnamed">Tillåta det här styrsystemet att hantera den här skärmen?</string>
+    <string name="confirm_message_unnamed">Styrsystemet du anslöt till vill hantera den här skärmen: vad den visar och dess inställningar. Tryck på OK för att tillåta det, eller Tillbaka för att neka. Tillåt det bara om du just nu lägger till skärmen.</string>
+    <string name="added_to">Tillagd i %1$s. Den här skärmen visar det som är inställt för den där.</string>
+    <string name="added">Tillagd i styrsystemet. Den här skärmen visar det som är inställt för den där.</string>
 </resources>

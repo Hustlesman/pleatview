@@ -71,4 +71,11 @@
     <string name="not_added_declined">Nepřidáno: zde to bylo odmítnuto. Připojte se znovu a zkuste to ještě jednou.</string>
     <string name="not_added_unanswered">Nepřidáno: nikdo neodpověděl včas. Připojte se znovu a zkuste to ještě jednou.</string>
     <string name="not_added_gave_up">Nepřidáno: nikdo tuto obrazovku do hodiny nepřidal, a tak se přestala připojovat. Připojte se znovu a zkuste to ještě jednou.</string>
+    <string name="setup_step_code_builtin">Pro přidání této obrazovky zadejte tento kód tam, kde spravujete své obrazovky:</string>
+    <string name="connect_message_builtin">Nechte adresu prázdnou pro připojení k systému, se kterým tato aplikace přichází, nebo zadejte jinou, například screens.example.com. Tato obrazovka pak zobrazí kód, abyste ji tam přidali.</string>
+    <string name="confirm_message_builtin">%1$s chce spravovat tuto obrazovku: co zobrazuje a její nastavení. Stiskněte OK pro povolení, nebo Zpět pro odmítnutí. Povolte to jen tehdy, pokud tuto obrazovku právě přidáváte do %1$s.</string>
+    <string name="confirm_title_unnamed">Povolit tomuto systému spravovat tuto obrazovku?</string>
+    <string name="confirm_message_unnamed">Systém, ke kterému jste se připojili, chce spravovat tuto obrazovku: co zobrazuje a její nastavení. Stiskněte OK pro povolení, nebo Zpět pro odmítnutí. Povolte to jen tehdy, pokud tuto obrazovku právě přidáváte.</string>
+    <string name="added_to">Přidáno do %1$s. Tato obrazovka zobrazuje, co je pro ni tam nastaveno.</string>
+    <string name="added">Přidáno do systému. Tato obrazovka zobrazuje, co je pro ni tam nastaveno.</string>
 </resources>

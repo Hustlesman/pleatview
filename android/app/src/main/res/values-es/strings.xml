@@ -71,4 +71,11 @@
     <string name="not_added_declined">No añadida: se rechazó aquí. Vuelve a conectar para intentarlo de nuevo.</string>
     <string name="not_added_unanswered">No añadida: nadie respondió a tiempo. Vuelve a conectar para intentarlo de nuevo.</string>
     <string name="not_added_gave_up">No añadida: nadie añadió esta pantalla en una hora, así que dejó de conectarse. Vuelve a conectar para intentarlo de nuevo.</string>
+    <string name="setup_step_code_builtin">Para añadir esta pantalla, escribe este código donde gestionas tus pantallas:</string>
+    <string name="connect_message_builtin">Deja la dirección vacía para conectar con el controlador que incluye esta app, o escribe otra, por ejemplo screens.example.com. Esta pantalla mostrará entonces un código para añadirla allí.</string>
+    <string name="confirm_message_builtin">%1$s pide gestionar esta pantalla: lo que muestra y sus ajustes. Pulsa OK para permitirlo, o Atrás para rechazarlo. Permítelo solo si estás añadiendo ahora esta pantalla a %1$s.</string>
+    <string name="confirm_title_unnamed">¿Permitir que este controlador gestione esta pantalla?</string>
+    <string name="confirm_message_unnamed">El controlador al que te has conectado pide gestionar esta pantalla: lo que muestra y sus ajustes. Pulsa OK para permitirlo, o Atrás para rechazarlo. Permítelo solo si estás añadiendo ahora esta pantalla.</string>
+    <string name="added_to">Añadida a %1$s. Esta pantalla muestra lo que se configure allí para ella.</string>
+    <string name="added">Añadida al controlador. Esta pantalla muestra lo que se configure allí para ella.</string>
 </resources>

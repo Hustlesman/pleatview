@@ -71,4 +71,11 @@
     <string name="not_added_declined">Nicht hinzugefügt: Hier wurde es abgelehnt. Verbinde dich erneut, um es noch einmal zu versuchen.</string>
     <string name="not_added_unanswered">Nicht hinzugefügt: Niemand hat rechtzeitig geantwortet. Verbinde dich erneut, um es noch einmal zu versuchen.</string>
     <string name="not_added_gave_up">Nicht hinzugefügt: Niemand hat diesen Bildschirm innerhalb einer Stunde hinzugefügt, deshalb verbindet er sich nicht mehr. Verbinde dich erneut, um es noch einmal zu versuchen.</string>
+    <string name="setup_step_code_builtin">Um diesen Bildschirm hinzuzufügen, gib diesen Code dort ein, wo deine Bildschirme verwaltet werden:</string>
+    <string name="connect_message_builtin">Lass die Adresse leer, um dich mit der Steuerung zu verbinden, die zu dieser App gehört, oder gib eine andere ein, zum Beispiel screens.example.com. Dieser Bildschirm zeigt dann einen Code, um ihn dort hinzuzufügen.</string>
+    <string name="confirm_message_builtin">%1$s möchte diesen Bildschirm verwalten: was er zeigt und seine Einstellungen. Drücke OK, um es zu erlauben, oder Zurück, um es abzulehnen. Erlaube es nur, wenn du diesen Bildschirm gerade zu %1$s hinzufügst.</string>
+    <string name="confirm_title_unnamed">Dieser Steuerung erlauben, diesen Bildschirm zu verwalten?</string>
+    <string name="confirm_message_unnamed">Die Steuerung, mit der du dich verbunden hast, möchte diesen Bildschirm verwalten: was er zeigt und seine Einstellungen. Drücke OK, um es zu erlauben, oder Zurück, um es abzulehnen. Erlaube es nur, wenn du diesen Bildschirm gerade hinzufügst.</string>
+    <string name="added_to">Zu %1$s hinzugefügt. Dieser Bildschirm zeigt, was dort für ihn eingestellt ist.</string>
+    <string name="added">Zur Steuerung hinzugefügt. Dieser Bildschirm zeigt, was dort für ihn eingestellt ist.</string>
 </resources>

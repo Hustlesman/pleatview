@@ -354,6 +354,14 @@ test("connecting without an address: the one the build was made with, or none", 
   assert.ok(controller);
 });
 
+test("the address the build came with is never shown; others are", async (t) => {
+  const { conn, controller } = await setUp(t, { builtIn: () => "wss://devices.example/api/pleatview/v2" });
+  assert.equal(conn.shownHost("wss://devices.example/api/pleatview/v2"), "");
+  assert.equal(conn.shownHost("wss://DEVICES.example:443/api/pleatview/v2"), ""); // the same address, written otherwise
+  assert.equal(conn.shownHost(controller.url), "127.0.0.1");
+  assert.equal(conn.shownHost("not an address"), "");
+});
+
 test("the built-in address is kept encoded, and a build without one has none", () => {
   const given = "wss://devices.example/api/pleatview/v2";
   const encoded = encodeAddress(given);
