@@ -31,7 +31,7 @@ fi
 exec docker run --rm \
   --user "$(id -u):$(id -g)" \
   -e HOME=/tmp/home -e GRADLE_USER_HOME=/gradle -e ANDROID_USER_HOME=/tmp/home/.android \
-  -e PLEATVIEW_KEYSTORE_PASSWORD -e PLEATVIEW_KEY_ALIAS -e PLEATVIEW_KEY_PASSWORD \
+  -e PLEATVIEW_KEYSTORE_PASSWORD -e PLEATVIEW_KEY_ALIAS -e PLEATVIEW_KEY_PASSWORD -e PLEATVIEW_CONTROLLER \
   "${keystore[@]}" \
   -v "$HOME/.gradle:/gradle" \
   -v "$HOME/.android:/tmp/home/.android" \

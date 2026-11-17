@@ -71,4 +71,11 @@
     <string name="not_added_declined">Not added: it was refused here. Connect again to try once more.</string>
     <string name="not_added_unanswered">Not added: nobody answered in time. Connect again to try once more.</string>
     <string name="not_added_gave_up">Not added: nobody added this screen within an hour, so it stopped connecting. Connect again to try once more.</string>
+    <string name="setup_step_code_builtin">To add this screen, type this code where your screens are managed:</string>
+    <string name="connect_message_builtin">Leave the address empty to connect to the controller this app comes with, or type another, such as screens.example.com. This screen then shows a code to add it there.</string>
+    <string name="confirm_message_builtin">%1$s asks to manage this screen: what it shows and its settings. Press OK to allow it, or Back to refuse. Only allow it if you\'re adding this screen to %1$s now.</string>
+    <string name="confirm_title_unnamed">Allow this controller to manage this screen?</string>
+    <string name="confirm_message_unnamed">The controller you connected to asks to manage this screen: what it shows and its settings. Press OK to allow it, or Back to refuse. Only allow it if you\'re adding this screen now.</string>
+    <string name="added_to">Added to %1$s. This screen shows what\'s set for it there.</string>
+    <string name="added">Added to the controller. This screen shows what\'s set for it there.</string>
 </resources>

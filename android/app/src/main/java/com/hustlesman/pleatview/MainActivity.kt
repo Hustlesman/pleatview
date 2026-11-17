@@ -16,7 +16,9 @@ import android.view.Gravity
 import android.view.KeyEvent
 import android.view.MotionEvent
 import android.view.View
+import android.view.ViewGroup
 import android.view.WindowManager
+import android.view.inputmethod.EditorInfo
 import android.widget.Button
 import android.widget.CheckBox
 import android.widget.EditText
@@ -311,11 +313,15 @@ class MainActivity : Activity(), Hub.Display, DashboardController.Callbacks, Med
         if (questionShown == asking && questionDialog?.isShowing == true) return
         questionDialog?.dismiss()
         questionShown = asking
-        val host = out.url?.let { runCatching { java.net.URI(it).host }.getOrNull() } ?: ""
+        val host = out.shownHost() // never the built-in address's
         var answered = false
         val dialog = AlertDialog.Builder(this, android.R.style.Theme_DeviceDefault_Dialog_Alert)
-            .setTitle(getString(R.string.confirm_title, asking))
-            .setMessage(getString(R.string.confirm_message, asking, host))
+            .setTitle(if (asking.isBlank()) getString(R.string.confirm_title_unnamed) else getString(R.string.confirm_title, asking))
+            .setMessage(when {
+                asking.isBlank() -> getString(R.string.confirm_message_unnamed)
+                host.isEmpty() -> getString(R.string.confirm_message_builtin, asking)
+                else -> getString(R.string.confirm_message, asking, host)
+            })
             .setPositiveButton(R.string.approve_allow) { _, _ -> answered = true; out.decide(true) }
             .setNegativeButton(R.string.approve_deny) { _, _ -> answered = true; out.decide(false) }
             .setOnCancelListener { if (!answered) out.decide(false) }
@@ -327,26 +333,43 @@ class MainActivity : Activity(), Hub.Display, DashboardController.Callbacks, Med
     /** A controller's address, typed with the remote (a host name is enough) or the one built in. */
     private fun showConnectDialog() {
         val out = app.connectOut ?: return
+        // The address this build came with is used when the field is left empty, and never shown:
+        // it stays unlisted.
+        val builtIn = out.builtIn
         val field = EditText(this).apply {
             inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_URI
             isSingleLine = true
-            hint = "screens.example.com"
-            setText(ProtocolV2.builtIn()?.let { runCatching { java.net.URI(it).host }.getOrNull() } ?: "")
-            setSelection(text.length)
+            // An example only when there's nothing built in: otherwise it looks like a value already there.
+            hint = if (builtIn == null) "screens.example.com" else ""
+            imeOptions = EditorInfo.IME_ACTION_GO
         }
         val dialog = AlertDialog.Builder(this, android.R.style.Theme_DeviceDefault_Dialog_Alert)
             .setTitle(R.string.connect_title)
-            .setMessage(R.string.connect_message)
+            .setMessage(if (builtIn != null) R.string.connect_message_builtin else R.string.connect_message)
             .setView(field)
             .setPositiveButton(R.string.connect_ok, null)
             .setNegativeButton(android.R.string.cancel, null)
             .show()
-        dialog.getButton(AlertDialog.BUTTON_POSITIVE)?.setOnClickListener {
+        val connect = dialog.getButton(AlertDialog.BUTTON_POSITIVE)
+        connect?.setOnClickListener {
+            val typed = field.text.toString().trim()
             try {
-                out.enrol(field.text.toString())
+                out.enrol(if (typed.isEmpty() && builtIn != null) builtIn else typed)
                 dialog.dismiss()
             } catch (e: IllegalArgumentException) {
                 field.error = getString(R.string.connect_bad)
+            }
+        }
+        // The remote's Down goes to Connect (not to Cancel, the nearer one), and the keyboard's
+        // Go key connects too.
+        connect?.let { field.nextFocusDownId = it.id }
+        field.setOnEditorActionListener { _, action, event ->
+            val enter = event?.keyCode == KeyEvent.KEYCODE_ENTER && event.action == KeyEvent.ACTION_UP
+            if (action == EditorInfo.IME_ACTION_GO || action == EditorInfo.IME_ACTION_DONE || enter) {
+                connect?.performClick()
+                true
+            } else {
+                false
             }
         }
         field.requestFocus()
@@ -522,17 +545,24 @@ class MainActivity : Activity(), Hub.Display, DashboardController.Callbacks, Med
         val code = app.connectOut?.code
         val notice = findViewById<TextView>(R.id.setup_notice)
         val why = app.connectOut?.notAdded
-        notice.text = when (why) {
-            ConnectOut.DECLINED -> getString(R.string.not_added_declined)
-            ConnectOut.UNANSWERED -> getString(R.string.not_added_unanswered)
-            ConnectOut.GAVE_UP -> getString(R.string.not_added_gave_up)
+        // Added, with nothing to show yet: say so, or it looks as if nothing happened.
+        val addedTo = if (code == null && why == null) app.connectOut?.addedTo else null
+        notice.text = when {
+            why == ConnectOut.DECLINED -> getString(R.string.not_added_declined)
+            why == ConnectOut.UNANSWERED -> getString(R.string.not_added_unanswered)
+            why == ConnectOut.GAVE_UP -> getString(R.string.not_added_gave_up)
+            addedTo != null -> if (addedTo.isBlank()) getString(R.string.added) else getString(R.string.added_to, addedTo)
             else -> ""
         }
-        notice.visibility = if (why != null && code == null) View.VISIBLE else View.GONE
+        notice.visibility = if ((why != null || addedTo != null) && code == null) View.VISIBLE else View.GONE
         // The demo is for a screen nothing manages yet.
-        findViewById<View>(R.id.setup_demo).visibility = if (app.settings.config.isConfigured) View.GONE else View.VISIBLE
-        findViewById<TextView>(R.id.setup_pin_label).text =
-            if (code != null) getString(R.string.setup_step_code, code.second) else getString(R.string.setup_step_pin)
+        findViewById<View>(R.id.setup_demo).visibility =
+            if (app.settings.config.isConfigured || app.connectOut?.addedTo != null) View.GONE else View.VISIBLE
+        findViewById<TextView>(R.id.setup_pin_label).text = when {
+            code == null -> getString(R.string.setup_step_pin)
+            code.second.isEmpty() -> getString(R.string.setup_step_code_builtin) // the built-in address stays unlisted
+            else -> getString(R.string.setup_step_code, code.second)
+        }
         findViewById<TextView>(R.id.setup_pin).text = code?.first ?: formatPin(app.pairing.pin)
         val qr = findViewById<ImageView>(R.id.setup_qr)
         if (ip != null) {
@@ -547,8 +577,23 @@ class MainActivity : Activity(), Hub.Display, DashboardController.Callbacks, Med
         }
         findViewById<TextView>(R.id.setup_manual).text =
             getString(R.string.setup_manual, if (ip != null) "http://$ip:$port" else "http://<address>:$port")
+        // A notice takes its line's room: the code's own caption says the same, and on a 1080p TV
+        // the buttons would otherwise go below the screen.
+        val noticed = notice.visibility == View.VISIBLE
+        findViewById<View>(R.id.setup_manual).visibility = if (noticed) View.GONE else View.VISIBLE
+        findViewById<View>(R.id.setup_pin).let { pin ->
+            val margins = pin.layoutParams as ViewGroup.MarginLayoutParams
+            val bottom = ((if (noticed) 10 else 26) * resources.displayMetrics.density).toInt()
+            if (margins.bottomMargin != bottom) pin.layoutParams = margins.apply { bottomMargin = bottom }
+        }
         findViewById<TextView>(R.id.setup_device).text =
             getString(R.string.setup_device, app.settings.deviceName, BuildConfig.VERSION_NAME)
+        // The remote always reaches a button: one that had focus may have just been hidden (the
+        // demo, while a controller adds or removes this screen), which leaves it on the page behind.
+        if (setupScreen.visibility == View.VISIBLE && !setupScreen.hasFocus() && !menuVisible) {
+            val demoButton = findViewById<View>(R.id.setup_demo)
+            (if (demoButton.visibility == View.VISIBLE) demoButton else findViewById(R.id.setup_connect)).requestFocus()
+        }
     }
 
     // ---- Demo ---------------------------------------------------------------------------

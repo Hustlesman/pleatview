@@ -71,4 +71,11 @@
     <string name="not_added_declined">Não adicionada: foi recusado aqui. Conecte de novo para tentar outra vez.</string>
     <string name="not_added_unanswered">Não adicionada: ninguém respondeu a tempo. Conecte de novo para tentar outra vez.</string>
     <string name="not_added_gave_up">Não adicionada: ninguém adicionou esta tela em uma hora, então ela parou de se conectar. Conecte de novo para tentar outra vez.</string>
+    <string name="setup_step_code_builtin">Para adicionar esta tela, digite este código onde suas telas são gerenciadas:</string>
+    <string name="connect_message_builtin">Deixe o endereço vazio para conectar ao controlador que vem com este app, ou digite outro, por exemplo screens.example.com. Esta tela mostrará então um código para adicioná-la lá.</string>
+    <string name="confirm_message_builtin">%1$s pede para gerenciar esta tela: o que ela mostra e suas configurações. Pressione OK para permitir, ou Voltar para recusar. Só permita se você estiver adicionando esta tela a %1$s agora.</string>
+    <string name="confirm_title_unnamed">Permitir que este controlador gerencie esta tela?</string>
+    <string name="confirm_message_unnamed">O controlador ao qual você se conectou pede para gerenciar esta tela: o que ela mostra e suas configurações. Pressione OK para permitir, ou Voltar para recusar. Só permita se você estiver adicionando esta tela agora.</string>
+    <string name="added_to">Adicionada a %1$s. Esta tela mostra o que estiver configurado para ela lá.</string>
+    <string name="added">Adicionada ao controlador. Esta tela mostra o que estiver configurado para ela lá.</string>
 </resources>

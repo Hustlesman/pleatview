@@ -89,6 +89,7 @@ class ConnectOut(
     private val connector: (String, String?) -> WebSocketClient = { url, pin -> WebSocketClient.connect(url, ProtocolV2.SUBPROTOCOL, pin) },
     private val firstWaitMs: Long = FIRST_WAIT_MS,
     private val clock: () -> Long = System::currentTimeMillis,
+    private val builtInAddress: () -> String? = { ProtocolV2.builtIn() },
 ) {
     interface Signer {
         /** Base64 of the public key's DER SubjectPublicKeyInfo. */
@@ -117,6 +118,19 @@ class ConnectOut(
     val notAdded: String? get() = prefs.getString(NOT_ADDED, null)
 
     val url: String? get() = prefs.getString(URL, null)
+
+    /** The address this build came with, as signatures name it (null in builds without one). */
+    val builtIn: String? get() = builtInAddress()?.let { runCatching { ProtocolV2.address(it) }.getOrNull() }
+
+    /**
+     * The controller's host, to show the person at the screen: never the built-in address's,
+     * which stays unlisted (blank instead).
+     */
+    fun shownHost(address: String? = url): String =
+        if (address == null || address == builtIn) "" else runCatching { URI(address).host }.getOrNull() ?: ""
+
+    /** Added to a controller (it welcomed this screen): the organisation that was allowed, or "". */
+    val addedTo: String? get() = if (url != null && prefs.getBoolean(ENROLLED, false)) prefs.getString(ORGANISATION, null) ?: "" else null
 
     private val wake = LinkedBlockingQueue<Unit>()
 
@@ -163,7 +177,7 @@ class ConnectOut(
     fun enrol(url: String, token: String? = null, pin: String? = null) {
         require(pin == null || ProtocolV2.isHex64(pin.lowercase())) { "fingerprint is the hex of the certificate's SHA-256" }
         prefs.edit().putString(URL, ProtocolV2.typed(url)).putString(PIN, pin?.lowercase()).putBoolean(ENROLLED, false)
-            .putLong(SINCE, clock()).putInt(CODES, 0).remove(NOT_ADDED).apply()
+            .putLong(SINCE, clock()).putInt(CODES, 0).remove(NOT_ADDED).remove(ORGANISATION).apply()
         this.token = token
         waitMs = firstWaitMs
         moving = null
@@ -175,9 +189,9 @@ class ConnectOut(
     /** The person at the screen allows the organisation that asked, or doesn't. */
     fun decide(allow: Boolean) {
         val ws = socket ?: return
-        if (asking == null) return
+        val organisation = asking ?: return
         asking = null
-        if (!allow) prefs.edit().putString(NOT_ADDED, DECLINED).apply()
+        prefs.edit().apply { if (allow) putString(ORGANISATION, organisation) else putString(NOT_ADDED, DECLINED) }.apply()
         codeChanged()
         Thread({
             try {
@@ -188,7 +202,7 @@ class ConnectOut(
     }
 
     private fun forget() {
-        prefs.edit().remove(URL).remove(PIN).remove(ENROLLED).remove(SINCE).remove(CODES).apply()
+        prefs.edit().remove(URL).remove(PIN).remove(ENROLLED).remove(SINCE).remove(CODES).remove(ORGANISATION).apply()
         token = null
         asking = null
         setCode(null)
@@ -332,10 +346,10 @@ class ConnectOut(
                     "code" -> {
                         prefs.edit().putInt(CODES, prefs.getInt(CODES, 0) + 1).apply()
                         codeEnds = clock() + message.optInt("expires_in", 600).coerceIn(1, 3600) * 1000L
-                        setCode(message.optString("code") to (URI(address).host ?: ""))
+                        setCode(message.optString("code") to shownHost(address))
                     }
                     "confirm" -> { // the code was typed: the person at the screen allows it, or not
-                        asking = message.optString("organisation").take(100).ifBlank { URI(address).host ?: "" }
+                        asking = message.optString("organisation").take(100).ifBlank { shownHost(address) }
                         codeChanged()
                         val asked = asking
                         pinger.schedule({
@@ -475,6 +489,7 @@ class ConnectOut(
         private const val SINCE = "v2_since"
         private const val CODES = "v2_codes"
         private const val NOT_ADDED = "v2_not_added"
+        private const val ORGANISATION = "v2_organisation"
         private const val MOST_CODES = 6
         private const val ENROL_HOUR_MS = 3_600_000L
         private const val DEFAULT_CODE_MS = 600_000L

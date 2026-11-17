@@ -110,15 +110,24 @@ export class Connection {
     this.restart();
   }
 
+  /**
+   * The controller's host, to show the person at the screen: never the address this build came
+   * with, which stays unlisted ("" instead).
+   */
+  shownHost(url) {
+    try {
+      const built = this.builtIn();
+      if (built && address(built) === address(url)) return "";
+      return new URL(url).hostname;
+    } catch {
+      return ""; // no address: nothing to name
+    }
+  }
+
   /** Not added: nothing more connects until someone chooses to connect again. */
   giveUp(why) {
-    let host = "";
-    try {
-      host = new URL(this.controller.url).hostname;
-    } catch {
-      // no address: nothing to name
-    }
-    console.log(`PleatView: not added to the controller at ${host}: ${why}`);
+    const host = this.shownHost(this.controller.url);
+    console.log(`PleatView: not added to the controller${host ? ` at ${host}` : ""}: ${why}`);
     this.forget();
     this.notAdded?.(host, why);
   }
@@ -270,11 +279,11 @@ export class Connection {
             this.giveUp("nobody added it within an hour");
             return ws.close(1000);
           }
-          return this.showCode(String(message.code ?? ""), new URL(url).hostname);
+          return this.showCode(String(message.code ?? ""), this.shownHost(url));
         }
         if (message.type === "confirm" && !welcomed && !asking) {
           asking = new AbortController();
-          return this.allow(ws, String(message.organisation || "an organisation").slice(0, 80), new URL(url).hostname, asking.signal);
+          return this.allow(ws, String(message.organisation || "an organisation").slice(0, 80), this.shownHost(url), asking.signal);
         }
         if (message.type === "ping") return ws.send({ type: "pong" });
         if (message.type === "welcome" && !welcomed) {

@@ -71,4 +71,11 @@
     <string name="not_added_declined">Nie dodano: odmówiono tutaj. Połącz ponownie, aby spróbować jeszcze raz.</string>
     <string name="not_added_unanswered">Nie dodano: nikt nie odpowiedział na czas. Połącz ponownie, aby spróbować jeszcze raz.</string>
     <string name="not_added_gave_up">Nie dodano: nikt nie dodał tego ekranu w ciągu godziny, więc przestał się łączyć. Połącz ponownie, aby spróbować jeszcze raz.</string>
+    <string name="setup_step_code_builtin">Aby dodać ten ekran, wpisz ten kod tam, gdzie zarządzasz ekranami:</string>
+    <string name="connect_message_builtin">Zostaw adres pusty, aby połączyć się z systemem dołączonym do tej aplikacji, lub wpisz inny, na przykład screens.example.com. Ten ekran pokaże wtedy kod, by go tam dodać.</string>
+    <string name="confirm_message_builtin">%1$s chce zarządzać tym ekranem: tym, co pokazuje, i jego ustawieniami. Naciśnij OK, aby zezwolić, lub Wstecz, aby odmówić. Zezwól tylko wtedy, gdy właśnie dodajesz ten ekran do %1$s.</string>
+    <string name="confirm_title_unnamed">Zezwolić temu systemowi na zarządzanie tym ekranem?</string>
+    <string name="confirm_message_unnamed">System, z którym się połączono, chce zarządzać tym ekranem: tym, co pokazuje, i jego ustawieniami. Naciśnij OK, aby zezwolić, lub Wstecz, aby odmówić. Zezwól tylko wtedy, gdy właśnie dodajesz ten ekran.</string>
+    <string name="added_to">Dodano do %1$s. Ten ekran pokazuje to, co jest tam dla niego ustawione.</string>
+    <string name="added">Dodano do systemu. Ten ekran pokazuje to, co jest tam dla niego ustawione.</string>
 </resources>

@@ -56,8 +56,11 @@ function showSetupInfo(info) {
   setupInfo = info;
   $("setup-address").textContent = info.address ? `Host  ${info.address}\nPort  ${info.port}` : "Not connected to a network";
   // Protocol v2: while a controller elsewhere waits for this screen's code, the code instead.
-  $("setup-pin-label").textContent = info.enrol ? `Connecting to ${info.enrol.host}. Add this screen there with its code`
-    : info.notAdded ? `Not added to ${info.notAdded.host}: ${info.notAdded.why}. To try again: pleatview-kiosk connect. When Home Assistant asks for a PIN, enter`
+  // The address this build came with stays unlisted: its host comes as "".
+  $("setup-pin-label").textContent = info.enrol
+    ? (info.enrol.host ? `Connecting to ${info.enrol.host}. Add this screen there with its code`
+      : "To add this screen, type this code where your screens are managed")
+    : info.notAdded ? `Not added${info.notAdded.host ? ` to ${info.notAdded.host}` : ""}: ${info.notAdded.why}. To try again: pleatview-kiosk connect. When Home Assistant asks for a PIN, enter`
       : "When Home Assistant asks for a PIN, enter";
   $("setup-pin").textContent = info.enrol ? info.enrol.code : info.pin.replace(/(\d{3})(\d{3})/, "$1 $2");
   $("setup-manual").textContent = `No integration? Scan the code, or open http://${info.address}:${info.port} on your phone.`;
@@ -427,7 +430,7 @@ function showApproval(approval) {
   if (approval?.organisation) {
     // Protocol v2: this screen's code was typed into a controller elsewhere.
     $("approval-title").textContent = `Allow ${approval.organisation} to manage this screen?`;
-    $("approval-text").textContent = `This screen's code was typed in at ${approval.host}, for ${approval.organisation}. ` +
+    $("approval-text").textContent = `This screen's code was typed in${approval.host ? ` at ${approval.host}` : ""}, for ${approval.organisation}. ` +
       "Press Enter to allow it. Only allow it if you're adding this screen there yourself, or someone you trust is.";
     $("approval-allow").focus();
   } else if (approval) {

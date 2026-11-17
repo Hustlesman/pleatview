@@ -148,10 +148,23 @@ class Connection:
         self.codes_shown = 0
         self._restart()
 
+    @staticmethod
+    def shown_host(url: str) -> str:
+        """The controller's host, to show the person at the screen: never the address this build
+        came with, which stays unlisted ("" instead)."""
+        from .builtin import address as built_in
+        built = built_in()
+        try:
+            if built and address(built) == address(url):
+                return ""
+        except ValueError:
+            pass
+        return urlsplit(url or "").hostname or ""
+
     async def _give_up(self, why: str) -> None:
         """Not added: nothing more connects until someone chooses to connect again."""
-        host = urlsplit(self.controller.get("url", "")).hostname or ""
-        _LOGGER.info("Not added to the controller at %s: %s", host, why)
+        host = self.shown_host(self.controller.get("url", ""))
+        _LOGGER.info("Not added to the controller%s: %s", f" at {host}" if host else "", why)
         self.forget()
         if self.not_added:
             await self.not_added(host, why)
@@ -265,7 +278,7 @@ class Connection:
                 before["features"] = list(self.state().get("features") or [])
                 await ws.send_json({"type": "enrol", "key": self.public, **hello, "info": before,
                                     **({"token": self.token} if self.token else {})})
-            host = urlsplit(url).hostname or ""
+            host = self.shown_host(url)  # never the built-in address's
             while True:  # a code first, perhaps, the person at the screen allowing it, then welcome
                 message = await ws.receive_json()
                 kind = message.get("type")

@@ -223,13 +223,15 @@ class Screen:
     def setup_text(self) -> str:
         if self.asking:
             organisation, host, _ = self.asking
-            return (f"PleatView\n\nAllow {organisation} to manage this screen?\n({host})\n\n"
+            return (f"PleatView\n\nAllow {organisation} to manage this screen?\n" + (f"({host})\n" if host else "") + "\n"
                     "OK on the TV's remote: allow · Back: don't\n"
                     "or on this computer: pleatview-light allow (or decline)")
         if self.enrol_code:
             code, host = self.enrol_code
-            return (f"PleatView\n\nConnecting to {host}\nAdd this screen there with its code:\n\n"
-                    f"Code  {code}")
+            # The address this build came with stays unlisted: its host comes as "".
+            where = (f"Connecting to {host}\nAdd this screen there with its code:" if host
+                     else "To add this screen, type this code\nwhere your screens are managed:")
+            return f"PleatView\n\n{where}\n\nCode  {code}"
         s = self.setup()
         pin = f"{s['pin'][:3]} {s['pin'][3:]}"
         return (f"PleatView\n\nIn Home Assistant: Settings → Devices & services → PleatView\n"
@@ -268,7 +270,8 @@ class Screen:
     async def not_added(self, host: str, why: str) -> None:
         """Not added to a controller: said on the screen for a while."""
         self.pin_until = time.monotonic() + 60
-        await self.player.text(f"PleatView\n\nNot added to {host}: {why}.\n\nTo try again: pleatview-light connect", 60)
+        to = f" to {host}" if host else ""
+        await self.player.text(f"PleatView\n\nNot added{to}: {why}.\n\nTo try again: pleatview-light connect", 60)
 
     async def pin_requested(self) -> None:
         """Someone asked who this screen is, which comes before pairing: show the PIN a while."""
