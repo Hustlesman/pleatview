@@ -672,6 +672,10 @@ class MainActivity : Activity(), Hub.Display, DashboardController.Callbacks, Med
             }
         }
         stack(R.id.setup_row, R.id.setup_text, 560, R.id.setup_code)
+        findViewById<LinearLayout>(R.id.setup_buttons).orientation = if (wide) LinearLayout.HORIZONTAL else LinearLayout.VERTICAL
+        findViewById<View>(R.id.setup_connect).let { connect ->
+            connect.layoutParams = (connect.layoutParams as LinearLayout.LayoutParams).apply { topMargin = if (wide) 0 else (10 * density).toInt() }
+        }
         stack(R.id.signin_row, R.id.signin_text, 520, R.id.signin_code)
         // A phone can be narrower than the menu, and than the now-playing text beside the
         // cover art (56 + 14 dp) in its bar (24 dp margins and 12 dp padding on each side).

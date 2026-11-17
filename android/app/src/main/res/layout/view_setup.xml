@@ -107,20 +107,28 @@
             android:textSize="13sp" />
 
         <!-- No Home Assistant yet: a sample home and a tour. Focused on TVs, so OK starts it. -->
-        <Button
-            android:id="@+id/setup_demo"
-            style="@style/PleatView.MenuButton"
+        <!-- Side by side on wide screens (both within a 1080p TV's height); stacked on narrow ones. -->
+        <LinearLayout
+            android:id="@+id/setup_buttons"
             android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
             android:layout_marginTop="22dp"
-            android:text="@string/setup_demo" />
+            android:orientation="horizontal">
 
-        <!-- Managed from elsewhere: a controller's address, typed here or built in (protocol v2). -->
-        <Button
-            android:id="@+id/setup_connect"
-            style="@style/PleatView.MenuButton"
-            android:layout_width="wrap_content"
-            android:layout_marginTop="10dp"
-            android:text="@string/setup_connect" />
+            <Button
+                android:id="@+id/setup_demo"
+                style="@style/PleatView.MenuButton"
+                android:layout_width="wrap_content"
+                android:layout_marginEnd="12dp"
+                android:text="@string/setup_demo" />
+
+            <!-- Managed from elsewhere: a controller's address, typed here or built in (protocol v2). -->
+            <Button
+                android:id="@+id/setup_connect"
+                style="@style/PleatView.MenuButton"
+                android:layout_width="wrap_content"
+                android:text="@string/setup_connect" />
+        </LinearLayout>
     </LinearLayout>
 
     <LinearLayout
