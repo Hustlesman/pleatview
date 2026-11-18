@@ -210,9 +210,10 @@ class PleatViewDevice:
         }
         if self.entry.data.get(CONF_AUTH_MODE) != AUTH_NONE:
             config["ha_token"] = self.entry.data.get(CONF_HA_TOKEN, "")
-        if self.rendering:
-            assert self.renderer
-            config["render_stream"] = self.ha_url.rstrip("/") + self.renderer.stream_path
+        if "render_stream" in (self.state.get("features") or []):
+            # Empty when not rendered: the TV keeps what it isn't sent, so a TV that was rendered
+            # would go on playing a stream that's gone. Empty, it draws its dashboards itself.
+            config["render_stream"] = self.ha_url.rstrip("/") + self.renderer.stream_path if self.rendering and self.renderer else ""
         if "rotation" in (self.state.get("features") or []):
             # The Linux app turns its whole picture; PleatView Light its own text (the renderer
             # turns its stream).
