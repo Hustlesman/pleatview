@@ -29,6 +29,7 @@ from typing import Any
 from urllib.parse import urlsplit
 
 from aiohttp import web
+from aiohttp.web_log import AccessLogger
 
 from . import actions
 from .mdns import Responder, local_address
@@ -36,6 +37,17 @@ from .pairing import Pairing
 from .session import Folders, Screen, Session
 
 _LOGGER = logging.getLogger(__name__)
+
+
+class AccessLog(AccessLogger):
+    """Every request but a stream's own: each TV fetches about two a second, which would push
+    the renderer's start and its warnings out of the log. A stream request that fails is kept."""
+
+    def log(self, request: web.BaseRequest, response: web.StreamResponse, time: float) -> None:
+        if response.status < 400 and request.path.startswith("/hls/"):
+            return
+        super().log(request, response, time)
+
 
 VERSION = "1.1.2"
 KEY = re.compile(r"^[A-Za-z0-9_-]{1,64}$")
@@ -690,4 +702,4 @@ def main() -> None:
 
         app.cleanup_ctx.append(announce)
         _LOGGER.info("Announcing itself on the network at %s:%d", local_address(), port)
-    web.run_app(app, host=host, port=port, ssl_context=context, print=None)
+    web.run_app(app, host=host, port=port, ssl_context=context, print=None, access_log_class=AccessLog)

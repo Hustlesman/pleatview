@@ -187,6 +187,87 @@ class SoundTest(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(set(received[:at]) | set(received[at + len(tone):]), {0})
 
 
+    async def test_a_sound_that_failed_still_stops(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            pipes = sound.Sound(Path(tmp) / "sound")
+            pipes.open()
+
+            async def fails() -> None:
+                raise OSError(5, "Input/output error")
+
+            pipes._run = fails  # type: ignore[method-assign]
+            pipes.start()
+            await asyncio.sleep(0.01)
+            self.assertTrue(pipes.task and pipes.task.done())
+            await pipes.stop()  # the session has said why; stopping doesn't fail on it
+            self.assertIsNone(pipes.task)
+            self.assertFalse(pipes.fifo.exists())
+
+
+class WatchTest(unittest.IsolatedAsyncioTestCase):
+    """What stops a screen's stream is noticed, and said, though every process still runs."""
+
+    async def asyncSetUp(self) -> None:
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        self.session = session.Session("tv-1", Screen("http://a"), session.Folders(Path(tmp.name)), "x264")
+        self.session.folder.mkdir(parents=True)
+        self.ffmpeg = await asyncio.create_subprocess_exec("sleep", "60")
+        self.addAsyncCleanup(self._end)
+        self.session._procs = {"ffmpeg": self.ffmpeg}
+        fast = mock.patch.multiple(session, WATCH_SECONDS=0.02, STALL_SECONDS=0.3, FIRST_SEGMENT_SECONDS=0.5, STOP_SECONDS=0.1)
+        fast.start()
+        self.addCleanup(fast.stop)
+
+    async def _end(self) -> None:
+        if self.ffmpeg.returncode is None:
+            self.ffmpeg.kill()
+            await self.ffmpeg.wait()
+
+    async def segments(self, count: int) -> None:
+        for n in range(count):
+            self.session.playlist.write_text(f"#EXTM3U\n#EXT-X-MEDIA-SEQUENCE:{n}\n")
+            await asyncio.sleep(0.05)
+
+    async def test_a_stream_that_stops_starts_again(self) -> None:
+        loop = asyncio.get_running_loop()
+        writer = asyncio.create_task(self.segments(12))  # 0.6 s of segments, then none
+        start = loop.time()
+        why = await asyncio.wait_for(self.session._wait_for_exit(), 5)
+        self.assertEqual(why, "the stream stopped: no new picture in 0.3 s")
+        self.assertGreater(loop.time() - start, 0.8, "not while segments came")
+        await writer
+
+    async def test_a_stream_that_never_starts(self) -> None:
+        why = await asyncio.wait_for(self.session._wait_for_exit(), 5)
+        self.assertEqual(why, "the stream didn't start in 0.5 s")
+
+    async def test_a_process_that_stops(self) -> None:
+        asyncio.get_running_loop().call_later(0.1, self.ffmpeg.kill)
+        self.assertEqual(await asyncio.wait_for(self.session._wait_for_exit(), 5), "ffmpeg stopped")
+
+    async def test_the_sound_failing_says_why(self) -> None:
+        async def fails() -> None:
+            await asyncio.sleep(0.1)
+            raise OSError(5, "Input/output error")
+
+        self.session._sound = mock.Mock(task=asyncio.create_task(fails()))
+        why = await asyncio.wait_for(self.session._wait_for_exit(), 5)
+        self.assertEqual(why, "the sound stopped (OSError(5, 'Input/output error'))")
+
+    async def test_a_process_that_wont_stop_is_left(self) -> None:
+        async def forever() -> None:  # stuck in the kernel: not even a kill ends it
+            await asyncio.sleep(60)
+
+        stuck = mock.Mock(returncode=None, pid=4321, wait=forever)
+        self.session._procs = {"ffmpeg": stuck}
+        with self.assertLogs(session._LOGGER, "WARNING") as logs:
+            await asyncio.wait_for(self.session._kill(), 2)
+        stuck.terminate.assert_called_once()
+        stuck.kill.assert_called_once()
+        self.assertEqual(logs.output, ["WARNING:pleatview_renderer.session:tv-1: ffmpeg (process 4321) doesn't stop; going on without it"])
+        self.assertEqual(self.session._procs, {})
+
 class PageTest(unittest.TestCase):
     def test_the_helper_is_the_apps_own(self) -> None:
         if not APP_HELPER.exists():
@@ -249,6 +330,21 @@ class ApiTest(AioHTTPTestCase):
         self.assertEqual((await self.client.get("/hls/tv-1/..%2Fprofiles")).status, 404)
         self.assertEqual((await self.client.get("/hls/other/s3.ts")).status, 404)
 
+
+class AccessLogTest(unittest.TestCase):
+    def test_streams_stay_out_of_the_log(self) -> None:
+        from aiohttp import web
+        from aiohttp.test_utils import make_mocked_request
+
+        log = server.AccessLog(server._LOGGER)
+        with self.assertNoLogs(server._LOGGER):
+            log.log(make_mocked_request("GET", "/hls/tv-1/index.m3u8"), web.Response(status=200), 0.01)
+            log.log(make_mocked_request("GET", "/hls/tv-1/s7.ts"), web.Response(status=200), 0.01)
+        with self.assertLogs(server._LOGGER, "INFO") as logs:
+            log.log(make_mocked_request("GET", "/hls/tv-1/index.m3u8"), web.Response(status=404), 0.01)
+            log.log(make_mocked_request("PUT", "/api/sessions/tv-1"), web.Response(status=200), 0.01)
+        self.assertEqual(len(logs.output), 2)
+        self.assertIn("/hls/tv-1/index.m3u8", logs.output[0])  # one that failed is kept
 
 class OverlayTest(unittest.TestCase):
     def test_overlays_are_checked(self) -> None:
