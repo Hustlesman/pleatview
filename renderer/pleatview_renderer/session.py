@@ -27,6 +27,13 @@ SEGMENT_SECONDS = 1
 PLAYLIST_SEGMENTS = 6
 # Frames per second of the stream: dashboards and live streams look smooth at 30.
 FPS = 30
+# A stream that stops while every process runs (ffmpeg waiting on an input or the encoder) is
+# started again: seconds for the first playlist, then without a new one, and between looks.
+FIRST_SEGMENT_SECONDS = 30
+STALL_SECONDS = 10 * SEGMENT_SECONDS
+WATCH_SECONDS = 1.0
+# Seconds a process gets to stop when asked, and again when killed.
+STOP_SECONDS = 5
 # Quality of the hardware encoder (lower is better): about 4 to 8 Mbit/s for a wall of videos at 1080p.
 VAAPI_QP = 26
 # The sound: AAC, which every TV plays.
@@ -255,7 +262,7 @@ class Session:
         self.display = next(_displays)
         self.port = 9300 + self.display
         self.last_access = time.monotonic()
-        self._procs: list[asyncio.subprocess.Process] = []
+        self._procs: dict[str, asyncio.subprocess.Process] = {}  # by program, in the order started
         self._task: asyncio.Task[None] | None = None
         self._cdp: Cdp | None = None
         self._script_id: str | None = None
@@ -327,8 +334,8 @@ class Session:
                 await self._start_processes()
                 self._ready.set()
                 _LOGGER.info("%s: showing %s at %dx%d", self.key, self.screen.url, self.screen.width, self.screen.height)
-                await self._wait_for_exit()
-                _LOGGER.warning("%s: a process stopped; starting again", self.key)
+                why = await self._wait_for_exit()
+                _LOGGER.warning("%s: %s; starting again", self.key, why)
             except (OSError, CdpError, TimeoutError) as err:
                 _LOGGER.warning("%s: could not start (%s)", self.key, err)
             finally:
@@ -350,7 +357,7 @@ class Session:
             (profile / name).unlink(missing_ok=True)
         screen = self.screen
         display = f":{self.display}"
-        self._procs.append(await _spawn(
+        self._procs["Xvfb"] = (await _spawn(
             "Xvfb", display, "-screen", "0", "{}x{}x24".format(*screen.page_size), "-nolisten", "tcp", "-nocursor",
         ))
         await _wait_for(lambda: Path(f"/tmp/.X11-unix/X{self.display}").exists(), 10)
@@ -358,13 +365,13 @@ class Session:
         env.pop("PULSE_SERVER", None)  # Chromium would play there instead of into the stream
         self._sound = self._open_sound(profile / "sound")
         device = sound.alsa_device(self._sound.fifo) if self._sound else None
-        self._procs.append(await _spawn("chromium", *chromium_args(screen, profile, self.port, device, self.proxy), env=env))
+        self._procs["chromium"] = await _spawn("chromium", *chromium_args(screen, profile, self.port, device, self.proxy), env=env)
         self._cdp = await Cdp.connect(self.port)
         self._cdp.on_event = self._on_event
         await self._cdp.call("Page.enable")
         await self._install_script()
         await self._cdp.call("Page.navigate", url=screen.page[0])
-        self._procs.append(await _spawn(
+        self._procs["ffmpeg"] = (await _spawn(
             "ffmpeg", *ffmpeg_args(self.encoder, screen, display, self.folder, with_sound=self._sound is not None),
             stdin=self._sound.ffmpeg_input if self._sound else None,
         ))
@@ -473,15 +480,48 @@ class Session:
                 return
         await self._cdp.call("Page.navigate", url=url)
 
-    async def _wait_for_exit(self) -> None:
-        waits = [asyncio.create_task(proc.wait()) for proc in self._procs]
+    async def _wait_for_exit(self) -> str:
+        """Until something stops: a process, Chromium's DevTools connection, the sound, or the
+        stream itself, which no process ending shows. Says what, for the log."""
+        waits: dict[asyncio.Future[Any], str] = {
+            asyncio.ensure_future(proc.wait()): f"{name} stopped" for name, proc in self._procs.items()
+        }
         if self._cdp:
-            waits.append(asyncio.create_task(self._cdp.closed.wait()))
+            waits[asyncio.ensure_future(self._cdp.closed.wait())] = "Chromium's DevTools connection closed"
+        watch = asyncio.ensure_future(self._watch_stream())
+        waits[watch] = ""
+        # Watched, not cancelled here: it's the sound itself, which stops with the rest.
+        sound_task = self._sound.task if self._sound else None
         try:
-            await asyncio.wait(waits, return_when=asyncio.FIRST_COMPLETED)
+            done, _ = await asyncio.wait([*waits, *([sound_task] if sound_task else [])], return_when=asyncio.FIRST_COMPLETED)
         finally:
             for task in waits:
                 task.cancel()
+        for task, why in waits.items():
+            if task in done:
+                return watch.result() if task is watch else why
+        assert sound_task
+        error = None if sound_task.cancelled() else sound_task.exception()
+        return f"the sound stopped ({error!r})" if error else "the sound stopped"
+
+    async def _watch_stream(self) -> str:
+        """Returns when the playlist stops changing: ffmpeg can wait for its sound, the display or
+        the encoder without stopping or saying so, and the TV then shows nothing."""
+        seen: int | None = None
+        since = time.monotonic()
+        while True:
+            await asyncio.sleep(WATCH_SECONDS)
+            try:
+                stamp: int | None = self.playlist.stat().st_mtime_ns
+            except OSError:
+                stamp = None
+            now = time.monotonic()
+            if stamp != seen:
+                seen, since = stamp, now
+            elif seen is None and now - since > FIRST_SEGMENT_SECONDS:
+                return f"the stream didn't start in {FIRST_SEGMENT_SECONDS:g} s"
+            elif seen is not None and now - since > STALL_SECONDS:
+                return f"the stream stopped: no new picture in {STALL_SECONDS:g} s"
 
     async def _kill(self) -> None:
         if self._steps_task:
@@ -491,14 +531,18 @@ class Session:
             await self._cdp.close()
             self._cdp = None
         self._script_id = None
-        for proc in reversed(self._procs):
+        for name, proc in reversed(self._procs.items()):
             if proc.returncode is None:
                 proc.terminate()
                 try:
-                    await asyncio.wait_for(proc.wait(), 5)
+                    await asyncio.wait_for(proc.wait(), STOP_SECONDS)
                 except TimeoutError:
                     proc.kill()
-                    await proc.wait()
+                    try:
+                        await asyncio.wait_for(proc.wait(), STOP_SECONDS)
+                    except TimeoutError:
+                        # Stuck in the kernel (a hung graphics driver): starting again beats waiting forever.
+                        _LOGGER.warning("%s: %s (process %d) doesn't stop; going on without it", self.key, name, proc.pid)
         self._procs.clear()
         if self._sound:
             await self._sound.stop()

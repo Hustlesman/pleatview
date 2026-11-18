@@ -76,6 +76,12 @@ class Sound:
         self.ffmpeg_input = -1
         self._task = asyncio.create_task(self._run(), name=f"sound {self.fifo}")
 
+    @property
+    def task(self) -> asyncio.Task[None] | None:
+        """What feeds ffmpeg: it ends by itself only when ffmpeg stops reading, or with an error
+        (the session watches it, and says which)."""
+        return self._task
+
     async def stop(self) -> None:
         if self._task:
             self._task.cancel()
@@ -83,6 +89,8 @@ class Sound:
                 await self._task
             except asyncio.CancelledError:
                 pass
+            except Exception as err:  # noqa: BLE001 - the session has said why it starts again
+                _LOGGER.debug("The sound in %s had stopped: %r", self.fifo, err)
             self._task = None
         for fd in (self._chromium, self._ffmpeg, self.ffmpeg_input):
             if fd >= 0:
