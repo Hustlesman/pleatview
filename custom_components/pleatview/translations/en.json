@@ -293,6 +293,10 @@
     "old_home_assistant": {
       "title": "Update Home Assistant for your TV dashboards",
       "description": "Home Assistant {version} has known security bugs in dashboard cards, fixed in {safe_version}. A TV shows its dashboard all day, signed in, so a malicious card could act as the TV's user. Update Home Assistant to {safe_version} or later."
+    },
+    "overlay_permission": {
+      "title": "{name} can't bring PleatView back to the front",
+      "description": "PleatView on {name} isn't allowed to display over other apps. Until it is, PleatView can't come back after another app or a restart, and notifications and cameras only show while it's open. Android can take this permission away, for example during an app update.\n\nOn the TV, press Back on the home dashboard and choose **Allow display over other apps**. If the TV has no such setting, which is common on Google TV, grant it once from a computer:\n\n`adb shell appops set com.hustlesman.pleatview SYSTEM_ALERT_WINDOW allow`"
     }
   },
   "entity": {

@@ -9,6 +9,9 @@ DEFAULT_PORT: Final = 8765
 # all day with the TV's token; the last of them was fixed in 2026.7.
 SAFE_HA_VERSION: Final = (2026, 7)
 ISSUE_OLD_HA: Final = "old_home_assistant"
+# A TV that won't let PleatView display over other apps (one repair per TV).
+ISSUE_OVERLAY: Final = "overlay_permission"
+OVERLAY_HELP: Final = "https://pleatview.hustlesman.com/support.html#over-other-apps"
 
 # Config entry data
 CONF_TOKEN: Final = "token"  # control-API token issued by the TV when pairing

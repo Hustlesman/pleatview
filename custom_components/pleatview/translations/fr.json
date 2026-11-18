@@ -293,6 +293,10 @@
     "old_home_assistant": {
       "title": "Mettez à jour Home Assistant pour vos tableaux de bord sur téléviseur",
       "description": "Home Assistant {version} a des failles de sécurité connues dans les cartes de tableau de bord, corrigées dans {safe_version}. Un téléviseur affiche son tableau de bord toute la journée, connecté, donc une carte malveillante pourrait agir en tant qu'utilisateur du téléviseur. Mettez à jour Home Assistant vers {safe_version} ou une version ultérieure."
+    },
+    "overlay_permission": {
+      "title": "{name} ne peut pas ramener PleatView au premier plan",
+      "description": "PleatView sur {name} n'est pas autorisé à s'afficher par-dessus d'autres applis. Tant qu'il ne l'est pas, PleatView ne peut pas revenir après une autre appli ou un redémarrage, et les notifications et caméras ne s'affichent que lorsqu'il est ouvert. Android peut retirer cette autorisation, par exemple lors d'une mise à jour de l'appli.\n\nSur le téléviseur, appuyez sur Retour sur le tableau de bord d'accueil et choisissez **Autoriser l'affichage par-dessus d'autres applis**. Si le téléviseur n'a pas ce réglage, ce qui est courant sur Google TV, accordez-la une fois depuis un ordinateur :\n\n`adb shell appops set com.hustlesman.pleatview SYSTEM_ALERT_WINDOW allow`"
     }
   },
   "entity": {

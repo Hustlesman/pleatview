@@ -13,6 +13,7 @@ from homeassistant.components.media_player import async_process_play_media_url
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.exceptions import HomeAssistantError
+from homeassistant.helpers import issue_registry as ir
 from homeassistant.helpers.network import NoURLAvailableError, get_url
 from yarl import URL
 
@@ -40,10 +41,18 @@ from .const import (
     CONF_ROTATION,
     CONF_ZOOM,
     DEFAULT_OPTIONS,
+    DOMAIN,
+    ISSUE_OVERLAY,
+    OVERLAY_HELP,
 )
 from .render import Renderer, Screen, screen_size
 
 _LOGGER = logging.getLogger(__name__)
+
+
+def overlay_issue(entry_id: str) -> str:
+    """The repair for one TV that won't let PleatView display over other apps."""
+    return f"{ISSUE_OVERLAY}_{entry_id}"
 
 RECONNECT_MIN = 1
 RECONNECT_MAX = 30
@@ -86,6 +95,7 @@ class PleatViewDevice:
         self.renderer = Renderer(hass, render_choice, entry.entry_id) if render_choice else None
         self._listeners: list[Callable[[], None]] = []
         self._received = False
+        self._overlay_permission: bool | None = None  # as last reported, for the repair
 
     @property
     def device_id(self) -> str:
@@ -273,7 +283,32 @@ class PleatViewDevice:
             )
         if self.rendering:
             self.entry.async_create_background_task(self.hass, self.async_render(), "pleatview render")
+        self._check_overlay_permission()
         self._notify()
+
+    @callback
+    def _check_overlay_permission(self) -> None:
+        """A repair while the TV won't let PleatView display over other apps. Without it the app
+        can't come back to the front, so a TV can sit on its home screen for days with nothing
+        to say why; Android has taken the permission away during an app update."""
+        allowed = self.state.get("overlay_permission")
+        if not isinstance(allowed, bool) or allowed == self._overlay_permission:
+            return  # unknown, or as before
+        self._overlay_permission = allowed
+        if allowed:
+            ir.async_delete_issue(self.hass, DOMAIN, overlay_issue(self.entry.entry_id))
+            return
+        ir.async_create_issue(
+            self.hass,
+            DOMAIN,
+            overlay_issue(self.entry.entry_id),
+            is_fixable=False,
+            is_persistent=False,
+            severity=ir.IssueSeverity.WARNING,
+            learn_more_url=OVERLAY_HELP,
+            translation_key=ISSUE_OVERLAY,
+            translation_placeholders={"name": self.name},
+        )
 
     async def _async_app_updated(self) -> None:
         changed = await self.async_refresh_dashboards()

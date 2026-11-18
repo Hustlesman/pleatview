@@ -42,6 +42,45 @@ async def test_setup_pushes_config(hass: HomeAssistant, fake_tv: FakeTV) -> None
     await hass.config_entries.async_unload(entry.entry_id)
 
 
+
+async def _until(check, timeout: float = 5) -> None:
+    async with asyncio.timeout(timeout):
+        while not check():
+            await asyncio.sleep(0.02)
+
+
+async def test_a_repair_while_a_tv_wont_let_pleatview_display_over_other_apps(hass: HomeAssistant, fake_tv: FakeTV) -> None:
+    # A wall TV lost the permission in an app update and sat on its home screen for days,
+    # with only an attribute to show why.
+    issues = ir.async_get(hass)
+    entry = await setup_entry(hass, make_entry(fake_tv))
+    repair = f"overlay_permission_{entry.entry_id}"
+    await fake_tv.wait_for_stream()
+    await _until(lambda: issues.async_get_issue(DOMAIN, repair) is not None)  # the fake TV reports false
+    issue = issues.async_get_issue(DOMAIN, repair)
+    assert issue.severity is ir.IssueSeverity.WARNING
+    assert issue.translation_key == "overlay_permission"
+    assert issue.translation_placeholders == {"name": "Living Room TV"}
+    assert issue.learn_more_url == "https://pleatview.hustlesman.com/support.html#over-other-apps"
+
+    await fake_tv.push(overlay_permission=True)  # allowed again on the TV
+    await _until(lambda: issues.async_get_issue(DOMAIN, repair) is None)
+    await fake_tv.push(overlay_permission=False)  # and taken away again
+    await _until(lambda: issues.async_get_issue(DOMAIN, repair) is not None)
+    await hass.config_entries.async_unload(entry.entry_id)
+    assert issues.async_get_issue(DOMAIN, repair) is None
+
+
+async def test_no_repair_from_apps_that_dont_say(hass: HomeAssistant, fake_tv: FakeTV) -> None:
+    # The Linux app and PleatView Light always may; an app that doesn't report it says nothing.
+    fake_tv.state.pop("overlay_permission")
+    entry = await setup_entry(hass, make_entry(fake_tv))
+    await fake_tv.wait_for_stream()
+    await fake_tv.push(volume=0.5)
+    await asyncio.sleep(0.2)
+    assert ir.async_get(hass).async_get_issue(DOMAIN, f"overlay_permission_{entry.entry_id}") is None
+    await hass.config_entries.async_unload(entry.entry_id)
+
 async def test_rotation_goes_to_screens_that_turn_their_picture(hass: HomeAssistant, fake_tv: FakeTV) -> None:
     entry = await setup_entry(hass, make_entry(fake_tv, options={"rotation": "90"}))
     assert "rotation" not in fake_tv.config  # older apps refuse settings they don't know

@@ -293,6 +293,10 @@
     "old_home_assistant": {
       "title": "Aktualisiere Home Assistant für deine Fernseher-Dashboards",
       "description": "Home Assistant {version} hat bekannte Sicherheitslücken in Dashboard-Karten, behoben in {safe_version}. Ein Fernseher zeigt sein Dashboard den ganzen Tag angemeldet an, also könnte eine bösartige Karte als Benutzer des Fernsehers handeln. Aktualisiere Home Assistant auf {safe_version} oder neuer."
+    },
+    "overlay_permission": {
+      "title": "{name} kann PleatView nicht wieder in den Vordergrund holen",
+      "description": "PleatView darf auf {name} nicht über anderen Apps einblenden. Bis das erlaubt ist, kann PleatView nach einer anderen App oder einem Neustart nicht zurückkehren, und Benachrichtigungen und Kameras erscheinen nur, während es geöffnet ist. Android kann diese Berechtigung entziehen, zum Beispiel bei einem App-Update.\n\nDrücke auf dem Fernseher im Start-Dashboard Zurück und wähle **Über anderen Apps einblenden erlauben**. Hat der Fernseher diese Einstellung nicht, was bei Google TV häufig ist, erteile sie einmal von einem Computer aus:\n\n`adb shell appops set com.hustlesman.pleatview SYSTEM_ALERT_WINDOW allow`"
     }
   },
   "entity": {

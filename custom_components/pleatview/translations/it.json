@@ -293,6 +293,10 @@
     "old_home_assistant": {
       "title": "Aggiorna Home Assistant per le plance sulla TV",
       "description": "Home Assistant {version} ha falle di sicurezza note nelle schede delle plance, corrette in {safe_version}. Una TV mostra la sua plancia tutto il giorno, con l'accesso fatto, quindi una scheda malevola potrebbe agire come l'utente della TV. Aggiorna Home Assistant a {safe_version} o successivo."
+    },
+    "overlay_permission": {
+      "title": "{name} non può riportare PleatView in primo piano",
+      "description": "PleatView su {name} non ha il permesso di essere visualizzato sopra altre app. Finché non lo ha, PleatView non può tornare dopo un'altra app o un riavvio, e notifiche e telecamere compaiono solo mentre è aperto. Android può togliere questo permesso, ad esempio durante un aggiornamento dell'app.\n\nSulla TV, premi Indietro sulla plancia iniziale e scegli **Consenti la visualizzazione sopra altre app**. Se la TV non ha questa impostazione, cosa comune su Google TV, concedilo una volta da un computer:\n\n`adb shell appops set com.hustlesman.pleatview SYSTEM_ALERT_WINDOW allow`"
     }
   },
   "entity": {

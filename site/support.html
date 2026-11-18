@@ -63,7 +63,7 @@
   <h3>The TV says Home Assistant rejected the access token</h3>
   <p>In Home Assistant, open the PleatView integration and choose <em>Reload</em> from its ⋮ menu; it issues a new token. If you use your own long-lived token, enter a new one with <em>Reconfigure</em>.</p>
 
-  <h3>Home Assistant can't bring PleatView to the front, or notifications and cameras only show while it's open</h3>
+  <h3 id="over-other-apps">Home Assistant can't bring PleatView to the front, or notifications and cameras only show while it's open</h3>
   <p>Android only allows this for apps that may display over other apps. Open PleatView's menu (press Back on the home dashboard) and choose <em>Allow display over other apps</em>. If your TV has no such setting, which is common on Google TV, grant it once from a computer:</p>
   <p><code>adb shell appops set com.hustlesman.pleatview SYSTEM_ALERT_WINDOW allow</code></p>
 

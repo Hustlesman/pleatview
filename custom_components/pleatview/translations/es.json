@@ -293,6 +293,10 @@
     "old_home_assistant": {
       "title": "Actualiza Home Assistant para los paneles de tu TV",
       "description": "Home Assistant {version} tiene fallos de seguridad conocidos en las tarjetas de los paneles, corregidos en {safe_version}. Una TV muestra su panel todo el día con la sesión iniciada, así que una tarjeta maliciosa podría actuar como el usuario de la TV. Actualiza Home Assistant a {safe_version} o posterior."
+    },
+    "overlay_permission": {
+      "title": "{name} no puede traer PleatView de vuelta al frente",
+      "description": "PleatView en {name} no tiene permiso para mostrarse sobre otras apps. Hasta que lo tenga, PleatView no puede volver tras otra app o un reinicio, y las notificaciones y cámaras solo se muestran mientras está abierto. Android puede quitar este permiso, por ejemplo al actualizar la app.\n\nEn la TV, pulsa Atrás en el panel de inicio y elige **Permitir mostrar sobre otras apps**. Si la TV no tiene ese ajuste, algo habitual en Google TV, concédelo una vez desde un ordenador:\n\n`adb shell appops set com.hustlesman.pleatview SYSTEM_ALERT_WINDOW allow`"
     }
   },
   "entity": {
