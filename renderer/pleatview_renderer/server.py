@@ -49,7 +49,7 @@ class AccessLog(AccessLogger):
         super().log(request, response, time)
 
 
-VERSION = "1.1.2"
+VERSION = "1.1.3"
 KEY = re.compile(r"^[A-Za-z0-9_-]{1,64}$")
 FILE = re.compile(r"^(index\.m3u8|s\d{1,9}\.ts)$")
 KIOSK_MODES = ("full", "sidebar", "off")
