@@ -1447,8 +1447,9 @@ def checks(r: Run, report: Report, apk: Path) -> None:
         adb("shell", "input", "keyevent", "KEYCODE_BACK")
         texts = wait_for("the menu", lambda: (lambda t: t if "Home dashboard" in t else None)(screen_texts()),
                          timeout=15)
-        # It sits near the end of the menu, which scrolls when there are many dashboards.
-        for _ in range(20):
+        # It sits near the end of the menu, which scrolls when there are many dashboards (a Home
+        # Assistant with twenty of them needed more than twenty presses).
+        for _ in range(60):
             if where := text_center("Support PleatView", texts):
                 break
             adb("shell", "input", "keyevent", "KEYCODE_DPAD_DOWN")
