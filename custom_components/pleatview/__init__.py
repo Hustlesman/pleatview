@@ -36,7 +36,7 @@ from .const import (
     ISSUE_OLD_HA,
     SAFE_HA_VERSION,
 )
-from .coordinator import PleatViewConfigEntry, PleatViewDevice
+from .coordinator import PleatViewConfigEntry, PleatViewDevice, overlay_issue
 from . import renderers
 from .render import RenderStreamView
 from .wall import WallView
@@ -140,6 +140,8 @@ async def async_unload_entry(hass: HomeAssistant, entry: PleatViewConfigEntry) -
         return await hass.config_entries.async_unload_platforms(entry, RENDERER_PLATFORMS)
     if renderer := entry.runtime_data.renderer:
         await renderer.async_stop()
+    # Raised again by the TV's next report if it still applies.
+    ir.async_delete_issue(hass, DOMAIN, overlay_issue(entry.entry_id))
     return await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
 
 

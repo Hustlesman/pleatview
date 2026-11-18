@@ -293,6 +293,10 @@
     "old_home_assistant": {
       "title": "Aktualizujte Home Assistant kvůli panelům na televizi",
       "description": "Home Assistant {version} má známé bezpečnostní chyby v kartách panelů, opravené ve verzi {safe_version}. Televize ukazuje svůj panel celý den a přihlášená, takže škodlivá karta by mohla jednat jako uživatel televize. Aktualizujte Home Assistant na {safe_version} nebo novější."
+    },
+    "overlay_permission": {
+      "title": "{name} nemůže vrátit PleatView do popředí",
+      "description": "PleatView na {name} nemá povolené zobrazení přes ostatní aplikace. Dokud ho mít nebude, PleatView se nemůže vrátit po jiné aplikaci ani po restartu a oznámení a kamery se zobrazí jen tehdy, když je otevřený. Android může toto oprávnění odebrat, například při aktualizaci aplikace.\n\nNa televizi stiskněte Zpět na úvodním panelu a zvolte **Povolit zobrazení přes ostatní aplikace**. Pokud televize takové nastavení nemá, což je u Google TV běžné, udělte ho jednou z počítače:\n\n`adb shell appops set com.hustlesman.pleatview SYSTEM_ALERT_WINDOW allow`"
     }
   },
   "entity": {

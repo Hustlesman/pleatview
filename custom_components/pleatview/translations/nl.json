@@ -293,6 +293,10 @@
     "old_home_assistant": {
       "title": "Update Home Assistant voor je tv-dashboards",
       "description": "Home Assistant {version} heeft bekende beveiligingsfouten in dashboardkaarten, opgelost in {safe_version}. Een tv toont zijn dashboard de hele dag, ingelogd, dus een kwaadaardige kaart zou kunnen handelen als de gebruiker van de tv. Update Home Assistant naar {safe_version} of later."
+    },
+    "overlay_permission": {
+      "title": "{name} kan PleatView niet terug naar de voorgrond halen",
+      "description": "PleatView op {name} mag niet vóór andere apps worden weergegeven. Tot dat mag, kan PleatView niet terugkomen na een andere app of een herstart, en meldingen en camera's verschijnen alleen terwijl het open is. Android kan deze toestemming intrekken, bijvoorbeeld bij een app-update.\n\nDruk op de tv op Terug op het startdashboard en kies **Weergeven vóór andere apps toestaan**. Heeft de tv die instelling niet, wat vaak zo is bij Google TV, geef de toestemming dan eenmalig vanaf een computer:\n\n`adb shell appops set com.hustlesman.pleatview SYSTEM_ALERT_WINDOW allow`"
     }
   },
   "entity": {

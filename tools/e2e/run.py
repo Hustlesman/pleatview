@@ -1410,6 +1410,34 @@ def checks(r: Run, report: Report, apk: Path) -> None:
             raise AssertionError(f"Home Assistant {version} {'shows' if shown else 'lacks'} the update repair")
         return f"Home Assistant {version}: " + ("asks for an update" if shown else "no repair")
 
+    def overlay_repair():
+        # Android can take "Display over other apps" away (a wall TV lost it in an app update
+        # and sat on its home screen for days): Home Assistant shows a repair for that TV
+        # until it's allowed again. PleatView reads it again each time it comes to the front.
+        repair = f"overlay_permission_{r.entry_id}"
+
+        def shown() -> bool:
+            issues = ws_call(r, {"type": "repairs/list_issues"}).get("result", {}).get("issues", [])
+            return any(i["domain"] == "pleatview" and i["issue_id"] == repair for i in issues)
+
+        def allowed(allow: bool) -> None:
+            adb("shell", "appops", "set", PACKAGE, "SYSTEM_ALERT_WINDOW", "allow" if allow else "deny")
+            adb("shell", "input", "keyevent", "KEYCODE_HOME")
+            wait_for("the entity to turn off", lambda: state()["state"] == "off", timeout=20)
+            adb("shell", "am", "start", "-n", f"{PACKAGE}/.MainActivity")
+            wait_for("the TV back, reporting the permission",
+                     lambda: ready() and state()["attributes"].get("overlay_permission") is allow, timeout=60)
+
+        try:
+            allowed(True)
+            wait_for("no repair while it's allowed", lambda: not shown(), timeout=30)
+            allowed(False)
+            wait_for("the repair", shown, timeout=30)
+        finally:
+            allowed(True)
+        wait_for("the repair to go once it's allowed again", lambda: not shown(), timeout=30)
+        return "shown while PleatView may not display over other apps, gone once it may"
+
     def support_code():
         # The GitHub download (which this is) offers a donation QR code in its menu.
         ha.call("pleatview", "home", {"entity_id": entity["id"]})
@@ -1705,6 +1733,7 @@ def checks(r: Run, report: Report, apk: Path) -> None:
     for name, fn in [
         ("Dashboard signs in automatically", signed_in),
         ("Repair for Home Assistant older than 2026.7", ha_version_repair),
+        ("Repair while PleatView may not display over other apps", overlay_repair),
         ("Battery sensors only where there's a battery", battery),
         ("Kiosk mode hides the sidebar and header", kiosk),
         ("Notification card appears", notification),

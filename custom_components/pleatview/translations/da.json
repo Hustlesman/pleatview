@@ -293,6 +293,10 @@
     "old_home_assistant": {
       "title": "Opdater Home Assistant til dine tv-paneler",
       "description": "Home Assistant {version} har kendte sikkerhedsfejl i betjeningspanelernes kort, rettet i {safe_version}. Et tv viser sit panel hele dagen, logget ind, så et ondsindet kort kunne handle som tv'ets bruger. Opdater Home Assistant til {safe_version} eller nyere."
+    },
+    "overlay_permission": {
+      "title": "{name} kan ikke bringe PleatView tilbage i forgrunden",
+      "description": "PleatView på {name} må ikke vises oven på andre apps. Indtil det er tilladt, kan PleatView ikke komme tilbage efter en anden app eller en genstart, og notifikationer og kameraer vises kun, mens den er åben. Android kan fjerne denne tilladelse, for eksempel ved en appopdatering.\n\nTryk på Tilbage på startpanelet på tv'et, og vælg **Tillad visning oven på andre apps**. Hvis tv'et ikke har den indstilling, hvilket er almindeligt på Google TV, så giv den én gang fra en computer:\n\n`adb shell appops set com.hustlesman.pleatview SYSTEM_ALERT_WINDOW allow`"
     }
   },
   "entity": {

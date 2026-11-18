@@ -66,6 +66,7 @@ checklist below and tick what passed. Anything that fails gets its own issue.
 - [ ] *Not now* on a sign-in card, then going home: Back opens the menu, and the card doesn't come back **(auto)**
 - [ ] With rotation on, a dashboard shown with `show_dashboard` and a duration stays for that duration, then rotation goes on **(auto)**
 - [ ] After Home, or another app left without sound, PleatView comes back after *Come back from other apps after* **(auto)**; not while a video plays in that app, and not while a settings panel only covers part of it
+- [ ] With *Display over other apps* taken away (`adb shell appops set com.hustlesman.pleatview SYSTEM_ALERT_WINDOW deny`, then leave PleatView and open it again), Home Assistant shows a repair for that TV, linking to the support answer; allowed again, the repair goes **(auto)**
 - [ ] Stopped by a crash while on screen (`adb shell am crash <pid>`), PleatView opens again within a few seconds; the third crash in ten minutes leaves it closed, and so does a crash behind another app
 - [ ] A real site's login form (Grafana, Proxmox, UniFi) signs in from the phone code; a wrong password asks again; *Forget saved sign-ins* in the menu removes it
 
