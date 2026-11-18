@@ -137,9 +137,24 @@ async def test_without_a_renderer_the_tv_renders(hass: HomeAssistant, fake_tv: F
     entry = await setup_entry(hass, make_entry(fake_tv))
     await fake_tv.wait_for_stream()
     await fake_tv.push(features=["render_stream"])
-    await asyncio.sleep(0.2)
+    await _until(lambda: "render_stream" in fake_tv.config)
     assert entry.runtime_data.renderer is None
-    assert "render_stream" not in fake_tv.config
+    assert fake_tv.config["render_stream"] == ""  # it draws its dashboards itself
+    await hass.config_entries.async_unload(entry.entry_id)
+
+
+async def test_rendering_switched_off_gives_the_tv_its_dashboards_back(hass: HomeAssistant, fake_tv: FakeTV, renderer: FakeRenderer) -> None:
+    # The TV keeps what it isn't sent: without the stream's address emptied, it went on playing
+    # a stream that was gone, and stayed black.
+    entry = await setup_entry(hass, make_entry(
+        fake_tv, options={"render_url": renderer.url}, **{CONF_AUTH_MODE: AUTH_MANAGED, CONF_HA_TOKEN: "tv-token"}))
+    await fake_tv.wait_for_stream()
+    await fake_tv.push(features=["render_stream"])
+    await _until(lambda: fake_tv.config.get("render_stream", "").startswith(HA_URL))
+
+    hass.config_entries.async_update_entry(entry, options={k: v for k, v in entry.options.items() if k != "render_url"})
+    await _until(lambda: fake_tv.config.get("render_stream") == "")
+    assert renderer.deleted == [entry.entry_id]
     await hass.config_entries.async_unload(entry.entry_id)
 
 
