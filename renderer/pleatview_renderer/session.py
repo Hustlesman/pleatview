@@ -39,6 +39,8 @@ STOP_SECONDS = 5
 VAAPI_QP = 26
 # The sound: AAC, which every TV plays.
 AUDIO_ARGS = ["-c:a", "aac", "-b:a", "128k"]
+# Microseconds a wall's piece with the sound waits for it before writing its picture on.
+INTERLEAVE_US = 500_000
 _displays = itertools.count(10)
 # The user that Xvfb and Chromium run as, when the renderer itself runs as root.
 UNPRIVILEGED = os.environ.get("RENDER_USER", "render")
@@ -237,7 +239,9 @@ def ffmpeg_args(encoder: str, screen: Screen, display: str, folder: Path, with_s
     for i, tile in enumerate(screen.tiles):
         outputs += ["-map", f"[t{i}]", *codec_args(encoder, *tile.size)]
         if with_sound and tile.sound:
-            outputs += ["-map", "1:a", *AUDIO_ARGS]
+            # Its picture never waits long for its sound (ffmpeg waits up to 10 s): on a busy
+            # machine late sound would hold this piece back from the others.
+            outputs += ["-map", "1:a", *AUDIO_ARGS, "-max_interleave_delta", str(INTERLEAVE_US)]
         outputs += hls_args(folder, f"t{i}", clock=True)
     return [*head, "-filter_complex", graph, *outputs]
 

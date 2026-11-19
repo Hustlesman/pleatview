@@ -66,6 +66,8 @@ class WallScreenTest(unittest.TestCase):
         self.assertEqual(args[args.index("-filter_complex") + 1],
                          "[0:v]split=2[c0][c1];[c0]crop=1920:1080:0:0[t0];[c1]crop=1920:1080:1920:0,transpose=2[t1]")
         self.assertEqual([args[i + 1] for i, a in enumerate(args) if a == "-map"], ["[t0]", "1:a", "[t1]"])  # sound with one piece
+        self.assertEqual(args[args.index("-max_interleave_delta") + 1], "500000")  # its picture doesn't wait long for it
+        self.assertEqual(args.count("-max_interleave_delta"), 1)
         self.assertIn("/f/t1-%d.ts", args)
         self.assertEqual(args[-1], "/f/t1.m3u8")
         self.assertTrue(all("program_date_time" in args[i + 1] for i, a in enumerate(args) if a == "-hls_flags"))
