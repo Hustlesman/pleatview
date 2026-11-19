@@ -287,6 +287,32 @@
           "description": "Bara den här webbplatsen, så som tv:ns telefonsida listar den. Tomt glömmer alla."
         }
       }
+    },
+    "list_screens": {
+      "name": "Lista skärmar",
+      "description": "Listar PleatView-skärmarna som är konfigurerade här, för en styrenhet på annan plats som den här platsen låter ta över dem (via sin PleatView Renderer)."
+    },
+    "enrol_with": {
+      "name": "Anslut en skärm till en styrenhet på annan plats",
+      "description": "Låter en skärm ansluta till en styrenhet på annan plats och registrera sig där med en engångstoken från den. Home Assistant behåller sin parkoppling och sina inställningar.",
+      "fields": {
+        "screen": {
+          "name": "Skärm",
+          "description": "Skärmens id, så som Lista skärmar anger det."
+        },
+        "url": {
+          "name": "Styrenhetens adress",
+          "description": "Dit skärmen ansluter, till exempel wss://controller.example.com/api/pleatview/v2."
+        },
+        "token": {
+          "name": "Token",
+          "description": "Engångstoken som styrenheten skapade för den här skärmen."
+        },
+        "fingerprint": {
+          "name": "Styrenhetens certifikat",
+          "description": "SHA-256-fingeravtrycket för styrenhetens eget certifikat, bara för ett som skärmens system inte litar på."
+        }
+      }
     }
   },
   "issues": {

@@ -287,6 +287,32 @@
           "description": "Only this site, as the TV's phone page lists it. Empty forgets all."
         }
       }
+    },
+    "list_screens": {
+      "name": "List screens",
+      "description": "Lists the PleatView screens set up here, for a controller elsewhere that this site lets move them (through its PleatView Renderer)."
+    },
+    "enrol_with": {
+      "name": "Connect a screen to a controller elsewhere",
+      "description": "Has a screen connect out to a controller elsewhere and enrol there with a one-time token from it. Home Assistant keeps its pairing and settings.",
+      "fields": {
+        "screen": {
+          "name": "Screen",
+          "description": "The screen's id, as List screens gives it."
+        },
+        "url": {
+          "name": "Controller's address",
+          "description": "Where the screen connects out to, such as wss://controller.example.com/api/pleatview/v2."
+        },
+        "token": {
+          "name": "Token",
+          "description": "The one-time token the controller made for this screen."
+        },
+        "fingerprint": {
+          "name": "Controller's certificate",
+          "description": "The SHA-256 fingerprint of the controller's own certificate, only for one the screen's system doesn't trust."
+        }
+      }
     }
   },
   "issues": {

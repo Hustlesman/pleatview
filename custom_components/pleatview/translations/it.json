@@ -287,6 +287,32 @@
           "description": "Solo questo sito, come lo elenca la pagina per telefono della TV. Vuoto dimentica tutto."
         }
       }
+    },
+    "list_screens": {
+      "name": "Elenca gli schermi",
+      "description": "Elenca gli schermi PleatView configurati qui, per un controller altrove a cui questo sito permette di prenderli (tramite il suo PleatView Renderer)."
+    },
+    "enrol_with": {
+      "name": "Collega uno schermo a un controller altrove",
+      "description": "Fa collegare uno schermo a un controller altrove e lo fa registrare lì con un token monouso fornito da quest'ultimo. Home Assistant mantiene il suo abbinamento e le sue impostazioni.",
+      "fields": {
+        "screen": {
+          "name": "Schermo",
+          "description": "L'identificativo dello schermo, come lo fornisce Elenca gli schermi."
+        },
+        "url": {
+          "name": "Indirizzo del controller",
+          "description": "Dove si collega lo schermo, ad esempio wss://controller.example.com/api/pleatview/v2."
+        },
+        "token": {
+          "name": "Token",
+          "description": "Il token monouso che il controller ha creato per questo schermo."
+        },
+        "fingerprint": {
+          "name": "Certificato del controller",
+          "description": "L'impronta SHA-256 del certificato proprio del controller, solo per uno di cui il sistema dello schermo non si fida."
+        }
+      }
     }
   },
   "issues": {

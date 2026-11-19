@@ -47,6 +47,7 @@ class FakeTV:
         }
         self.config: dict[str, Any] = {}
         self.commands: list[dict[str, Any]] = []
+        self.enrolments: list[dict[str, Any]] = []  # POST /api/enrol bodies (protocol v2)
         self.authorizations: list[str] = []  # every Authorization header received
         self.verify_supported = True
         self.streams: list[web.StreamResponse] = []
@@ -70,6 +71,7 @@ class FakeTV:
         app.router.add_get("/api/config", self._get_config)
         app.router.add_post("/api/config", self._set_config)
         app.router.add_post("/api/unpair", self._unpair)
+        app.router.add_post("/api/enrol", self._enrol)
         return app
 
     # Pairing approved on the TV: `approve` decides what the person at the TV does.
@@ -161,6 +163,13 @@ class FakeTV:
         self.config.update(body)
         self.state["config_rev"] = body.get("rev", "")
         return web.json_response(self.config)
+
+    async def _enrol(self, request: web.Request) -> web.Response:
+        body = await request.json()
+        if not str(body.get("url", "")).startswith("wss://") or not body.get("token"):
+            return web.json_response({"error": "url and token are required"}, status=400)
+        self.enrolments.append(body)
+        return web.json_response({"ok": True}, status=202)
 
     async def _unpair(self, request: web.Request) -> web.Response:
         self.tokens.discard(request.headers["Authorization"].removeprefix("Bearer "))

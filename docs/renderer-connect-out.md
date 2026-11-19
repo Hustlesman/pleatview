@@ -24,6 +24,10 @@ can't be changed from the controller:
 | `site_pages` | `SITE_PAGES` | Places on the site's own network that the controller's pages may load, comma-separated: `host:port` (such as `homeassistant.local:8123`) or a network (`192.168.1.40/32`). Empty by default: pages from the controller reach only the public internet |
 | `stream_url` | `STREAM_URL` | This machine's address on the site's network for the streams port, such as `http://192.168.1.10:8781`. In the Home Assistant OS app, which can't see it, the site's screens get their streams through the controller until it's set; elsewhere it's the machine's own address |
 | none | `STREAM_PORT` | The port the site's screens fetch their streams from (default `8781`; the app maps it as `8781/tcp`) |
+| `share_home_assistant` | `SHARE_HOME_ASSISTANT` | Share the site's Home Assistant with the controller: the entities in `shared_entities` ([below](#home-assistant-at-the-site)). Off by default |
+| `shared_entities` | `SHARED_ENTITIES` | The entities shared, by id, `*` standing for any letters, comma-separated: `camera.*` (the default), `camera.front_door`, `todo.shopping` |
+| `share_screens` | `SHARE_SCREENS` | Let the controller list the site's PleatView screens in Home Assistant and move the ones it chooses to itself ([below](#screens-at-the-site)). Off by default |
+| none | `HA_URL`, `HA_TOKEN` | Home Assistant's address and a long-lived token, outside the Home Assistant OS app (which uses the Supervisor's own, through `homeassistant_api`) |
 
 ## What the controller gets
 
@@ -31,6 +35,8 @@ can't be changed from the controller:
   notifications and pictures drawn over them, and the streams' segments for its previews.
 - **Who the renderer is:** its name, version, how busy it is, what it encodes with, how many
   screens it renders, and where the site's screens reach its streams.
+- **The site's Home Assistant,** only when the site shares it: what it lists, and its screens
+  only if it lets them go ([below](#home-assistant-at-the-site)).
 
 Nothing else. The connection carries a fixed list of calls (below), each checked; nothing is
 passed on to the site's network, and nothing lets the controller change the renderer's options.
@@ -103,7 +109,15 @@ forgets it, writes so in its log, and stays away until its options change or it 
 | `show` | `key` (1–48 of `A-Z a-z 0-9 _ -`), `url` (http or https), `width`, `height`, `scale`, `kiosk`, `rotation`, `tiles`: as `PUT /api/sessions/<key>`, without Home Assistant's address and token | `{"stream": "/stream/<secret>/index.m3u8"}`, on `streams`; for a wall (`tiles`), `{"streams": ["/stream/<secret>/t0.m3u8", …]}`, a stream for each tile in the order given |
 | `overlay` | `key` and what `POST /api/sessions/<key>/overlay` takes | `{}` |
 | `stop` | `key` | `{}` |
-| `segment` | `key`, `name` (`index.m3u8` or `s<n>.ts`; a wall's: `t<tile>.m3u8` or `t<tile>-<n>.ts`) | `{"type": "…", "data": "<base64>"}`: the playlist (with its segments' names) or a segment, at most 4 MB |
+| `segment` | `key`, `name` (`index.m3u8` or `s<n>.ts`; a wall's: `t<tile>.m3u8` or `t<tile>-<n>.ts`) | `{"type": "…", "data": "<base64>"}`: the playlist (with its segments' names) or a segment, at most 4 MB; a camera's too (`ha_stream`'s key) |
+| `ha_config` | none | Home Assistant's `name` and `version`, `shared` (the patterns) and `screens` (whether they may move) |
+| `ha_entities` | none | `{"entities": [{"entity_id", "domain", "name", "state"}]}`: the shared ones, without their other attributes |
+| `ha_picture` | `entity_id` (a shared camera) | `{"type": "image/jpeg", "data": "<base64>"}`, at most 3 MB |
+| `ha_stream` | `key`, `entity_id` (a shared camera) | `{"stream": "/stream/<secret>/index.m3u8"}`: its live stream, made here, on `streams` |
+| `ha_todo` | `entity_id` (a shared to-do list) | `{"items": [{"summary", "status", "due"}]}` |
+| `ha_calendar` | `entity_id` (a shared calendar), `start`, `end` (ISO 8601) | `{"events": [{"summary", "start", "end", "location", "description", "uid", "recurrence_id"}]}`, repeats worked out by Home Assistant |
+| `ha_screens` | none | `{"screens": [{"id", "name", "manufacturer", "model", "app_version", "online", "connects_out"}]}`, with `share_screens` |
+| `ha_enrol` | `screen` (an `id` from `ha_screens`), `token` (the controller's one-time token for it) | `{}`, once the screen took it, with `share_screens` |
 
 Keys from the controller are its own: they never name the sessions Home Assistant has.
 Sessions from the controller count towards `max_screens` like the others; a wall counts as many
@@ -144,10 +158,44 @@ log, with what it asked for and whether it was done, so the site sees what its c
 so is every call it doesn't know. Requests are JSON objects of at most 64 kB, at most
 16 at once and 30 a second; more closes the connection.
 
-## Next
+## Home Assistant at the site
 
-- **Home Assistant at the site,** shared when the site turns it on: the entities it chooses
-  (cameras by default), their pictures and live streams, with a token the site gives the
-  renderer that never leaves it.
-- **Screens at the site** paired through the renderer and moved to protocol v2, for screens
-  set up with Home Assistant that can't be given a controller's address otherwise.
+A site that runs Home Assistant can share some of it with the controller, through the renderer,
+when it turns `share_home_assistant` on. Home Assistant needn't be reachable from the controller,
+or from anywhere outside the site: the renderer asks it, on the site's network, for what the
+controller asks, and only for that:
+
+- **The entities in `shared_entities`,** cameras (`camera.*`) by default: their names and
+  states, without their other attributes (a camera's carry a token for its picture).
+- **Cameras:** a picture now, and the live stream. The renderer fetches the stream from Home
+  Assistant (its HLS stream, or its picture stream for a camera without one) and makes it a
+  stream of its own, served like a screen's: the site's screens fetch it on the streams port,
+  the controller through the connection. A camera nobody fetches for 90 seconds stops; four at
+  most stream at once.
+- **To-do lists and calendars** that are shared: their items and events.
+
+The token is the site's. In the Home Assistant OS app the renderer uses the Supervisor's own
+(`homeassistant_api`); elsewhere, the address and long-lived token in `HA_URL` and `HA_TOKEN`.
+It stays in the renderer's own process: the controller never gets it or an address signed with
+it, it isn't on any command line, and the browsers and ffmpegs the renderer starts don't have it
+in their environment. ffmpeg reads the camera's stream from the renderer, on its standard input,
+without root. Anything not shared is refused, whatever the controller asks.
+
+## Screens at the site
+
+Screens already set up with the site's Home Assistant can't be given the controller's address by
+anyone but the people at the site. With `share_screens` on, the controller may move them itself,
+through Home Assistant (the PleatView integration from 1.1.4, and screens with PleatView 1.0.19
+or later):
+
+1. `ha_screens` lists Home Assistant's PleatView screens (its `pleatview.list_screens` service).
+2. For each screen chosen, the controller makes a one-time token, as for any screen it pairs
+   with ([protocol v2](protocol-v2.md#enrolment)), and sends it with `ha_enrol`.
+3. The renderer has Home Assistant pass it on (`pleatview.enrol_with`): the screen connects out
+   to the controller and enrols with the token. Home Assistant keeps its own pairing, and shows a
+   notification for each screen it moved.
+
+A screen goes only to this renderer's own controller: the renderer gives Home Assistant the
+controller's address for screens (`wss://<controller>/api/pleatview/v2`, and its pinned
+certificate when there is one), never an address the call names. Both services are for Home
+Assistant's administrators only.

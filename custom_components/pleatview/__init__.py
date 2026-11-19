@@ -20,8 +20,9 @@ from homeassistant.const import (
 )
 from homeassistant.core import Event, HomeAssistant
 from homeassistant.exceptions import ConfigEntryAuthFailed, ConfigEntryNotReady
-from homeassistant.helpers import issue_registry as ir
+from homeassistant.helpers import config_validation as cv, issue_registry as ir
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
+from homeassistant.helpers.typing import ConfigType
 
 from .api import InvalidAuth, PleatViewClient, PleatViewError
 from .const import (
@@ -39,9 +40,12 @@ from .const import (
 from .coordinator import PleatViewConfigEntry, PleatViewDevice, overlay_issue
 from . import renderers
 from .render import RenderStreamView
+from .services import async_setup_services
 from .wall import WallView
 
 _LOGGER = logging.getLogger(__name__)
+
+CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
 
 LOVELACE_UPDATED = "lovelace_updated"  # fired when a dashboard's configuration is saved
 
@@ -58,6 +62,12 @@ def _client(hass: HomeAssistant, entry: PleatViewConfigEntry) -> PleatViewClient
         entry.data[CONF_PORT],
         entry.data[CONF_TOKEN],
     )
+
+
+async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
+    """The integration's own services (services.py): its screens, for a controller elsewhere."""
+    async_setup_services(hass)
+    return True
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: PleatViewConfigEntry) -> bool:

@@ -25,5 +25,12 @@ network*. Set *Streams address* to this machine's address with port 8781, such a
 controller makes is in the log. See
 https://github.com/Hustlesman/pleatview/blob/main/docs/renderer-connect-out.md
 
+**This Home Assistant, for that controller:** turn on *Share this Home Assistant*, and the
+controller may use the entities under *Shared entities* (every camera, by default): their
+states, cameras' pictures and live streams, to-do lists and calendars. Home Assistant needn't be
+reachable from outside, and its token stays in this app. *Move screens to the controller* also
+lets the controller have this Home Assistant's PleatView screens connect out to it; each move
+shows as a notification.
+
 The whole guide, with pictures of each step and what to expect on the TV:
 https://github.com/Hustlesman/pleatview/blob/main/docs/render-on-home-assistant.md

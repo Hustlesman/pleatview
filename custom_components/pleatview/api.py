@@ -137,6 +137,14 @@ class PleatViewClient:
         """Revoke our token on the TV."""
         await self._request("POST", "/api/unpair", {})
 
+    async def enrol(self, url: str, token: str, fingerprint: str | None = None) -> None:
+        """Have the TV connect out to a controller elsewhere and enrol there with a one-time
+        token (docs/protocol-v2.md#enrolment); apps with protocol_v2."""
+        body = {"url": url, "token": token}
+        if fingerprint:
+            body["fingerprint"] = fingerprint
+        await self._request("POST", "/api/enrol", body)
+
     async def listen(self, on_state: Callable[[dict[str, Any]], None]) -> None:
         """Consume the Server-Sent Events stream until it ends or fails.
 

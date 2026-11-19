@@ -34,7 +34,8 @@ from aiohttp.web_log import AccessLogger
 from . import actions, wall
 from .mdns import Responder, local_address
 from .pairing import Pairing
-from .session import Folders, Screen, Session, Tile
+from .session import Folders, Screen, Session, Tile, hls_args
+from .site_ha import RELAYS_MOST, HomeAssistant, Relay, Unavailable
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -254,6 +255,8 @@ class Full(Exception):
 # API's: its sessions are "c.<key>", which no local key can be (KEY has no "."), and which a
 # path to its sound pipe may hold.
 CONTROLLER = "c."
+RELAY = "h."  # a camera of the site's Home Assistant, streamed for the controller
+HA_CALLS = ("ha_config", "ha_entities", "ha_picture", "ha_stream", "ha_todo", "ha_calendar", "ha_screens", "ha_enrol")
 CONTROLLER_KEY = re.compile(r"^[A-Za-z0-9_-]{1,48}$")
 LARGEST_SEGMENT = 4 * 1024 * 1024
 
@@ -267,7 +270,9 @@ class Renderer:
         self.root, self.encoder, self.max_sessions = root, encoder, max_sessions
         self.folders = Folders(root)
         self.sessions: dict[str, Session] = {}
-        self.streams: dict[str, str] = {}  # a controller's session's stream secret -> its key
+        self.streams: dict[str, str] = {}  # a controller's session's (or camera's) stream secret -> its key
+        # Cameras of the site's Home Assistant, streamed for the controller (site_ha.py): "h.<key>".
+        self.relays: dict[str, Relay] = {}
 
     def used(self, but: str | None = None) -> int:
         return sum(weight(s.screen) for k, s in self.sessions.items() if k != but)
@@ -295,12 +300,42 @@ class Renderer:
             self.streams.pop(getattr(session, "secret", ""), None)
             await session.stop()
 
-    async def file(self, session: Session, name: str) -> tuple[bytes, str, str]:
+    async def relay(self, key: str, entity: str, ha: HomeAssistant) -> Relay:
+        """A camera's live stream (site_ha.py), started or as it is; the least recently watched
+        goes for a new one once there are as many as there may be."""
+        relay = self.relays.get(key)
+        if relay is not None and relay.entity != entity:
+            await self.stop_relay(key)
+            relay = None
+        if relay is None:
+            if len(self.relays) >= RELAYS_MOST:
+                idle = [r for r in self.relays.values() if time.monotonic() - r.last_access > IDLE_SECONDS or not r.running]
+                if not idle:
+                    raise Full(f"this renderer streams at most {RELAYS_MOST} cameras at once")
+                await self.stop_relay(min(idle, key=lambda r: r.last_access).key)
+            relay = self.relays[key] = Relay(key, entity, self.folders.stream(self.folders.name(key)), ha,
+                                             hls_args(self.folders.stream(self.folders.name(key)), "index"))
+            self.streams[relay.secret] = key
+        relay.last_access = time.monotonic()
+        relay.start()
+        return relay
+
+    async def stop_relay(self, key: str) -> None:
+        relay = self.relays.pop(key, None)
+        if relay:
+            self.streams.pop(relay.secret, None)
+            await relay.stop()
+
+    def watched(self, key: str | None) -> Session | Relay | None:
+        """A controller's session or camera stream, by its key."""
+        return (self.sessions.get(key) or self.relays.get(key)) if key else None
+
+    async def file(self, session: Session | Relay, name: str) -> tuple[bytes, str, str]:
         """A stream's playlist or segment: its bytes, type and caching; FileNotFoundError if
         there's none (yet, or any more)."""
         tile = TILE_FILE.fullmatch(name)
-        if not FILE.fullmatch(name) or bool(tile) != bool(session.screen.tiles) \
-                or (tile and int(tile.group(1)) >= len(session.screen.tiles)):
+        tiles = session.screen.tiles if isinstance(session, Session) else ()
+        if not FILE.fullmatch(name) or bool(tile) != bool(tiles) or (tile and int(tile.group(1)) >= len(tiles)):
             raise FileNotFoundError(name)
         session.last_access = time.monotonic()
         if not session.running:
@@ -362,19 +397,22 @@ class Renderer:
         return wall.in_step(text, session.wall_clock[piece], first_sample).encode()
 
     async def stop_idle(self) -> None:
-        for session in list(self.sessions.values()):
+        for session in [*self.sessions.values(), *self.relays.values()]:
             if session.running and time.monotonic() - session.last_access > IDLE_SECONDS:
                 _LOGGER.info("%s: nobody watches; stopping until its TV asks again", session.key)
                 await session.stop()
 
     async def close(self) -> None:
-        for session in self.sessions.values():
+        for session in [*self.sessions.values(), *self.relays.values()]:
             await session.stop()
 
 
-def controller_calls(renderer: Renderer, info: Any, proxy: Any) -> dict[str, Any]:
+def controller_calls(renderer: Renderer, info: Any, proxy: Any, ha: HomeAssistant | None = None,
+                     screens_to: tuple[str, str | None] | None = None) -> dict[str, Any]:
     """What a controller elsewhere may ask of this renderer, each call checked
-    (docs/renderer-connect-out.md#calls). `proxy()` is the filter's port."""
+    (docs/renderer-connect-out.md#calls). `proxy()` is the filter's port. With `ha`, what the
+    site shares of its Home Assistant (site_ha.py); `screens_to` is where its screens may go:
+    the controller's own address for screens (protocol v2) and its certificate's pin."""
     from .connect import Refused
 
     def key_of(params: dict[str, Any]) -> str:
@@ -388,6 +426,9 @@ def controller_calls(renderer: Renderer, info: Any, proxy: Any) -> dict[str, Any
         if session is None:
             raise Refused("no such screen")
         return session
+
+    def relay_key(params: dict[str, Any]) -> str:
+        return f"{RELAY}{key_of(params)[len(CONTROLLER):]}"
 
     async def show(params: dict[str, Any]) -> dict[str, Any]:
         key = key_of(params)
@@ -421,10 +462,13 @@ def controller_calls(renderer: Renderer, info: Any, proxy: Any) -> dict[str, Any
 
     async def stop(params: dict[str, Any]) -> dict[str, Any]:
         await renderer.stop(key_of(params))
+        await renderer.stop_relay(relay_key(params))
         return {}
 
     async def segment(params: dict[str, Any]) -> dict[str, Any]:
-        session = existing(params)
+        session = renderer.watched(key_of(params)) or renderer.watched(relay_key(params))
+        if session is None:
+            raise Refused("no such screen")
         name = params.get("name")
         if not isinstance(name, str) or not FILE.fullmatch(name):
             raise Refused("name is index.m3u8 or s<n>.ts (a wall's: t<piece>.m3u8 or t<piece>-<n>.ts)")
@@ -439,7 +483,66 @@ def controller_calls(renderer: Renderer, info: Any, proxy: Any) -> dict[str, Any
     async def about(params: dict[str, Any]) -> dict[str, Any]:
         return info()
 
-    return {"info": about, "show": show, "overlay": overlay, "stop": stop, "segment": segment}
+    calls = {"info": about, "show": show, "overlay": overlay, "stop": stop, "segment": segment}
+    if ha is None:  # the site shares nothing of its Home Assistant: said so, not "unknown method"
+        async def not_shared(params: dict[str, Any]) -> dict[str, Any]:
+            raise Refused("this site doesn't share its Home Assistant (the renderer's Share this Home Assistant option)")
+        return {**calls, **dict.fromkeys(HA_CALLS, not_shared)}
+
+    def asked(what: Any) -> Any:
+        """What Home Assistant said, or what's wrong, in the renderer's own words."""
+        async def call(params: dict[str, Any]) -> dict[str, Any]:
+            try:
+                return await what(params)
+            except Unavailable as err:
+                raise Refused(str(err)) from None
+        return call
+
+    async def ha_config(params: dict[str, Any]) -> dict[str, Any]:
+        return {**await ha.config(), **ha.shared.describe()}
+
+    async def ha_entities(params: dict[str, Any]) -> dict[str, Any]:
+        return {"entities": await ha.entities()}
+
+    async def ha_picture(params: dict[str, Any]) -> dict[str, Any]:
+        body, kind = await ha.picture(params.get("entity_id"))
+        return {"type": kind, "data": base64.b64encode(body).decode()}
+
+    async def ha_stream(params: dict[str, Any]) -> dict[str, Any]:
+        entity = ha.check(params.get("entity_id"), "camera")
+        try:
+            relay = await renderer.relay(relay_key(params), entity, ha)
+        except Full as err:
+            raise Refused(str(err)) from None
+        return {"stream": f"/stream/{relay.secret}/index.m3u8"}
+
+    async def ha_todo(params: dict[str, Any]) -> dict[str, Any]:
+        return {"items": await ha.todo(params.get("entity_id"))}
+
+    async def ha_calendar(params: dict[str, Any]) -> dict[str, Any]:
+        return {"events": await ha.calendar(params.get("entity_id"), params.get("start"), params.get("end"))}
+
+    async def ha_screens(params: dict[str, Any]) -> dict[str, Any]:
+        return {"screens": await ha.screens()}
+
+    async def ha_enrol(params: dict[str, Any]) -> dict[str, Any]:
+        if screens_to is None:
+            raise Unavailable("this site doesn't pass its screens on")
+        # Only to this renderer's own controller: its address for screens, never one the call names.
+        await ha.enrol(params.get("screen"), screens_to[0], params.get("token"), screens_to[1])
+        return {}
+
+    shared = {"ha_config": ha_config, "ha_entities": ha_entities, "ha_picture": ha_picture, "ha_stream": ha_stream,
+              "ha_todo": ha_todo, "ha_calendar": ha_calendar, "ha_screens": ha_screens, "ha_enrol": ha_enrol}
+    return {**calls, **{name: asked(shared[name]) for name in HA_CALLS}}
+
+
+def screens_address(controller: str, fingerprint: str | None) -> tuple[str, str | None]:
+    """Where the site's screens may go (site_ha.py): this renderer's own controller only, at its
+    address for screens (protocol v2), with the certificate pinned for it, if any."""
+    from .connect import PATH, address
+    pin = (fingerprint or "").replace(":", "").strip().lower() or None
+    return address(controller).removesuffix(PATH) + "/api/pleatview/v2", pin
 
 
 def describe_call(method: str, params: dict[str, Any]) -> str | None:
@@ -456,6 +559,12 @@ def describe_call(method: str, params: dict[str, Any]) -> str | None:
         return f"draw {printable(params.get('kind', '?'), 20)} on {key}"
     if method == "stop":
         return f"stop {key}"
+    if method == "ha_stream":
+        return f"stream Home Assistant's {printable(params.get('entity_id', ''), 120)} as {key}"
+    if method == "ha_screens":
+        return "list Home Assistant's PleatView screens"
+    if method == "ha_enrol":
+        return f"move the screen {printable(params.get('screen', ''), 80)} to this controller"
     return None
 
 
@@ -472,8 +581,7 @@ def create_stream_app(renderer: Renderer) -> web.Application:
     app = web.Application(middlewares=[plain])
 
     async def stream(request: web.Request) -> web.Response:
-        key = renderer.streams.get(request.match_info["secret"])
-        session = renderer.sessions.get(key) if key else None
+        session = renderer.watched(renderer.streams.get(request.match_info["secret"]))
         if session is None:
             raise web.HTTPNotFound()
         try:
@@ -676,6 +784,13 @@ def settings() -> dict[str, str]:
     return values
 
 
+def keep_tokens_here() -> None:
+    """Home Assistant's tokens stay in this process: the browsers and encoders it starts don't
+    inherit them (they're read before, in settings())."""
+    for secret in ("SUPERVISOR_TOKEN", "HASSIO_TOKEN", "HA_TOKEN"):
+        os.environ.pop(secret, None)
+
+
 def is_loopback(host: str) -> bool:
     try:
         return ipaddress.ip_address(host).is_loopback
@@ -741,8 +856,20 @@ def connect_out(app: web.Application, env: dict[str, str], renderer: Renderer, s
     pages go through, and the listener the site's screens fetch their streams from."""
     from .connect import Link
     from .filter import Filter, Places
+    from .site_ha import Access, Shared
 
     stream_port = int(env.get("STREAM_PORT", "8781"))
+    ha: HomeAssistant | None = None
+    try:
+        shared = Shared.parse(env)
+        access = Access.find(env) if shared.anything else None
+        if shared.anything and access is None:
+            _LOGGER.error("Not sharing Home Assistant: this renderer has no way in. In the app it uses the "
+                          "Supervisor's; elsewhere set HA_URL and HA_TOKEN")
+        elif shared.anything and access is not None:
+            ha = HomeAssistant(access, shared)
+    except ValueError as err:
+        _LOGGER.error("Not sharing Home Assistant: %s", err)
     try:
         places = Places.parse(env.get("SITE_PAGES", ""))
         page_filter = Filter(places)
@@ -756,7 +883,7 @@ def connect_out(app: web.Application, env: dict[str, str], renderer: Renderer, s
 
         def about() -> dict[str, Any]:
             return {**identity, "version": VERSION, "encoder": encoder, "max_screens": renderer.max_sessions,
-                    "load": load(), "streams": streams,
+                    "load": load(), "streams": streams, **({"home_assistant": ha.shared.describe()} if ha else {}),
                     "sessions": {key[len(CONTROLLER):]: {"url": s.screen.url, "width": s.screen.width, "height": s.screen.height,
                                            "running": s.running}
                                  for key, s in renderer.sessions.items() if key.startswith(CONTROLLER)}}
@@ -764,9 +891,12 @@ def connect_out(app: web.Application, env: dict[str, str], renderer: Renderer, s
         async def removed() -> None:
             for key in [k for k in renderer.sessions if k.startswith(CONTROLLER)]:
                 await renderer.stop(key)
+            for key in list(renderer.relays):
+                await renderer.stop_relay(key)
 
+        screens_to = screens_address(env["CONTROLLER"], env.get("CONTROLLER_FINGERPRINT")) if ha and ha.shared.screens else None
         link = Link(state, env["CONTROLLER"], env.get("CONTROLLER_FINGERPRINT"),
-                    calls=controller_calls(renderer, about, lambda: page_filter.port), info=about,
+                    calls=controller_calls(renderer, about, lambda: page_filter.port, ha, screens_to), info=about,
                     write=write_private, describe=describe_call, on_removed=removed)
     except ValueError as err:
         _LOGGER.error("Not connecting out: %s", err)
@@ -780,6 +910,10 @@ def connect_out(app: web.Application, env: dict[str, str], renderer: Renderer, s
         _LOGGER.info("Connecting out to the controller at %s. Pages from it reach the public internet%s.",
                      link.url, f" and {', '.join(sorted(f'{h}:{p}' for h, p in places.hosts) + [str(n) for n in places.networks])}"
                      if places else " only")
+        if ha:
+            what = ", ".join(ha.shared.patterns) or "no entities"
+            _LOGGER.info("Sharing this Home Assistant with the controller: %s%s", what,
+                         "; and its PleatView screens move to it when it asks" if ha.shared.screens else "")
         if streams:
             _LOGGER.info("The site's screens fetch their streams at %s", streams[0])
         else:
@@ -788,6 +922,8 @@ def connect_out(app: web.Application, env: dict[str, str], renderer: Renderer, s
         link.start()
         yield
         await link.stop()
+        if ha:
+            await ha.close()
         await streams_runner.cleanup()
         await page_filter.stop()
 
@@ -797,6 +933,7 @@ def connect_out(app: web.Application, env: dict[str, str], renderer: Renderer, s
 def main() -> None:
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
     env = settings()
+    keep_tokens_here()
     root = Path(env.get("DATA", "/tmp/pleatview-renderer"))
     root.mkdir(parents=True, exist_ok=True)
     encoder = asyncio.run(detect_encoder(env.get("ENCODER", "auto")))

@@ -287,6 +287,32 @@
           "description": "Seulement ce site, tel que la page téléphone du téléviseur le liste. Vide oublie tout."
         }
       }
+    },
+    "list_screens": {
+      "name": "Lister les écrans",
+      "description": "Liste les écrans PleatView configurés ici, pour un contrôleur situé ailleurs que ce site autorise à les reprendre (par son PleatView Renderer)."
+    },
+    "enrol_with": {
+      "name": "Connecter un écran à un contrôleur situé ailleurs",
+      "description": "Fait se connecter un écran à un contrôleur situé ailleurs et s'y inscrire avec un jeton à usage unique de celui-ci. Home Assistant garde son appairage et ses réglages.",
+      "fields": {
+        "screen": {
+          "name": "Écran",
+          "description": "L'identifiant de l'écran, tel que Lister les écrans le donne."
+        },
+        "url": {
+          "name": "Adresse du contrôleur",
+          "description": "Là où l'écran se connecte, par exemple wss://controller.example.com/api/pleatview/v2."
+        },
+        "token": {
+          "name": "Jeton",
+          "description": "Le jeton à usage unique que le contrôleur a créé pour cet écran."
+        },
+        "fingerprint": {
+          "name": "Certificat du contrôleur",
+          "description": "L'empreinte SHA-256 du certificat propre au contrôleur, seulement pour un certificat auquel le système de l'écran ne fait pas confiance."
+        }
+      }
     }
   },
   "issues": {

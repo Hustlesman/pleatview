@@ -6,6 +6,8 @@
     "notify": { "service": "mdi:message-badge" },
     "home": { "service": "mdi:home" },
     "reload": { "service": "mdi:reload" },
-    "forget_sign_ins": { "service": "mdi:account-key" }
+    "forget_sign_ins": { "service": "mdi:account-key" },
+    "list_screens": { "service": "mdi:monitor-multiple" },
+    "enrol_with": { "service": "mdi:swap-horizontal" }
   }
 }

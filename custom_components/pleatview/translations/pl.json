@@ -287,6 +287,32 @@
           "description": "Tylko ta strona, tak jak wymienia ją strona telefonu telewizora. Puste zapomina wszystkie."
         }
       }
+    },
+    "list_screens": {
+      "name": "Wyświetl ekrany",
+      "description": "Wyświetla ekrany PleatView skonfigurowane tutaj, dla kontrolera w innym miejscu, któremu ta lokalizacja pozwala je przejąć (przez swój PleatView Renderer)."
+    },
+    "enrol_with": {
+      "name": "Połącz ekran z kontrolerem w innym miejscu",
+      "description": "Sprawia, że ekran łączy się z kontrolerem w innym miejscu i rejestruje się tam jednorazowym tokenem od niego. Home Assistant zachowuje swoje parowanie i ustawienia.",
+      "fields": {
+        "screen": {
+          "name": "Ekran",
+          "description": "Identyfikator ekranu, taki jak podaje Wyświetl ekrany."
+        },
+        "url": {
+          "name": "Adres kontrolera",
+          "description": "Dokąd łączy się ekran, na przykład wss://controller.example.com/api/pleatview/v2."
+        },
+        "token": {
+          "name": "Token",
+          "description": "Jednorazowy token, który kontroler utworzył dla tego ekranu."
+        },
+        "fingerprint": {
+          "name": "Certyfikat kontrolera",
+          "description": "Odcisk SHA-256 własnego certyfikatu kontrolera, tylko dla takiego, któremu system ekranu nie ufa."
+        }
+      }
     }
   },
   "issues": {
