@@ -29,8 +29,13 @@ https://github.com/Hustlesman/pleatview/blob/main/docs/renderer-connect-out.md
 controller may use the entities under *Shared entities* (every camera, by default): their
 states, cameras' pictures and live streams, to-do lists and calendars. Home Assistant needn't be
 reachable from outside, and its token stays in this app. *Move screens to the controller* also
-lets the controller have this Home Assistant's PleatView screens connect out to it; each move
-shows as a notification.
+lets the controller have this Home Assistant's PleatView screens connect out to it, with nobody
+at them; each move shows as a notification.
+
+**This site's screens, for that controller:** the controller lists the PleatView screens this
+Home Assistant's PleatView integration found, and adds them as on its own network: someone
+presses OK on the screen, or reads its PIN out. Turn *Find screens for the controller* off to
+stop it.
 
 The whole guide, with pictures of each step and what to expect on the TV:
 https://github.com/Hustlesman/pleatview/blob/main/docs/render-on-home-assistant.md

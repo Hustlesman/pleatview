@@ -268,8 +268,9 @@ and policies live in the controller.
       one connection out with its own key. The site decides what the controller gets; pages
       from the controller go through a filter that keeps them off the site's network. Done in
       1.1: rendering; in 1.1.4: the site's Home Assistant shared through it (the entities the
-      site lists, cameras streamed by the renderer, its token kept there), and screens set up
-      with it moved to the controller when the site allows
+      site lists, cameras streamed by the renderer, its token kept there), the site's screens
+      found for the controller and added there as on its own network (OK on the screen, or its
+      PIN), and screens set up with it moved to the controller when the site allows
 
 **Exit:** a screen on another network is paired, controlled and removed through a ZTNA
 connector and over the open internet, with no open port at the screen's end, and the

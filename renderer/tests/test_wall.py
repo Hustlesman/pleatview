@@ -188,7 +188,10 @@ class WallApiTest(AioHTTPTestCase):
             for n in (4, 5, 6):  # the piece with the sound: its timestamps 22 ms on from the others', its sound 10 ms before its picture
                 video = (5 + n) * wall.TICKS + (1980 if piece == 0 else 0)
                 (folder / f"t{piece}-{n}.ts").write_bytes(segment_with(video, sound=video - 900 if piece == 0 else None))
-        served = [await (await self.client.get(f"/hls/lobby/t{piece}.m3u8")).text() for piece in (0, 1)]
+        # Served soon after it was written, as ffmpeg's would be: timestamps wrap every 26.5 hours.
+        written = wall._parse_time("2026-11-19T04:00:05.151+0000")
+        with mock.patch.object(wall, "time", mock.Mock(time=lambda: written + 3)):
+            served = [await (await self.client.get(f"/hls/lobby/t{piece}.m3u8")).text() for piece in (0, 1)]
         times = [[wall._parse_time(line.split(":", 1)[1]) for line in text.splitlines() if line.startswith("#EXT-X-PROGRAM")] for text in served]
         self.assertEqual(len(times[1]), 3)
         for sound, picture in zip(*times):  # the same frame at the same moment: the sound's segment starts 10 ms sooner

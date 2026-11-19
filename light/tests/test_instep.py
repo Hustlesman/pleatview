@@ -108,7 +108,9 @@ class Loop(unittest.IsolatedAsyncioTestCase):
     async def test_it_stops_when_something_else_plays(self) -> None:
         playing = ["stream"]
         player = Player([1795060100.0], 96.0)
-        keeper = instep.InStep(player, "x", fetch_playlist=lambda url: PIECE, active=lambda: playing[0] == "stream")
+        # In step by this screen's clock (the frame drawn 4 seconds ago), whatever the day today.
+        keeper = instep.InStep(player, "x", fetch_playlist=lambda url: PIECE, clock=lambda: 1795060000.0 + 96.0 + 4.0,
+                               active=lambda: playing[0] == "stream")
         with mock.patch.object(instep, "START", 0), mock.patch.object(instep, "LOOK", 0.01):
             keeper.start()
             await asyncio.sleep(0.1)
