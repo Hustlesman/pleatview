@@ -81,67 +81,90 @@ def load() -> dict[str, float]:
     except (OSError, KeyError, ValueError, ZeroDivisionError):
         return {}
 
+class Problem(str):
+    """What's wrong with a request, in the renderer's own words. Checks return one rather than
+    raise: what reaches a caller is never made from an exception (CodeQL
+    py/stack-trace-exposure)."""
+
+
 def parse_screen(body: Any) -> Screen:
     """A screen from a request body; ValueError says what's wrong."""
+    found = read_screen(body)
+    if isinstance(found, Problem):
+        raise ValueError(str(found))
+    return found
+
+
+def read_screen(body: Any) -> Screen | Problem:
+    """A screen from a request body, or what's wrong with it."""
     if not isinstance(body, dict):
-        raise ValueError("expected a JSON object")
+        return Problem("expected a JSON object")
     url = body.get("url")
     if not isinstance(url, str) or urlsplit(url).scheme not in ("http", "https") or not urlsplit(url).netloc:
-        raise ValueError("url must be an http or https address")
-    try:
-        actions.split(url)
-    except ValueError as err:
-        raise ValueError(f"the page's steps (#{actions.PARAM}…): {err}") from None
+        return Problem("url must be an http or https address")
+    if not steps_readable(url):
+        return Problem(f"the page's steps (#{actions.PARAM}…) can't be read: wait, click, drag, rightdrag or scroll, "
+                       f"at most {actions.MAX_STEPS}")
     width, height = body.get("width", 1920), body.get("height", 1080)
-    tiles = parse_tiles(body.get("tiles"), width, height) if "tiles" in body else ()
+    tiles = read_tiles(body.get("tiles"), width, height) if "tiles" in body else ()
+    if isinstance(tiles, Problem):
+        return tiles
     side = WALL_SIDE if tiles else 3840
     if not all(isinstance(v, int) and not isinstance(v, bool) and 160 <= v <= side for v in (width, height)):
-        raise ValueError(f"width and height must be whole pixels from 160 to {side}")
+        return Problem(f"width and height must be whole pixels from 160 to {side}")
     if tiles and width * height > WALL_PIXELS:
-        raise ValueError(f"a wall's page is at most {WALL_PIXELS:,} pixels")
+        return Problem(f"a wall's page is at most {WALL_PIXELS:,} pixels")
     scale = body.get("scale", 2.0)
     if not isinstance(scale, (int, float)) or not 0.25 <= scale <= 8:
-        raise ValueError("scale must be from 0.25 to 8")
+        return Problem("scale must be from 0.25 to 8")
     kiosk = body.get("kiosk", "full")
     if kiosk not in KIOSK_MODES:
-        raise ValueError(f"kiosk must be one of {', '.join(KIOSK_MODES)}")
+        return Problem(f"kiosk must be one of {', '.join(KIOSK_MODES)}")
     ha_url, token = body.get("ha_url", ""), body.get("token", "")
     if not isinstance(ha_url, str) or not isinstance(token, str):
-        raise ValueError("ha_url and token must be text")
+        return Problem("ha_url and token must be text")
     rotation = body.get("rotation", 0)
     if rotation not in (0, 90, 180, 270) or isinstance(rotation, bool):
-        raise ValueError("rotation must be 0, 90, 180 or 270 (degrees the screen is turned clockwise)")
+        return Problem("rotation must be 0, 90, 180 or 270 (degrees the screen is turned clockwise)")
     if tiles and rotation:
-        raise ValueError("a wall's page is drawn upright: each piece has its own rotation")
+        return Problem("a wall's page is drawn upright: each piece has its own rotation")
     # Even sizes: H.264 in 4:2:0 needs them.
     return Screen(url=url, width=width // 2 * 2, height=height // 2 * 2, scale=round(float(scale), 3),
                   kiosk=kiosk, ha_url=ha_url, token=token, rotation=rotation, tiles=tiles)
 
 
-def parse_tiles(raw: Any, width: Any, height: Any) -> tuple[Tile, ...]:
+def steps_readable(url: str) -> bool:
+    try:
+        actions.split(url)
+    except ValueError:
+        return False
+    return True
+
+
+def read_tiles(raw: Any, width: Any, height: Any) -> tuple[Tile, ...] | Problem:
     """A wall's pieces: 2 to 16, each inside the page (width × height), one with the sound at most."""
     if not isinstance(raw, list) or not 2 <= len(raw) <= TILES_MOST:
-        raise ValueError(f"tiles: a wall has 2 to {TILES_MOST} screens")
+        return Problem(f"tiles: a wall has 2 to {TILES_MOST} screens")
     if not all(isinstance(v, int) and not isinstance(v, bool) for v in (width, height)):
-        raise ValueError("a wall's width and height must be whole pixels")
+        return Problem("a wall's width and height must be whole pixels")
     out = []
     for i, tile in enumerate(raw):
         if not isinstance(tile, dict):
-            raise ValueError(f"tiles[{i}] must be an object")
+            return Problem(f"tiles[{i}] must be an object")
         x, y, w, h = (tile.get(k) for k in ("x", "y", "width", "height"))
         if not all(isinstance(v, int) and not isinstance(v, bool) for v in (x, y, w, h)):
-            raise ValueError(f"tiles[{i}]: x, y, width and height must be whole pixels")
+            return Problem(f"tiles[{i}]: x, y, width and height must be whole pixels")
         x, y, w, h = x // 2 * 2, y // 2 * 2, w // 2 * 2, h // 2 * 2
         if not (0 <= x and 0 <= y and 64 <= w <= 3840 and 64 <= h <= 3840 and x + w <= width and y + h <= height):
-            raise ValueError(f"tiles[{i}] must be 64 to 3840 pixels a side, inside the page")
+            return Problem(f"tiles[{i}] must be 64 to 3840 pixels a side, inside the page")
         rotation = tile.get("rotation", 0)
         if rotation not in (0, 90, 180, 270) or isinstance(rotation, bool):
-            raise ValueError(f"tiles[{i}]: rotation must be 0, 90, 180 or 270")
+            return Problem(f"tiles[{i}]: rotation must be 0, 90, 180 or 270")
         if not isinstance(tile.get("sound", False), bool):
-            raise ValueError(f"tiles[{i}]: sound must be true or false")
+            return Problem(f"tiles[{i}]: sound must be true or false")
         out.append(Tile(x=x, y=y, width=w, height=h, rotation=rotation, sound=tile.get("sound", False)))
     if sum(t.sound for t in out) > 1:
-        raise ValueError("one of a wall's screens has its sound")
+        return Problem("one of a wall's screens has its sound")
     return tuple(out)
 
 
@@ -161,25 +184,35 @@ TONES = ("chime", "ding", "beep", "alarm", "siren", "bell")
 
 
 def parse_overlay(body: Any) -> dict[str, Any] | None:
-    """A notification or camera to draw on top of a screen's page; None to clear."""
+    """A notification or camera to draw on top of a screen's page; None to clear. ValueError
+    says what's wrong."""
+    found = read_overlay(body)
+    if isinstance(found, Problem):
+        raise ValueError(str(found))
+    return found
+
+
+def read_overlay(body: Any) -> dict[str, Any] | None | Problem:
+    """A notification or camera to draw on top of a screen's page; None to clear; or what's
+    wrong with it."""
     if not isinstance(body, dict):
-        raise ValueError("expected a JSON object")
+        return Problem("expected a JSON object")
     kind = body.get("kind")
     if kind == "clear":
         return None
 
-    def text(name: str, required: bool = False) -> str:
+    def text(name: str, required: bool = False) -> str | Problem:
         value = body.get(name) or ""
         if not isinstance(value, str) or len(value) > 1000 or (required and not value):
-            raise ValueError(f"{name} must be text of up to 1000 characters")
+            return Problem(f"{name} must be text of up to 1000 characters")
         return value
 
-    def url(name: str, required: bool) -> str:
+    def url(name: str, required: bool) -> str | Problem:
         value = body.get(name) or ""
         if not value and not required:
             return ""
         if not isinstance(value, str) or urlsplit(value).scheme not in ("http", "https"):
-            raise ValueError(f"{name} must be an http or https address")
+            return Problem(f"{name} must be an http or https address")
         return value
 
     level = body.get("level") or "notice"
@@ -190,22 +223,27 @@ def parse_overlay(body: Any) -> dict[str, Any] | None:
         tone = ""
     duration = body.get("duration") or (10 if kind == "notify" and level != "alert" else 30 if kind == "notify" else 60)
     if not isinstance(duration, (int, float)) or not 1 <= duration <= 3600:
-        raise ValueError("duration must be from 1 to 3600 seconds")
+        return Problem("duration must be from 1 to 3600 seconds")
     position = body.get("position") or ("top-right" if kind == "notify" else "bottom-right")
     if position not in POSITIONS:
-        raise ValueError(f"position must be one of {', '.join(POSITIONS)}")
+        return Problem(f"position must be one of {', '.join(POSITIONS)}")
     if kind == "notify":
-        return {"kind": kind, "message": text("message", True), "title": text("title"),
-                "image_url": url("image_url", False), "position": position, "duration": float(duration),
-                "level": level, "tone": tone}
+        fields = {"message": text("message", True), "title": text("title"), "image_url": url("image_url", False)}
+        wrong = next((v for v in fields.values() if isinstance(v, Problem)), None)
+        if wrong is not None:
+            return wrong
+        return {"kind": kind, **fields, "position": position, "duration": float(duration), "level": level, "tone": tone}
     if kind == "image":
         size = body.get("size") or 30
         if not isinstance(size, (int, float)) or not 10 <= size <= 100:
-            raise ValueError("size must be from 10 to 100 (percent of the width)")
+            return Problem("size must be from 10 to 100 (percent of the width)")
         if body.get("mode") == "fullscreen":
             size, position = 100, "center"
-        return {"kind": kind, "url": url("url", True), "size": size, "position": position, "duration": float(duration)}
-    raise ValueError("kind must be notify, image or clear")
+        address = url("url", True)
+        if isinstance(address, Problem):
+            return address
+        return {"kind": kind, "url": address, "size": size, "position": position, "duration": float(duration)}
+    return Problem("kind must be notify, image or clear")
 
 
 class Full(Exception):
@@ -524,9 +562,12 @@ def create_app(root: Path, encoder: str, max_sessions: int = 4, *, pairing: Pair
         if not KEY.fullmatch(key):
             raise web.HTTPNotFound()
         try:
-            screen = parse_screen(await request.json())
-        except ValueError as err:
-            raise web.HTTPBadRequest(text=str(err)) from err
+            body = await request.json()
+        except ValueError:
+            raise web.HTTPBadRequest(text="expected a JSON object") from None
+        screen = read_screen(body)
+        if isinstance(screen, Problem):
+            raise web.HTTPBadRequest(text=screen)
         try:
             await renderer.show(key, screen)
         except Full:
@@ -549,9 +590,11 @@ def create_app(root: Path, encoder: str, max_sessions: int = 4, *, pairing: Pair
             raise web.HTTPBadRequest(text="a wall shows no notices: its screens are one picture")
         try:
             body = await request.json()
-            item = parse_overlay(body)
-        except ValueError as err:
-            raise web.HTTPBadRequest(text=str(err)) from err
+        except ValueError:
+            raise web.HTTPBadRequest(text="expected a JSON object") from None
+        item = read_overlay(body)
+        if isinstance(item, Problem):
+            raise web.HTTPBadRequest(text=item)
         await session.overlay(item, kind=str(body.get("clear") or "") if item is None else "")
         return web.json_response({})
 
