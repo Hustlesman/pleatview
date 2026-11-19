@@ -107,7 +107,9 @@ Events stream that sends the full snapshot on connect and after every change
 - `ha_connected`: the Home Assistant frontend's websocket state, from its heartbeat.
 - `media.state`: `playing`, `paused` or `buffering`; `duration` is null for live streams.
 - `overlay_permission`: whether the app may draw over other apps / start itself
-  from the background.
+  from the background, as it is now (looked at again every 30 seconds). Up to 1.1.3 the
+  Android app said `false` until its screen first came to the front after it started, so
+  controllers only take a `false` from those versions while `foreground` is true.
 - `sign_in`: null, or the page waiting for a username and password:
   `{"kind": "prompt" | "form", "title": "Grafana", "site": "http://grafana.lan:3000", "failed": false}`.
   `title` is the dashboard's name; `failed` means the last sign-in for it was rejected.

@@ -59,6 +59,10 @@ RECONNECT_MAX = 30
 # Older apps switch to any Home Assistant path inside the frontend, which shows the
 # default dashboard for a page such as /local/streams.html.
 APP_OPENS_LOCAL_PAGES = (1, 0, 12)
+# The Android app reports whether it may display over other apps as it is from this version;
+# before, "not allowed" until its screen first came to the front after the app started (with
+# the TV, or after an update), so only what it said in the front counts.
+APP_REPORTS_OVERLAY_LIVE = (1, 1, 4)
 
 
 def app_version(value: str | None) -> tuple[int, ...]:
@@ -292,6 +296,9 @@ class PleatViewDevice:
         can't come back to the front, so a TV can sit on its home screen for days with nothing
         to say why; Android has taken the permission away during an app update."""
         allowed = self.state.get("overlay_permission")
+        if allowed is False and app_version(self.state.get("app_version")) < APP_REPORTS_OVERLAY_LIVE \
+                and not self.state.get("foreground"):
+            return  # an older app in the background: may just not have looked yet
         if not isinstance(allowed, bool) or allowed == self._overlay_permission:
             return  # unknown, or as before
         self._overlay_permission = allowed
