@@ -529,8 +529,9 @@ def create_app(root: Path, encoder: str, max_sessions: int = 4, *, pairing: Pair
             raise web.HTTPBadRequest(text=str(err)) from err
         try:
             await renderer.show(key, screen)
-        except Full as err:
-            raise web.HTTPTooManyRequests(text=str(err)) from None
+        except Full:
+            wall = f" (a wall this size counts for {weight(screen)})" if screen.tiles else ""
+            raise web.HTTPTooManyRequests(text=f"this renderer shows at most {renderer.max_sessions} screens{wall}") from None
         if screen.tiles:  # a wall: each screen's piece, in the order given
             return web.json_response({"playlists": [f"/hls/{key}/t{i}.m3u8" for i in range(len(screen.tiles))]})
         return web.json_response({"playlist": f"/hls/{key}/index.m3u8"})
