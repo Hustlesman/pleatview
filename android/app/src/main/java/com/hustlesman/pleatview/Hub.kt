@@ -64,12 +64,19 @@ class Hub(
     private val reopenCheck = object : Runnable {
         override fun run() {
             checkReopen()
+            // The permission as it is now: it can be given or taken away while PleatView is in
+            // the background, where nothing else would look again.
+            val overlays = canDrawOverlays()
+            if (overlays != state.overlayPermission) update { overlayPermission = overlays }
             main.postDelayed(this, REOPEN_CHECK_MS)
         }
     }
 
     init {
         state.configRev = settings.config.rev
+        // As it is, from the start: PleatView often starts in the background (with the TV, after
+        // an update), and reported "not allowed" until its screen first came to the front.
+        state.overlayPermission = canDrawOverlays()
         stateJson = render()
         settings.addListener { old, new ->
             main.post {

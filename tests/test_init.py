@@ -53,6 +53,7 @@ async def test_a_repair_while_a_tv_wont_let_pleatview_display_over_other_apps(ha
     # A wall TV lost the permission in an app update and sat on its home screen for days,
     # with only an attribute to show why.
     issues = ir.async_get(hass)
+    fake_tv.state["app_version"] = "1.1.4"  # reports the permission as it is, in the background too
     entry = await setup_entry(hass, make_entry(fake_tv))
     repair = f"overlay_permission_{entry.entry_id}"
     await fake_tv.wait_for_stream()
@@ -69,6 +70,24 @@ async def test_a_repair_while_a_tv_wont_let_pleatview_display_over_other_apps(ha
     await _until(lambda: issues.async_get_issue(DOMAIN, repair) is not None)
     await hass.config_entries.async_unload(entry.entry_id)
     assert issues.async_get_issue(DOMAIN, repair) is None
+
+
+async def test_an_older_app_in_the_background_isnt_taken_at_its_word(hass: HomeAssistant, fake_tv: FakeTV) -> None:
+    # Up to 1.1.3 the app said "not allowed" until its screen first came to the front after it
+    # started: a Google TV with the permission given got the repair after updating to 1.1.3.
+    issues = ir.async_get(hass)
+    fake_tv.state.update(app_version="1.1.3", foreground=False)
+    entry = await setup_entry(hass, make_entry(fake_tv))
+    repair = f"overlay_permission_{entry.entry_id}"
+    await fake_tv.wait_for_stream()
+    await fake_tv.push(volume=0.5)
+    await asyncio.sleep(0.2)
+    assert issues.async_get_issue(DOMAIN, repair) is None
+    await fake_tv.push(foreground=True)  # in the front it has looked: that counts
+    await _until(lambda: issues.async_get_issue(DOMAIN, repair) is not None)
+    await fake_tv.push(overlay_permission=True)
+    await _until(lambda: issues.async_get_issue(DOMAIN, repair) is None)
+    await hass.config_entries.async_unload(entry.entry_id)
 
 
 async def test_no_repair_from_apps_that_dont_say(hass: HomeAssistant, fake_tv: FakeTV) -> None:
