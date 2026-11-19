@@ -31,10 +31,10 @@ from urllib.parse import urlsplit
 from aiohttp import web
 from aiohttp.web_log import AccessLogger
 
-from . import actions
+from . import actions, wall
 from .mdns import Responder, local_address
 from .pairing import Pairing
-from .session import Folders, Screen, Session
+from .session import Folders, Screen, Session, Tile
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -51,7 +51,16 @@ class AccessLog(AccessLogger):
 
 VERSION = "1.1.3"
 KEY = re.compile(r"^[A-Za-z0-9_-]{1,64}$")
-FILE = re.compile(r"^(index\.m3u8|s\d{1,9}\.ts)$")
+FILE = re.compile(r"^(index\.m3u8|s\d{1,9}\.ts|t\d{1,2}\.m3u8|t\d{1,2}-\d{1,9}\.ts)$")
+# A wall's pieces' files: t<piece>.m3u8 and t<piece>-<n>.ts.
+TILE_FILE = re.compile(r"^t(\d{1,2})(\.m3u8|-\d{1,9}\.ts)$")
+# A wall: its page at most this wide or high, and this many pixels in all (two 4K pictures);
+# 2 to 16 screens, each piece at most 4K.
+WALL_SIDE = 7680
+WALL_PIXELS = 2 * 3840 * 2160
+TILES_MOST = 16
+# What one screen of its own counts for: a wall counts as many as its page has 1080p pictures.
+SCREEN_PIXELS = 1920 * 1080
 KIOSK_MODES = ("full", "sidebar", "off")
 # A screen whose TV hasn't fetched its stream for this long stops until it does again.
 IDLE_SECONDS = 90
@@ -84,8 +93,12 @@ def parse_screen(body: Any) -> Screen:
     except ValueError as err:
         raise ValueError(f"the page's steps (#{actions.PARAM}…): {err}") from None
     width, height = body.get("width", 1920), body.get("height", 1080)
-    if not all(isinstance(v, int) and 160 <= v <= 3840 for v in (width, height)):
-        raise ValueError("width and height must be whole pixels from 160 to 3840")
+    tiles = parse_tiles(body.get("tiles"), width, height) if "tiles" in body else ()
+    side = WALL_SIDE if tiles else 3840
+    if not all(isinstance(v, int) and not isinstance(v, bool) and 160 <= v <= side for v in (width, height)):
+        raise ValueError(f"width and height must be whole pixels from 160 to {side}")
+    if tiles and width * height > WALL_PIXELS:
+        raise ValueError(f"a wall's page is at most {WALL_PIXELS:,} pixels")
     scale = body.get("scale", 2.0)
     if not isinstance(scale, (int, float)) or not 0.25 <= scale <= 8:
         raise ValueError("scale must be from 0.25 to 8")
@@ -98,9 +111,43 @@ def parse_screen(body: Any) -> Screen:
     rotation = body.get("rotation", 0)
     if rotation not in (0, 90, 180, 270) or isinstance(rotation, bool):
         raise ValueError("rotation must be 0, 90, 180 or 270 (degrees the screen is turned clockwise)")
+    if tiles and rotation:
+        raise ValueError("a wall's page is drawn upright: each piece has its own rotation")
     # Even sizes: H.264 in 4:2:0 needs them.
     return Screen(url=url, width=width // 2 * 2, height=height // 2 * 2, scale=round(float(scale), 3),
-                  kiosk=kiosk, ha_url=ha_url, token=token, rotation=rotation)
+                  kiosk=kiosk, ha_url=ha_url, token=token, rotation=rotation, tiles=tiles)
+
+
+def parse_tiles(raw: Any, width: Any, height: Any) -> tuple[Tile, ...]:
+    """A wall's pieces: 2 to 16, each inside the page (width × height), one with the sound at most."""
+    if not isinstance(raw, list) or not 2 <= len(raw) <= TILES_MOST:
+        raise ValueError(f"tiles: a wall has 2 to {TILES_MOST} screens")
+    if not all(isinstance(v, int) and not isinstance(v, bool) for v in (width, height)):
+        raise ValueError("a wall's width and height must be whole pixels")
+    out = []
+    for i, tile in enumerate(raw):
+        if not isinstance(tile, dict):
+            raise ValueError(f"tiles[{i}] must be an object")
+        x, y, w, h = (tile.get(k) for k in ("x", "y", "width", "height"))
+        if not all(isinstance(v, int) and not isinstance(v, bool) for v in (x, y, w, h)):
+            raise ValueError(f"tiles[{i}]: x, y, width and height must be whole pixels")
+        x, y, w, h = x // 2 * 2, y // 2 * 2, w // 2 * 2, h // 2 * 2
+        if not (0 <= x and 0 <= y and 64 <= w <= 3840 and 64 <= h <= 3840 and x + w <= width and y + h <= height):
+            raise ValueError(f"tiles[{i}] must be 64 to 3840 pixels a side, inside the page")
+        rotation = tile.get("rotation", 0)
+        if rotation not in (0, 90, 180, 270) or isinstance(rotation, bool):
+            raise ValueError(f"tiles[{i}]: rotation must be 0, 90, 180 or 270")
+        if not isinstance(tile.get("sound", False), bool):
+            raise ValueError(f"tiles[{i}]: sound must be true or false")
+        out.append(Tile(x=x, y=y, width=w, height=h, rotation=rotation, sound=tile.get("sound", False)))
+    if sum(t.sound for t in out) > 1:
+        raise ValueError("one of a wall's screens has its sound")
+    return tuple(out)
+
+
+def weight(screen: Screen) -> int:
+    """How many screens of its own a session counts for: a wall's page by its 1080p pictures."""
+    return max(1, -(-screen.width * screen.height // SCREEN_PIXELS)) if screen.tiles else 1
 
 
 POSITIONS = ("top-left", "top-right", "bottom-left", "bottom-right", "center")
@@ -184,11 +231,15 @@ class Renderer:
         self.sessions: dict[str, Session] = {}
         self.streams: dict[str, str] = {}  # a controller's session's stream secret -> its key
 
+    def used(self, but: str | None = None) -> int:
+        return sum(weight(s.screen) for k, s in self.sessions.items() if k != but)
+
     async def show(self, key: str, screen: Screen, proxy: int | None = None) -> Session:
         session = self.sessions.get(key)
+        if self.used(but=key) + weight(screen) > self.max_sessions:
+            wall = f" (a wall this size counts for {weight(screen)})" if screen.tiles else ""
+            raise Full(f"this renderer shows at most {self.max_sessions} screens{wall}")
         if session is None:
-            if len(self.sessions) >= self.max_sessions:
-                raise Full(f"this renderer shows at most {self.max_sessions} screens")
             session = self.sessions[key] = Session(key, screen, self.folders, self.encoder, proxy=proxy)
             if key.startswith(CONTROLLER):
                 session.secret = secrets.token_hex(16)
@@ -209,7 +260,9 @@ class Renderer:
     async def file(self, session: Session, name: str) -> tuple[bytes, str, str]:
         """A stream's playlist or segment: its bytes, type and caching; FileNotFoundError if
         there's none (yet, or any more)."""
-        if not FILE.fullmatch(name):
+        tile = TILE_FILE.fullmatch(name)
+        if not FILE.fullmatch(name) or bool(tile) != bool(session.screen.tiles) \
+                or (tile and int(tile.group(1)) >= len(session.screen.tiles)):
             raise FileNotFoundError(name)
         session.last_access = time.monotonic()
         if not session.running:
@@ -217,12 +270,58 @@ class Renderer:
             session.start()
         path = session.folder / name
         deadline = time.monotonic() + START_WAIT_SECONDS
-        while not path.exists() and name == "index.m3u8" and time.monotonic() < deadline:
+        while not path.exists() and name.endswith(".m3u8") and time.monotonic() < deadline:
             await asyncio.sleep(0.25)
         body = await asyncio.to_thread(path.read_bytes)  # FileNotFoundError: an old segment ffmpeg just deleted
+        if tile and name.endswith(".m3u8"):
+            body = await asyncio.to_thread(self._in_step, session, int(tile.group(1)), body)
         cache = "no-cache" if name.endswith(".m3u8") else "max-age=60"
         content_type = "application/vnd.apple.mpegurl" if name.endswith(".m3u8") else "video/mp2t"
         return body, content_type, cache
+
+    @staticmethod
+    def _in_step(session: Session, piece: int, body: bytes) -> bytes:
+        """A wall's piece's playlist with the wall's clock (wall.py); as it is until there's one."""
+        def stamps_of(name: str) -> dict[str, int]:
+            if name in session.wall_pts:
+                return session.wall_pts[name]
+            if not TILE_FILE.fullmatch(name) or name.endswith(".m3u8"):
+                return {}
+            try:
+                with open(session.folder / name, "rb") as segment:
+                    found = wall.stamps(segment.read(wall.HEAD_BYTES))
+            except OSError:
+                return {}
+            if "video" in found:
+                if len(session.wall_pts) > 40 * len(session.screen.tiles):
+                    session.wall_pts.clear()
+                session.wall_pts[name] = found
+            return found
+
+        def pts_of(name: str) -> int | None:  # its first picture's
+            return stamps_of(name).get("video")
+
+        def first_sample(name: str) -> int | None:  # its first picture's or sound's, whichever comes first
+            found = stamps_of(name)
+            if "video" not in found:
+                return None
+            return min(found.values(), key=lambda pts: found["video"] + ((pts - found["video"] + wall.WRAP // 2) % wall.WRAP - wall.WRAP // 2))
+
+        if 0 not in session.wall_clock:
+            try:
+                first = body.decode(errors="replace") if piece == 0 else (session.folder / "t0.m3u8").read_text()
+            except OSError:
+                return body
+            if (clock := wall.clock_from(first, pts_of)) is None:
+                return body
+            session.wall_clock[0] = clock
+        text = body.decode(errors="replace")
+        if piece not in session.wall_clock:
+            clock = wall.piece_clock(session.wall_clock[0], text, pts_of, lambda name: "t0-" + name.split("-", 1)[1])
+            if clock is None:
+                return body
+            session.wall_clock[piece] = clock
+        return wall.in_step(text, session.wall_clock[piece], first_sample).encode()
 
     async def stop_idle(self) -> None:
         for session in list(self.sessions.values()):
@@ -266,10 +365,14 @@ def controller_calls(renderer: Renderer, info: Any, proxy: Any) -> dict[str, Any
             raise Refused(str(err)) from None
         except Full as err:
             raise Refused(str(err)) from None
+        if screen.tiles:  # a wall: each screen's piece, in the order given
+            return {"streams": [f"/stream/{session.secret}/t{i}.m3u8" for i in range(len(screen.tiles))]}
         return {"stream": f"/stream/{session.secret}/index.m3u8"}
 
     async def overlay(params: dict[str, Any]) -> dict[str, Any]:
         session = existing(params)
+        if session.screen.tiles:
+            raise Refused("a wall shows no notices: its screens are one picture")
         body = {k: v for k, v in params.items() if k != "key"}
         try:
             item = parse_overlay(body)
@@ -286,7 +389,7 @@ def controller_calls(renderer: Renderer, info: Any, proxy: Any) -> dict[str, Any
         session = existing(params)
         name = params.get("name")
         if not isinstance(name, str) or not FILE.fullmatch(name):
-            raise Refused("name is index.m3u8 or s<n>.ts")
+            raise Refused("name is index.m3u8 or s<n>.ts (a wall's: t<piece>.m3u8 or t<piece>-<n>.ts)")
         try:
             body, content_type, _ = await renderer.file(session, name)
         except FileNotFoundError:
@@ -307,8 +410,10 @@ def describe_call(method: str, params: dict[str, Any]) -> str | None:
 
     key = printable(params.get("key", ""), 48)
     if method == "show":
+        tiles = params.get("tiles")
+        wall_of = f", a wall of {len(tiles)} screens" if isinstance(tiles, list) else ""
         return (f"show {key}: {printable(params.get('url', ''), 200)} "
-                f"({printable(params.get('width', 1920), 6)}×{printable(params.get('height', 1080), 6)})")
+                f"({printable(params.get('width', 1920), 6)}×{printable(params.get('height', 1080), 6)}{wall_of})")
     if method == "overlay":
         return f"draw {printable(params.get('kind', '?'), 20)} on {key}"
     if method == "stop":
@@ -377,7 +482,8 @@ def create_app(root: Path, encoder: str, max_sessions: int = 4, *, pairing: Pair
         if open_to_all() or authorized(request):
             public["load"] = load()
             public["sessions"] = {
-                key: {"url": s.screen.url, "width": s.screen.width, "height": s.screen.height, "running": s.running}
+                key: {"url": s.screen.url, "width": s.screen.width, "height": s.screen.height, "running": s.running,
+                      **({"screens": len(s.screen.tiles)} if s.screen.tiles else {})}
                 for key, s in sessions.items() if not key.startswith(CONTROLLER)  # a controller elsewhere's are its own
             }
         return web.json_response(public)
@@ -424,7 +530,10 @@ def create_app(root: Path, encoder: str, max_sessions: int = 4, *, pairing: Pair
         try:
             await renderer.show(key, screen)
         except Full:
-            raise web.HTTPTooManyRequests(text=f"this renderer shows at most {renderer.max_sessions} screens") from None
+            wall = f" (a wall this size counts for {weight(screen)})" if screen.tiles else ""
+            raise web.HTTPTooManyRequests(text=f"this renderer shows at most {renderer.max_sessions} screens{wall}") from None
+        if screen.tiles:  # a wall: each screen's piece, in the order given
+            return web.json_response({"playlists": [f"/hls/{key}/t{i}.m3u8" for i in range(len(screen.tiles))]})
         return web.json_response({"playlist": f"/hls/{key}/index.m3u8"})
 
     def local(request: web.Request) -> Session | None:
@@ -436,6 +545,8 @@ def create_app(root: Path, encoder: str, max_sessions: int = 4, *, pairing: Pair
         session = local(request)
         if session is None:
             raise web.HTTPNotFound()
+        if session.screen.tiles:
+            raise web.HTTPBadRequest(text="a wall shows no notices: its screens are one picture")
         try:
             body = await request.json()
             item = parse_overlay(body)

@@ -15,6 +15,7 @@ from pathlib import Path
 from typing import Any, Callable
 
 from .config import Config, is_http
+from .instep import InStep
 from .player import Player
 from .playlist import MediaCache
 from .upkeep import VERSION_TEXT, Helper, newer
@@ -79,6 +80,7 @@ class Screen:
         self.enrol_code: tuple[str, str] | None = None
         self.asking: tuple[str, str, asyncio.Future] | None = None  # organisation, host, the answer
         self.playing: str | None = None  # "stream", "playlist" or "media"
+        self.in_step = InStep(self.player, "", active=lambda: False)  # a wall's piece kept in step (instep.py)
         self.playlist_index = 0
         self.playlist_failures = 0
         self.cache = cache
@@ -181,6 +183,10 @@ class Screen:
             self.playing = "stream"
             # The stream has the dashboards' sound, at the screen's volume (not a clip's own).
             await self.player.play(config.render_stream, live=True, volume=self.state["volume"])
+            # A wall's piece: kept in step with the wall's other screens (instep.py).
+            self.in_step.stop()
+            self.in_step = InStep(self.player, config.render_stream, active=lambda: self.playing == "stream")
+            self.in_step.start()
             if time.monotonic() >= self.pin_until:
                 await self.player.clear_text()
         else:

@@ -1,5 +1,6 @@
 """One TV's screen on the renderer: an X display, Chromium on it, and ffmpeg encoding it and its
-sound to HLS."""
+sound to HLS. Or a wall's: one page across several screens, drawn once, its pieces cut out
+and encoded each to its own stream, in step (Tile)."""
 
 from __future__ import annotations
 
@@ -38,6 +39,8 @@ STOP_SECONDS = 5
 VAAPI_QP = 26
 # The sound: AAC, which every TV plays.
 AUDIO_ARGS = ["-c:a", "aac", "-b:a", "128k"]
+# Microseconds a wall's piece with the sound waits for it before writing its picture on.
+INTERLEAVE_US = 500_000
 _displays = itertools.count(10)
 # The user that Xvfb and Chromium run as, when the renderer itself runs as root.
 UNPRIVILEGED = os.environ.get("RENDER_USER", "render")
@@ -50,7 +53,7 @@ class Folders:
     and a key a request brings never becomes part of a path."""
 
     NAME = re.compile(r"s[1-9][0-9]{0,8}")
-    LEFTOVER = re.compile(r"index\.m3u8(\.tmp)?|s\d{1,9}\.ts")
+    LEFTOVER = re.compile(r"index\.m3u8(\.tmp)?|s\d{1,9}\.ts|t\d{1,2}\.m3u8(\.tmp)?|t\d{1,2}-\d{1,9}\.ts")
 
     def __init__(self, root: Path) -> None:
         self.root = root
@@ -111,8 +114,29 @@ class Folders:
 
 
 @dataclass(frozen=True)
+class Tile:
+    """One screen's piece of a wall: where it is on the page, in the page's pixels, and how that
+    screen is mounted (its picture is turned back, as for a screen of its own). Every piece is
+    cut from the same frames, so their segments start on the same frames, with the same
+    numbers, and their playlists carry the same clock (wall_playlist)."""
+
+    x: int
+    y: int
+    width: int
+    height: int
+    rotation: int = 0
+    sound: bool = False  # one piece carries the page's sound
+
+    @property
+    def size(self) -> tuple[int, int]:
+        """Its stream's picture: the other way round for a screen on its side."""
+        return (self.height, self.width) if self.rotation in (90, 270) else (self.width, self.height)
+
+
+@dataclass(frozen=True)
 class Screen:
-    """What one TV shows: its page, size and sign-in."""
+    """What one TV shows: its page, size and sign-in. With tiles, a wall: the page is drawn at
+    width × height and each tile is a screen's stream."""
 
     url: str
     width: int = 1920
@@ -124,6 +148,7 @@ class Screen:
     # How the TV's screen is mounted, in degrees turned clockwise: the page is drawn upright for
     # it, and the picture turned back to the screen's own orientation (ROTATE).
     rotation: int = 0
+    tiles: tuple[Tile, ...] = ()
 
     @property
     def page_size(self) -> tuple[int, int]:
@@ -142,7 +167,8 @@ class Screen:
 
     def restart_needed(self, other: Screen) -> bool:
         """Size, scale and rotation are fixed for a Chromium window and ffmpeg; the rest changes in place."""
-        return (self.width, self.height, self.scale, self.rotation) != (other.width, other.height, other.scale, other.rotation)
+        return ((self.width, self.height, self.scale, self.rotation, self.tiles)
+                != (other.width, other.height, other.scale, other.rotation, other.tiles))
 
 
 # ffmpeg filters that turn the upright page into the picture for a screen mounted this way:
@@ -150,44 +176,74 @@ class Screen:
 ROTATE = {90: "transpose=2", 180: "hflip,vflip", 270: "transpose=1"}
 
 
-def bitrate(screen: Screen) -> int:
+def bitrate(width: int, height: int) -> int:
     """Bits per second: 6 Mbit/s for 1080p, scaled by area, at least 1.5 Mbit/s."""
-    return max(1_500_000, int(6_000_000 * screen.width * screen.height / (1920 * 1080)))
+    return max(1_500_000, int(6_000_000 * width * height / (1920 * 1080)))
 
 
-def encoder_args(encoder: str, screen: Screen) -> list[str]:
-    """ffmpeg's video encoding options: a keyframe every segment, so a TV can join at any."""
+def codec_args(encoder: str, width: int, height: int) -> list[str]:
+    """ffmpeg's video encoder for a picture this size: a keyframe every segment, so a TV can join at any."""
     gop = ["-g", str(FPS * SEGMENT_SECONDS)]
-    turn = [ROTATE[screen.rotation]] if screen.rotation in ROTATE else []
     if encoder == "vaapi":
         # Constant quality: the free VA-API drivers have no bitrate control for H.264.
-        return ["-vf", ",".join([*turn, "format=nv12", "hwupload"]), "-c:v", "h264_vaapi", "-bf", "0", *gop,
-                "-rc_mode", "CQP", "-qp", str(VAAPI_QP)]
-    rate = bitrate(screen)
+        return ["-c:v", "h264_vaapi", "-bf", "0", *gop, "-rc_mode", "CQP", "-qp", str(VAAPI_QP)]
+    rate = bitrate(width, height)
     return [
-        *(["-vf", ",".join(turn)] if turn else []),
         "-c:v", "libx264", "-preset", "veryfast", "-tune", "zerolatency", "-pix_fmt", "yuv420p", *gop,
         "-keyint_min", str(FPS * SEGMENT_SECONDS), "-sc_threshold", "0",
         "-b:v", str(rate), "-maxrate", str(rate * 4 // 3), "-bufsize", str(rate * 2),
     ]
 
 
-def ffmpeg_args(encoder: str, screen: Screen, display: str, folder: Path, with_sound: bool) -> list[str]:
-    """The display, and the sound on standard input (sound.py), to HLS segments in folder."""
-    sound_in = [*sound.FFMPEG_INPUT, "-i", "pipe:0"] if with_sound else []
-    sound_out = ["-map", "0:v", "-map", "1:a", *AUDIO_ARGS] if with_sound else []
+def encoder_args(encoder: str, screen: Screen) -> list[str]:
+    """ffmpeg's video encoding options for a screen of its own."""
+    turn = [ROTATE[screen.rotation]] if screen.rotation in ROTATE else []
+    steps = [*turn, "format=nv12", "hwupload"] if encoder == "vaapi" else turn
+    return [*(["-vf", ",".join(steps)] if steps else []), *codec_args(encoder, screen.width, screen.height)]
+
+
+def hls_args(folder: Path, name: str, clock: bool = False) -> list[str]:
+    """An HLS output: name.m3u8, and its segments name-<n>.ts (s<n>.ts for a screen of its own)."""
+    segments = "s%d.ts" if name == "index" else f"{name}-%d.ts"
     return [
+        "-f", "hls", "-hls_time", str(SEGMENT_SECONDS), "-hls_list_size", str(PLAYLIST_SEGMENTS),
+        "-hls_flags", "delete_segments+independent_segments+omit_endlist+temp_file" + ("+program_date_time" if clock else ""),
+        "-hls_segment_filename", str(folder / segments), str(folder / f"{name}.m3u8"),
+    ]
+
+
+def ffmpeg_args(encoder: str, screen: Screen, display: str, folder: Path, with_sound: bool) -> list[str]:
+    """The display, and the sound on standard input (sound.py), to HLS segments in folder: one
+    stream, or a wall's, one for each of its tiles."""
+    sound_in = [*sound.FFMPEG_INPUT, "-i", "pipe:0"] if with_sound else []
+    head = [
         "-loglevel", "error", "-nostdin",
         *(["-vaapi_device", "/dev/dri/renderD128"] if encoder == "vaapi" else []),
         # The picture waits for the sound that goes with it.
         *(["-itsoffset", str(sound.DELAY)] if with_sound else []),
         "-f", "x11grab", "-framerate", str(FPS), "-video_size", "{}x{}".format(*screen.page_size),
         "-draw_mouse", "0", "-i", display, *sound_in,
-        *encoder_args(encoder, screen), *sound_out,
-        "-f", "hls", "-hls_time", str(SEGMENT_SECONDS), "-hls_list_size", str(PLAYLIST_SEGMENTS),
-        "-hls_flags", "delete_segments+independent_segments+omit_endlist+temp_file",
-        "-hls_segment_filename", str(folder / "s%d.ts"), str(folder / "index.m3u8"),
     ]
+    if not screen.tiles:
+        sound_out = ["-map", "0:v", "-map", "1:a", *AUDIO_ARGS] if with_sound else []
+        return [*head, *encoder_args(encoder, screen), *sound_out, *hls_args(folder, "index")]
+    # A wall: the frame split, each piece cut out (and turned), encoded and written on its own.
+    cuts = []
+    for i, tile in enumerate(screen.tiles):
+        steps = [f"crop={tile.width}:{tile.height}:{tile.x}:{tile.y}", *([ROTATE[tile.rotation]] if tile.rotation in ROTATE else [])]
+        if encoder == "vaapi":
+            steps += ["format=nv12", "hwupload"]
+        cuts.append(f"[c{i}]{','.join(steps)}[t{i}]")
+    graph = f"[0:v]split={len(screen.tiles)}{''.join(f'[c{i}]' for i in range(len(screen.tiles)))};{';'.join(cuts)}"
+    outputs: list[str] = []
+    for i, tile in enumerate(screen.tiles):
+        outputs += ["-map", f"[t{i}]", *codec_args(encoder, *tile.size)]
+        if with_sound and tile.sound:
+            # Its picture never waits long for its sound (ffmpeg waits up to 10 s): on a busy
+            # machine late sound would hold this piece back from the others.
+            outputs += ["-map", "1:a", *AUDIO_ARGS, "-max_interleave_delta", str(INTERLEAVE_US)]
+        outputs += hls_args(folder, f"t{i}", clock=True)
+    return [*head, "-filter_complex", graph, *outputs]
 
 
 def through_filter(proxy: int) -> list[str]:
@@ -272,10 +328,15 @@ class Session:
         self._overlay_task: asyncio.Task[None] | None = None
         self._steps_task: asyncio.Task[None] | None = None
         self._sound: sound.Sound | None = None
+        # A wall's clocks (wall.py): each piece's time at its timestamp zero, and segments'
+        # first timestamps, found again each time ffmpeg starts.
+        self.wall_clock: dict[int, float] = {}
+        self.wall_pts: dict[str, dict[str, int]] = {}
 
     @property
     def playlist(self) -> Path:
-        return self.folder / "index.m3u8"
+        """The playlist the watchdog follows: a wall's first piece's."""
+        return self.folder / ("t0.m3u8" if self.screen.tiles else "index.m3u8")
 
     @property
     def running(self) -> bool:
@@ -345,6 +406,7 @@ class Session:
             await asyncio.sleep(delay)
 
     async def _start_processes(self) -> None:
+        self.wall_clock, self.wall_pts = {}, {}
         if self.folder.exists():
             shutil.rmtree(self.folder)
         self.folder.mkdir(parents=True)
