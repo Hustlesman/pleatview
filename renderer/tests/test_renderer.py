@@ -317,6 +317,21 @@ class ApiTest(AioHTTPTestCase):
         self.assertEqual(sorted(info["sessions"]), ["tv-1", "tv-2"])
         self.assertEqual((await self.client.delete("/api/sessions/tv-2")).status, 204)
 
+    async def test_what_is_wrong_is_said_in_the_renderers_own_words(self) -> None:
+        # Never an exception's text (CodeQL py/stack-trace-exposure): the checks return what's wrong.
+        wrong = await self.client.put("/api/sessions/tv-1", json={"url": "http://a", "width": 10})
+        self.assertEqual((wrong.status, await wrong.text()), (400, "width and height must be whole pixels from 160 to 3840"))
+        steps = await self.client.put("/api/sessions/tv-1", json={"url": "http://a/#pleatview=jump:1"})
+        self.assertEqual(steps.status, 400)
+        self.assertIn("can't be read", await steps.text())
+        not_json = await self.client.put("/api/sessions/tv-1", data=b"{", headers={"Content-Type": "application/json"})
+        self.assertEqual((not_json.status, await not_json.text()), (400, "expected a JSON object"))
+        await self.client.put("/api/sessions/tv-1", json={"url": "http://a"})
+        bad = await self.client.post("/api/sessions/tv-1/overlay", json={"kind": "notify", "message": "", "title": "x"})
+        self.assertEqual((bad.status, await bad.text()), (400, "message must be text of up to 1000 characters"))
+        self.assertIsInstance(server.read_overlay({"kind": "image", "url": "ftp://x"}), server.Problem)
+        self.assertIsInstance(server.read_screen({"url": "http://a", "tiles": "two"}), server.Problem)
+
     async def test_only_stream_files_are_served(self) -> None:
         await self.client.put("/api/sessions/tv-1", json={"url": "http://ha.local:8123/home"})
         folders = session.Folders(Path(self.root.name))  # what the renderer wrote down
