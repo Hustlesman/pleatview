@@ -90,3 +90,26 @@ async def test_only_administrators(hass: HomeAssistant, fake_tv: FakeTV) -> None
             await hass.services.async_call(DOMAIN, service, data, blocking=True,
                                            return_response=service == "list_screens", context=Context(user_id=user.id))
     assert fake_tv.enrolments == []
+
+
+async def test_on_home_assistant_2025_1_too(hass: HomeAssistant, fake_tv: FakeTV) -> None:
+    """Home Assistant 2025.1's helper for administrators' services gives no response: the
+    integration makes the same check itself there, and still answers."""
+    from custom_components.pleatview import services
+
+    def helper_2025_1(hass, domain, service, service_func, schema=None):  # noqa: ANN001, ANN202 - its signature then
+        raise AssertionError("not for services with a response")
+
+    fake_tv.state["features"] = ["protocol_v2"]
+    with patch.object(services, "async_register_admin_service", helper_2025_1):
+        await setup_entry(hass, make_entry(fake_tv))
+    admin = await _admin(hass)
+    result = await hass.services.async_call(DOMAIN, "list_screens", {}, blocking=True, return_response=True, context=admin)
+    assert [s["id"] for s in result["screens"]] == ["tv-1"]
+    user = await hass.auth.async_create_user("Someone", group_ids=[GROUP_ID_USER])
+    with pytest.raises(Unauthorized):
+        await hass.services.async_call(DOMAIN, "list_screens", {}, blocking=True, return_response=True,
+                                       context=Context(user_id=user.id))
+    result = await hass.services.async_call(DOMAIN, "enrol_with", {"screen": "tv-1", "url": URL, "token": TOKEN},
+                                            blocking=True, return_response=True, context=admin)
+    assert result == {"screen": "tv-1", "enrolled": True}
