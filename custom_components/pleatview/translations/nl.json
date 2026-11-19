@@ -287,6 +287,32 @@
           "description": "Alleen deze site, zoals de telefoonpagina van de tv hem toont. Leeg vergeet alles."
         }
       }
+    },
+    "list_screens": {
+      "name": "Schermen weergeven",
+      "description": "Geeft de hier ingestelde PleatView-schermen weer, voor een controller elders die deze locatie ze laat overnemen (via zijn PleatView Renderer)."
+    },
+    "enrol_with": {
+      "name": "Een scherm verbinden met een controller elders",
+      "description": "Laat een scherm verbinding maken met een controller elders en zich daar aanmelden met een eenmalig token daarvan. Home Assistant houdt zijn koppeling en instellingen.",
+      "fields": {
+        "screen": {
+          "name": "Scherm",
+          "description": "De id van het scherm, zoals Schermen weergeven die geeft."
+        },
+        "url": {
+          "name": "Adres van de controller",
+          "description": "Waarmee het scherm verbinding maakt, zoals wss://controller.example.com/api/pleatview/v2."
+        },
+        "token": {
+          "name": "Token",
+          "description": "Het eenmalige token dat de controller voor dit scherm heeft gemaakt."
+        },
+        "fingerprint": {
+          "name": "Certificaat van de controller",
+          "description": "De SHA-256-vingerafdruk van het eigen certificaat van de controller, alleen voor een certificaat dat het systeem van het scherm niet vertrouwt."
+        }
+      }
     }
   },
   "issues": {

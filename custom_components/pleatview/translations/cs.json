@@ -287,6 +287,32 @@
           "description": "Jen tento web, tak jak ho uvádí telefonní stránka televize. Prázdné zapomene všechna."
         }
       }
+    },
+    "list_screens": {
+      "name": "Vypsat obrazovky",
+      "description": "Vypíše obrazovky PleatView nastavené zde, pro řadič jinde, kterému toto místo dovoluje je převzít (přes svůj PleatView Renderer)."
+    },
+    "enrol_with": {
+      "name": "Připojit obrazovku k řadiči jinde",
+      "description": "Nechá obrazovku připojit se k řadiči jinde a zaregistrovat se tam jednorázovým tokenem od něj. Home Assistant si ponechá své spárování a nastavení.",
+      "fields": {
+        "screen": {
+          "name": "Obrazovka",
+          "description": "ID obrazovky, jak ho uvádí Vypsat obrazovky."
+        },
+        "url": {
+          "name": "Adresa řadiče",
+          "description": "Kam se obrazovka připojuje, například wss://controller.example.com/api/pleatview/v2."
+        },
+        "token": {
+          "name": "Token",
+          "description": "Jednorázový token, který řadič vytvořil pro tuto obrazovku."
+        },
+        "fingerprint": {
+          "name": "Certifikát řadiče",
+          "description": "Otisk SHA-256 vlastního certifikátu řadiče, jen pro takový, kterému systém obrazovky nedůvěřuje."
+        }
+      }
     }
   },
   "issues": {

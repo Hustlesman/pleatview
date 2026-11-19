@@ -287,6 +287,32 @@
           "description": "Só este site, como a página de celular da TV o lista. Vazio esquece todos."
         }
       }
+    },
+    "list_screens": {
+      "name": "Listar telas",
+      "description": "Lista as telas do PleatView configuradas aqui, para um controlador em outro lugar que este local permite levá-las (pelo seu PleatView Renderer)."
+    },
+    "enrol_with": {
+      "name": "Conectar uma tela a um controlador em outro lugar",
+      "description": "Faz uma tela se conectar a um controlador em outro lugar e se registrar lá com um token de uso único dele. O Home Assistant mantém o pareamento e as configurações.",
+      "fields": {
+        "screen": {
+          "name": "Tela",
+          "description": "O identificador da tela, como Listar telas o informa."
+        },
+        "url": {
+          "name": "Endereço do controlador",
+          "description": "Onde a tela se conecta, por exemplo wss://controller.example.com/api/pleatview/v2."
+        },
+        "token": {
+          "name": "Token",
+          "description": "O token de uso único que o controlador criou para esta tela."
+        },
+        "fingerprint": {
+          "name": "Certificado do controlador",
+          "description": "A impressão digital SHA-256 do certificado próprio do controlador, só para um em que o sistema da tela não confia."
+        }
+      }
     }
   },
   "issues": {

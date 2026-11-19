@@ -25,3 +25,20 @@ configuration:
       This machine's address on the site's network for the streams port, such as
       http://192.168.1.10:8781. Without it, the site's screens get their streams through the
       controller.
+  share_home_assistant:
+    name: Share this Home Assistant
+    description: >-
+      Lets the controller elsewhere use the entities listed below: their states, cameras'
+      pictures and live streams, to-do lists and calendars. Home Assistant's token stays in this
+      app. Off: the controller gets nothing from Home Assistant.
+  shared_entities:
+    name: Shared entities
+    description: >-
+      The entities the controller may use, by id, with * for any letters: camera.* for every
+      camera, camera.front_door for one.
+  share_screens:
+    name: Move screens to the controller
+    description: >-
+      Lets the controller list this Home Assistant's PleatView screens and have the ones it
+      chooses connect out to it (they need PleatView 1.0.19 or later). Home Assistant keeps
+      them too. Each move shows as a notification here.

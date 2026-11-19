@@ -287,6 +287,32 @@
           "description": "Kun dette websted, som tv'ets telefonside viser det. Tomt glemmer alle."
         }
       }
+    },
+    "list_screens": {
+      "name": "Vis skærme",
+      "description": "Viser de PleatView-skærme, der er sat op her, til en controller et andet sted, som dette sted lader overtage dem (gennem sin PleatView Renderer)."
+    },
+    "enrol_with": {
+      "name": "Forbind en skærm med en controller et andet sted",
+      "description": "Får en skærm til at forbinde sig til en controller et andet sted og tilmelde sig der med et engangstoken fra den. Home Assistant beholder sin parring og sine indstillinger.",
+      "fields": {
+        "screen": {
+          "name": "Skærm",
+          "description": "Skærmens id, som Vis skærme giver det."
+        },
+        "url": {
+          "name": "Controllerens adresse",
+          "description": "Hvor skærmen forbinder sig til, for eksempel wss://controller.example.com/api/pleatview/v2."
+        },
+        "token": {
+          "name": "Token",
+          "description": "Det engangstoken, controlleren lavede til denne skærm."
+        },
+        "fingerprint": {
+          "name": "Controllerens certifikat",
+          "description": "SHA-256-fingeraftrykket af controllerens eget certifikat, kun for et, som skærmens system ikke stoler på."
+        }
+      }
     }
   },
   "issues": {

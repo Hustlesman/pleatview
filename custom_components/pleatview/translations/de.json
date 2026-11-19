@@ -287,6 +287,32 @@
           "description": "Nur diese Website, so wie die Handy-Seite des Fernsehers sie auflistet. Leer vergisst alle."
         }
       }
+    },
+    "list_screens": {
+      "name": "Bildschirme auflisten",
+      "description": "Listet die hier eingerichteten PleatView-Bildschirme auf, für einen Controller an einem anderen Ort, dem dieser Standort erlaubt, sie zu übernehmen (über seinen PleatView Renderer)."
+    },
+    "enrol_with": {
+      "name": "Bildschirm mit einem Controller an einem anderen Ort verbinden",
+      "description": "Lässt einen Bildschirm sich zu einem Controller an einem anderen Ort verbinden und sich dort mit einem Einmal-Token von ihm anmelden. Home Assistant behält seine Kopplung und Einstellungen.",
+      "fields": {
+        "screen": {
+          "name": "Bildschirm",
+          "description": "Die ID des Bildschirms, wie Bildschirme auflisten sie angibt."
+        },
+        "url": {
+          "name": "Adresse des Controllers",
+          "description": "Wohin sich der Bildschirm verbindet, etwa wss://controller.example.com/api/pleatview/v2."
+        },
+        "token": {
+          "name": "Token",
+          "description": "Das Einmal-Token, das der Controller für diesen Bildschirm erstellt hat."
+        },
+        "fingerprint": {
+          "name": "Zertifikat des Controllers",
+          "description": "Der SHA-256-Fingerabdruck des eigenen Zertifikats des Controllers, nur für eines, dem das System des Bildschirms nicht vertraut."
+        }
+      }
     }
   },
   "issues": {

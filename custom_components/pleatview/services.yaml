@@ -160,3 +160,25 @@ forget_sign_ins:
       example: https://grafana.example.com
       selector:
         text:
+
+list_screens:
+
+enrol_with:
+  fields:
+    screen:
+      required: true
+      example: living-room-tv
+      selector:
+        text:
+    url:
+      required: true
+      example: wss://controller.example.com/api/pleatview/v2
+      selector:
+        text:
+    token:
+      required: true
+      selector:
+        text:
+    fingerprint:
+      selector:
+        text:

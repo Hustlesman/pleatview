@@ -263,11 +263,13 @@ and policies live in the controller.
       1.3, enrol with a token after pairing or with a code from anywhere, and prove their key
       (P-256) on every connection. Done in 1.1: the Android and Linux apps and PleatView Light,
       with each new screen allowed by the person in front of it. Next: Home Assistant, with M4
-- [ ] **A renderer at the site connects out** ([specification](docs/renderer-connect-out.md)):
+- [x] **A renderer at the site connects out** ([specification](docs/renderer-connect-out.md)):
       it renders for the site's PleatView Light screens there, for a controller elsewhere, over
       one connection out with its own key. The site decides what the controller gets; pages
       from the controller go through a filter that keeps them off the site's network. Done in
-      1.1: rendering. Next: Home Assistant at the site, and screens set up with it
+      1.1: rendering; in 1.1.4: the site's Home Assistant shared through it (the entities the
+      site lists, cameras streamed by the renderer, its token kept there), and screens set up
+      with it moved to the controller when the site allows
 
 **Exit:** a screen on another network is paired, controlled and removed through a ZTNA
 connector and over the open internet, with no open port at the screen's end, and the
