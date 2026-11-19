@@ -111,6 +111,16 @@ class Access:
         return None
 
 
+async def read_all(response: aiohttp.ClientResponse, most: int) -> bytes:
+    """The whole body, up to `most` bytes (content.read(n) gives only what has come so far)."""
+    body = bytearray()
+    async for chunk in response.content.iter_chunked(64 * 1024):
+        body += chunk
+        if len(body) > most:
+            raise Unavailable("Home Assistant's answer is too large")
+    return bytes(body)
+
+
 def printable(text: Any, most: int = 200) -> str:
     return re.sub(r"[^\x20-\x7e]", "?", str(text))[:most]
 
@@ -151,10 +161,7 @@ class HomeAssistant:
                     raise Unavailable("Home Assistant refused this renderer's token")
                 if response.status != 200:
                     raise Unavailable(f"Home Assistant answered HTTP {response.status}")
-                body = await response.content.read(most + 1)
-                if len(body) > most:
-                    raise Unavailable("Home Assistant's answer is too large")
-                return body, response.content_type
+                return await read_all(response, most), response.content_type
         except (aiohttp.ClientError, asyncio.TimeoutError, OSError):
             raise Unavailable("Home Assistant can't be reached") from None
 
@@ -170,7 +177,7 @@ class HomeAssistant:
         url = f"{self.access.root}/api/services/{domain}/{service}?return_response"
         try:
             async with self.http.post(url, json=data, headers=self.headers, timeout=TIMEOUT, allow_redirects=False) as response:
-                text = await response.content.read(LARGEST_ANSWER)
+                text = await read_all(response, LARGEST_ANSWER)
                 try:
                     answer = json.loads(text)
                 except ValueError:
@@ -336,13 +343,65 @@ def media_playlist(text: str) -> tuple[list[tuple[int, int, str]], str | None, f
     return segments, init, target
 
 
+async def picture_parts(chunks: Any, most: int = LARGEST_PICTURE) -> Any:
+    """Each picture of a picture stream (multipart/x-mixed-replace, "MJPEG"), from its chunks:
+    by each part's Content-Length, or up to the next delimiter when there's none. The delimiter
+    is the line the first part starts with: Home Assistant's doesn't match its boundary
+    parameter, and cameras' own streams vary."""
+    buffer = bytearray()
+    delimiter: bytes | None = None
+    async for chunk in chunks:
+        buffer += chunk
+        while True:
+            start = buffer.find(delimiter) if delimiter else buffer.find(b"--")
+            if start < 0:
+                break
+            del buffer[:start]
+            heads = [i for i in (buffer.find(b"\r\n\r\n"), buffer.find(b"\n\n")) if i >= 0]
+            if not heads:
+                break
+            head_end = min(heads)
+            lines = bytes(buffer[:head_end]).replace(b"\r\n", b"\n").split(b"\n")
+            delimiter = delimiter or lines[0].rstrip()
+            headers = {k.strip().lower(): v.strip() for k, _, v in (line.decode("latin-1").partition(":") for line in lines[1:])}
+            body = head_end + (4 if buffer[head_end:head_end + 4] == b"\r\n\r\n" else 2)
+            length = headers.get("content-length", "")
+            if length.isdigit():
+                if int(length) > most:
+                    raise Unavailable("the camera's pictures are too large")
+                if len(buffer) < body + int(length):
+                    break
+                picture = bytes(buffer[body:body + int(length)])
+                del buffer[:body + int(length)]
+            else:
+                end = buffer.find(delimiter, body)
+                if end < 0:
+                    break
+                picture = bytes(buffer[body:end])
+                picture = picture[:-2] if picture.endswith(b"\r\n") else picture[:-1] if picture.endswith(b"\n") else picture
+                del buffer[:end]
+            if picture:
+                yield picture
+        if len(buffer) > 2 * most:
+            raise Unavailable("the camera's picture stream can't be read")
+
+
+def picture_format(picture: bytes) -> str | None:
+    """ffmpeg's reader for a camera's pictures: JPEG or PNG."""
+    return "jpeg_pipe" if picture.startswith(b"\xff\xd8") else "png_pipe" if picture.startswith(b"\x89PNG") else None
+
+
 def relay_ffmpeg(kind: str, folder: Path, hls_args: list[str]) -> list[str]:
     """ffmpeg's options: Home Assistant's video copied as it is (HLS, fragmented MP4), or a
-    picture stream (MJPEG) encoded as H.264; either way into this renderer's own HLS."""
+    camera's pictures (jpeg_pipe, png_pipe) encoded as H.264; either way into this renderer's
+    own HLS."""
     if kind == "hls":
         source = ["-f", "mp4", "-i", "pipe:0", "-map", "0:v:0", "-map", "0:a:0?", "-c", "copy"]
     else:
-        source = ["-use_wallclock_as_timestamps", "1", "-f", "mpjpeg", "-i", "pipe:0", "-an",
+        # Its first picture says all there is: ffmpeg's usual look ahead would take a minute at a
+        # picture or two a second, and screens give up on a stream that long in coming.
+        source = ["-probesize", "256k", "-analyzeduration", "0", "-fpsprobesize", "0",
+                  "-use_wallclock_as_timestamps", "1", "-f", kind, "-i", "pipe:0", "-an",
                   "-vf", f"fps={MJPEG_FPS},scale='min({MJPEG_WIDTH},iw)':-2,format=yuv420p",
                   "-c:v", "libx264", "-preset", "veryfast", "-tune", "zerolatency",
                   "-g", str(MJPEG_FPS * 2), "-keyint_min", str(MJPEG_FPS * 2), "-sc_threshold", "0",
@@ -402,12 +461,38 @@ class Relay:
             shutil.chown(self.folder, UNPRIVILEGED, UNPRIVILEGED)
             command = ["setpriv", f"--reuid={UNPRIVILEGED}", f"--regid={UNPRIVILEGED}", "--init-groups", "--", "ffmpeg"]
         source = await self.ha.stream_url(self.entity)
-        self.kind = "hls" if source else "mjpeg"
+        if source:
+            self.kind = "hls"
+            return await self._encode(command, "hls", lambda stdin: self._feed_hls(source, stdin))
+        # No video stream: its pictures, as Home Assistant sends them (its picture stream).
+        self.kind = "mjpeg"
+        try:
+            async with self.ha.http.get(self.ha.picture_stream(self.entity), headers=self.ha.headers, allow_redirects=False,
+                                        timeout=aiohttp.ClientTimeout(total=None, sock_connect=10, sock_read=30)) as response:
+                if response.status != 200:
+                    raise Unavailable(f"Home Assistant answered HTTP {response.status} for the camera's picture stream")
+                pictures = picture_parts(response.content.iter_any())
+                first = await anext(pictures, None)
+                kind = picture_format(first or b"")
+                if kind is None:
+                    raise Unavailable("the camera's pictures are neither JPEG nor PNG")
+
+                async def feed(stdin: asyncio.StreamWriter) -> str:
+                    await self._write(stdin, first)
+                    async for picture in pictures:
+                        await self._write(stdin, picture)
+                    return "the camera's picture stream ended"
+                return await self._encode(command, kind, feed)
+        except (aiohttp.ClientError, asyncio.TimeoutError):
+            raise Unavailable("Home Assistant's picture stream stopped") from None
+
+    async def _encode(self, command: list[str], kind: str, feed: Any) -> str:
+        """ffmpeg, given what `feed` writes on its standard input, until either stops."""
         env = {k: v for k, v in os.environ.items() if k in ("PATH", "LANG", "LC_ALL", "TZ")}
         proc = await asyncio.create_subprocess_exec(
-            *command, *relay_ffmpeg(self.kind, self.folder, self.hls_args), env=env,
+            *command, *relay_ffmpeg(kind, self.folder, self.hls_args), env=env,
             stdin=asyncio.subprocess.PIPE, stdout=asyncio.subprocess.DEVNULL, stderr=None)
-        feeding = asyncio.create_task(self._feed_hls(source, proc.stdin) if source else self._feed_pictures(proc.stdin))
+        feeding = asyncio.create_task(feed(proc.stdin))
         ended = asyncio.create_task(proc.wait())
         try:
             done, _ = await asyncio.wait({feeding, ended}, return_when=asyncio.FIRST_COMPLETED)
@@ -450,16 +535,3 @@ class Relay:
                 await self._write(stdin, data)
                 written, era = number, discontinuity
             await asyncio.sleep(max(0.5, min(target, 6) / 2))
-
-    async def _feed_pictures(self, stdin: asyncio.StreamWriter) -> str:
-        url = self.ha.picture_stream(self.entity)
-        try:
-            async with self.ha.http.get(url, headers=self.ha.headers, allow_redirects=False,
-                                        timeout=aiohttp.ClientTimeout(total=None, sock_connect=10, sock_read=30)) as response:
-                if response.status != 200:
-                    raise Unavailable(f"Home Assistant answered HTTP {response.status} for the camera's picture stream")
-                async for chunk in response.content.iter_chunked(64 * 1024):
-                    await self._write(stdin, chunk)
-        except (aiohttp.ClientError, asyncio.TimeoutError):
-            raise Unavailable("Home Assistant's picture stream stopped") from None
-        return "the camera's picture stream ended"

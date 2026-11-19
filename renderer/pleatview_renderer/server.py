@@ -256,6 +256,7 @@ class Full(Exception):
 # path to its sound pipe may hold.
 CONTROLLER = "c."
 RELAY = "h."  # a camera of the site's Home Assistant, streamed for the controller
+HA_CALLS = ("ha_config", "ha_entities", "ha_picture", "ha_stream", "ha_todo", "ha_calendar", "ha_screens", "ha_enrol")
 CONTROLLER_KEY = re.compile(r"^[A-Za-z0-9_-]{1,48}$")
 LARGEST_SEGMENT = 4 * 1024 * 1024
 
@@ -483,8 +484,10 @@ def controller_calls(renderer: Renderer, info: Any, proxy: Any, ha: HomeAssistan
         return info()
 
     calls = {"info": about, "show": show, "overlay": overlay, "stop": stop, "segment": segment}
-    if ha is None:
-        return calls
+    if ha is None:  # the site shares nothing of its Home Assistant: said so, not "unknown method"
+        async def not_shared(params: dict[str, Any]) -> dict[str, Any]:
+            raise Refused("this site doesn't share its Home Assistant (the renderer's Share this Home Assistant option)")
+        return {**calls, **dict.fromkeys(HA_CALLS, not_shared)}
 
     def asked(what: Any) -> Any:
         """What Home Assistant said, or what's wrong, in the renderer's own words."""
@@ -529,9 +532,9 @@ def controller_calls(renderer: Renderer, info: Any, proxy: Any, ha: HomeAssistan
         await ha.enrol(params.get("screen"), screens_to[0], params.get("token"), screens_to[1])
         return {}
 
-    return {**calls, **{name: asked(call) for name, call in (
-        ("ha_config", ha_config), ("ha_entities", ha_entities), ("ha_picture", ha_picture), ("ha_stream", ha_stream),
-        ("ha_todo", ha_todo), ("ha_calendar", ha_calendar), ("ha_screens", ha_screens), ("ha_enrol", ha_enrol))}}
+    shared = {"ha_config": ha_config, "ha_entities": ha_entities, "ha_picture": ha_picture, "ha_stream": ha_stream,
+              "ha_todo": ha_todo, "ha_calendar": ha_calendar, "ha_screens": ha_screens, "ha_enrol": ha_enrol}
+    return {**calls, **{name: asked(shared[name]) for name in HA_CALLS}}
 
 
 def screens_address(controller: str, fingerprint: str | None) -> tuple[str, str | None]:

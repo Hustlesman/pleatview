@@ -100,7 +100,7 @@ class FakeHomeAssistant:
         await response.prepare(request)
         try:
             for _ in range(600):
-                await response.write(b"--frameboundary\r\nContent-Type: image/jpeg\r\nContent-Length: "
+                await response.write(b"--frameboundary\r\nContent-Type: image/jpg\r\nContent-Length: "
                                      + str(len(self.still)).encode() + b"\r\n\r\n" + self.still + b"\r\n")
                 await asyncio.sleep(0.1)
         except (ConnectionError, RuntimeError):
@@ -123,11 +123,19 @@ class FakeHomeAssistant:
         lines.append(f'#EXT-X-PART:DURATION=0.5,URI="segment/{newest + 1}.0.m4s"')
         return web.Response(text="\n".join(lines) + "\n", content_type="application/vnd.apple.mpegurl")
 
-    async def segment(self, request: web.Request) -> web.Response:
+    async def segment(self, request: web.Request) -> web.StreamResponse:
         n = int(request.match_info["n"])
         if n > self.newest():
             raise web.HTTPNotFound()
-        return web.Response(body=self.segments[n], content_type="video/iso.segment")
+        # In pieces, as over a network: what's read is the whole of it, not what came first.
+        data = self.segments[n]
+        response = web.StreamResponse(headers={"Content-Type": "video/iso.segment", "Content-Length": str(len(data))})
+        await response.prepare(request)
+        for start in range(0, len(data), 2048):
+            await response.write(data[start:start + 2048])
+            await asyncio.sleep(0.002)
+        await response.write_eof()
+        return response
 
     async def websocket(self, request: web.Request) -> web.WebSocketResponse:
         ws = web.WebSocketResponse()
@@ -216,6 +224,33 @@ class Options(unittest.TestCase):
         self.assertEqual(segments, [(7, 1, "segment/7.m4s"), (8, 2, "segment/8.m4s")])
         self.assertEqual((init, target), ("init.mp4", 2.0))
 
+    def test_a_picture_streams_pictures(self) -> None:
+        jpeg, png = b"\xff\xd8" + b"\n\r\n--x" * 50 + b"\xff\xd9", b"\x89PNG\r\n\x1a\n" + bytes(range(256)) * 3
+
+        def parts(data: bytes, size: int) -> list[bytes]:
+            async def chunks():
+                for i in range(0, len(data), size):
+                    yield data[i:i + size]
+
+            async def collect():
+                return [p async for p in site_ha.picture_parts(chunks())]
+            return asyncio.run(collect())
+
+        # Home Assistant's: a delimiter that isn't its boundary parameter, each part's length, image/jpg.
+        home_assistant = b"".join(b"--frameboundary\r\nContent-Type: image/jpg\r\nContent-Length: " + str(len(p)).encode()
+                                  + b"\r\n\r\n" + p + b"\r\n" for p in (jpeg, jpeg, png))
+        # A camera's own: no lengths, bare newlines, a preamble.
+        camera = b"preamble\n" + b"".join(b"--myboundary\nContent-Type: image/jpeg\n\n" + p + b"\n" for p in (jpeg, jpeg)) + b"--myboundary\n"
+        for size in (1, 7, 64, 100000):
+            with self.subTest(size=size):
+                self.assertEqual(parts(home_assistant, size), [jpeg, jpeg, png])
+                self.assertEqual(parts(camera, size), [jpeg, jpeg])
+        self.assertEqual((site_ha.picture_format(jpeg), site_ha.picture_format(png), site_ha.picture_format(b"GIF89a")),
+                         ("jpeg_pipe", "png_pipe", None))
+        too_large = b"--b\r\nContent-Length: 99999999\r\n\r\n"
+        with self.assertRaises(site_ha.Unavailable):
+            parts(too_large, 64)
+
     def test_the_log_tells_what_changes(self) -> None:
         self.assertEqual(server.describe_call("ha_stream", {"key": "cam-1", "entity_id": "camera.front_door"}),
                          "stream Home Assistant's camera.front_door as cam-1")
@@ -301,7 +336,10 @@ class TheCalls(unittest.IsolatedAsyncioTestCase):
             with self.subTest(call=call), self.assertRaises(connect.Refused):
                 await calls[call]({"screen": "a1b2", "token": "one-time-token-0123456789"})
         self.assertEqual(self.ha_fake.enrolled, [])
-        self.assertNotIn("ha_screens", server.controller_calls(self.renderer, lambda: {}, lambda: 40000))  # nothing shared
+        nothing = server.controller_calls(self.renderer, lambda: {}, lambda: 40000)  # nothing shared: said so
+        for call in server.HA_CALLS:
+            with self.subTest(call=call), self.assertRaisesRegex(connect.Refused, "doesn't share its Home Assistant"):
+                await nothing[call]({"entity_id": "camera.front_door", "key": "x"})
 
     async def wait_for_stream(self, secret: str) -> bytes:
         async with aiohttp.ClientSession() as client:
@@ -320,9 +358,12 @@ class TheCalls(unittest.IsolatedAsyncioTestCase):
     def probe(self, data: bytes) -> list[str]:
         path = Path(self.root.name) / "probe.ts"
         path.write_bytes(data)
-        out = subprocess.run(["ffprobe", "-v", "error", "-show_streams", "-of", "json", str(path)],
+        out = subprocess.run(["ffprobe", "-v", "error", "-count_frames", "-show_streams", "-of", "json", str(path)],
                              capture_output=True, text=True, check=True).stdout
-        return [s["codec_name"] for s in json.loads(out)["streams"]]
+        streams = json.loads(out)["streams"]
+        video = next(s for s in streams if s["codec_type"] == "video")
+        self.assertGreaterEqual(int(video["nb_read_frames"]), 10)  # whole pictures, not pieces of them
+        return [s["codec_name"] for s in streams]
 
     async def test_a_cameras_video_streamed_here_without_the_token_on_a_command_line(self) -> None:
         started: list[tuple] = []
@@ -350,8 +391,10 @@ class TheCalls(unittest.IsolatedAsyncioTestCase):
         self.assertNotIn(secret, self.renderer.streams)
 
     async def test_a_camera_without_video_streams_its_pictures(self) -> None:
+        started = time.monotonic()
         stream = await self.calls["ha_stream"]({"key": "cam-2", "entity_id": "camera.back_yard"})
         data = await self.wait_for_stream(stream["stream"].split("/")[2])
+        self.assertLess(time.monotonic() - started, 15)  # before a screen gives up on it
         self.assertEqual(self.probe(data), ["h264"])
         self.assertEqual(self.renderer.relays["h.cam-2"].kind, "mjpeg")
 
