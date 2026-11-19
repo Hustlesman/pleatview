@@ -136,13 +136,14 @@ class Player:
 
     async def play(self, url: str, *, loop: bool = False, volume: float | None = None,
                    start: float | None = None, live: bool = False, image_seconds: int | None = None) -> None:
-        options = [f"loop-file={'inf' if loop else 'no'}"]
+        options = [f"loop-file={'inf' if loop else 'no'}", "speed=1"]  # (a wall's piece may have been sped up)
         if image_seconds:
             options.append(f"image-display-duration={image_seconds}")
         if start:
             options.append(f"start={start}")
         if live:
-            options += ["cache-pause=no", "demuxer-readahead-secs=2"]
+            # Timestamps as the stream has them: a wall's piece is kept in step by them (instep.py).
+            options += ["cache-pause=no", "demuxer-readahead-secs=2", "rebase-start-time=no"]
         await self.command("loadfile", url, "replace", -1, ",".join(options))
         await self.command("set_property", "pause", False)
         if volume is not None:

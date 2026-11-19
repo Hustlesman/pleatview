@@ -100,13 +100,44 @@ forgets it, writes so in its log, and stays away until its options change or it 
 | Method | `params` | Answer |
 | --- | --- | --- |
 | `info` | none | What `GET /api/info` gives, with `streams`: the addresses the site's screens reach its streams at |
-| `show` | `key` (1–48 of `A-Z a-z 0-9 _ -`), `url` (http or https), `width`, `height`, `scale`, `kiosk`, `rotation`: as `PUT /api/sessions/<key>`, without Home Assistant's address and token | `{"stream": "/stream/<secret>/index.m3u8"}`, on `streams` |
+| `show` | `key` (1–48 of `A-Z a-z 0-9 _ -`), `url` (http or https), `width`, `height`, `scale`, `kiosk`, `rotation`, `tiles`: as `PUT /api/sessions/<key>`, without Home Assistant's address and token | `{"stream": "/stream/<secret>/index.m3u8"}`, on `streams`; for a wall (`tiles`), `{"streams": ["/stream/<secret>/t0.m3u8", …]}`, a stream for each tile in the order given |
 | `overlay` | `key` and what `POST /api/sessions/<key>/overlay` takes | `{}` |
 | `stop` | `key` | `{}` |
-| `segment` | `key`, `name` (`index.m3u8` or `s<n>.ts`) | `{"type": "…", "data": "<base64>"}`: the playlist (with its segments' names) or a segment, at most 4 MB |
+| `segment` | `key`, `name` (`index.m3u8` or `s<n>.ts`; a wall's: `t<tile>.m3u8` or `t<tile>-<n>.ts`) | `{"type": "…", "data": "<base64>"}`: the playlist (with its segments' names) or a segment, at most 4 MB |
 
 Keys from the controller are its own: they never name the sessions Home Assistant has.
-Sessions from the controller count towards `max_screens` like the others.
+Sessions from the controller count towards `max_screens` like the others; a wall counts as many
+as its page has 1080p pictures. A wall shows no notices (`overlay` is refused): its screens are
+one picture.
+
+## One page across several screens: walls
+
+A session with `tiles` is a wall: the renderer draws its page once, `width` × `height` (up to
+7680 a side and 2 × 3840 × 2160 pixels in all; `rotation` stays 0), and cuts it into a stream
+for each of its screens. `tiles` lists 2 to 16 of them, each `{"x", "y", "width", "height"}` in
+the page's pixels (64 to 3840 a side, inside the page, rounded down to even numbers),
+`rotation` (how that screen is mounted: its piece is turned back, as for a screen of its own)
+and `sound` (true for one of them at most: the page's sound goes with that piece).
+
+One ffmpeg cuts the pieces from the same frames and encodes each with a keyframe every
+segment, so segment *n* of every piece starts on the same frame. Each piece's playlist is
+served with:
+
+- `#EXT-X-PROGRAM-DATE-TIME` on every segment: when its first sample was drawn, by one clock for
+  the whole wall (each piece's timestamps are lined up with the first piece's at a segment both
+  have, by their first pictures);
+- `#EXT-X-SERVER-CONTROL:HOLD-BACK=4.000`: how far behind that time screens play;
+- `#EXT-X-PLEATVIEW-CLOCK:<seconds>`: the time at the piece's timestamp zero, for players that
+  see timestamps but not playlists' times.
+
+A player that keeps the delay by its own clock (kept right by NTP) shows the same frame as the
+screens beside it. The apps do: Android's player (ExoPlayer) by the playlist's times and delay,
+adjusting its speed; the Linux app's and PleatView Light's by a few hundredths faster or
+slower, a jump forward when late, a pause when early; both by the frame's own timestamp and
+the piece's clock (in the piece with the sound, a segment's time is its first sound's, which
+can be an audio frame off its first picture's). Checked with the Linux app's player twice in
+Chromium, one piece with the sound: the same frame on both, 8 times out of 8; and Light on a
+Raspberry Pi Zero 2 W: within 20 ms of the delay.
 
 Every call that changes what the renderer shows (`show`, `overlay`, `stop`) is written to its
 log, with what it asked for and whether it was done, so the site sees what its controller did;
