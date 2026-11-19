@@ -26,7 +26,8 @@ can't be changed from the controller:
 | none | `STREAM_PORT` | The port the site's screens fetch their streams from (default `8781`; the app maps it as `8781/tcp`) |
 | `share_home_assistant` | `SHARE_HOME_ASSISTANT` | Share the site's Home Assistant with the controller: the entities in `shared_entities` ([below](#home-assistant-at-the-site)). Off by default |
 | `shared_entities` | `SHARED_ENTITIES` | The entities shared, by id, `*` standing for any letters, comma-separated: `camera.*` (the default), `camera.front_door`, `todo.shopping` |
-| `share_screens` | `SHARE_SCREENS` | Let the controller list the site's PleatView screens in Home Assistant and move the ones it chooses to itself ([below](#screens-at-the-site)). Off by default |
+| `find_screens` | `FIND_SCREENS` | Find the site's PleatView screens for the controller, which adds them as on its own network: with OK pressed on the screen, or its PIN ([below](#screens-at-the-site)). On by default |
+| `share_screens` | `SHARE_SCREENS` | Let the controller list the site's PleatView screens in Home Assistant and move the ones it chooses to itself, with nobody at them ([below](#screens-at-the-site)). Off by default |
 | none | `HA_URL`, `HA_TOKEN` | Home Assistant's address and a long-lived token, outside the Home Assistant OS app (which uses the Supervisor's own, through `homeassistant_api`) |
 
 ## What the controller gets
@@ -37,6 +38,8 @@ can't be changed from the controller:
   screens it renders, and where the site's screens reach its streams.
 - **The site's Home Assistant,** only when the site shares it: what it lists, and its screens
   only if it lets them go ([below](#home-assistant-at-the-site)).
+- **The site's screens,** unless the site turns `find_screens` off: their ids and names, never
+  their addresses, to be added with someone at each ([below](#screens-at-the-site)).
 
 Nothing else. The connection carries a fixed list of calls (below), each checked; nothing is
 passed on to the site's network, and nothing lets the controller change the renderer's options.
@@ -118,6 +121,9 @@ forgets it, writes so in its log, and stays away until its options change or it 
 | `ha_calendar` | `entity_id` (a shared calendar), `start`, `end` (ISO 8601) | `{"events": [{"summary", "start", "end", "location", "description", "uid", "recurrence_id"}]}`, repeats worked out by Home Assistant |
 | `ha_screens` | none | `{"screens": [{"id", "name", "manufacturer", "model", "app_version", "online", "connects_out"}]}`, with `share_screens` |
 | `ha_enrol` | `screen` (an `id` from `ha_screens`), `token` (the controller's one-time token for it) | `{}`, once the screen took it, with `share_screens` |
+| `site_screens` | none | `{"screens": [{"id", "name", "in_home_assistant", "connects_out"}]}`: the screens found at the site (`connects_out` only for the ones Home Assistant has), with `find_screens` |
+| `site_add` | `screen` (an `id` from `site_screens`), `how` (`ok` or `pin`), `pin` (with `pin`), `token` (the controller's one-time token for it) | With `pin`: `{"added": true}`, once the screen took it. With `ok`: `{"ticket": "…"}`, while the screen asks the person in front of it |
+| `site_asked` | `ticket` | `{"state": "pending"}`, then `added`, `denied`, `expired`, or `failed` with an `error` |
 
 Keys from the controller are its own: they never name the sessions Home Assistant has.
 Sessions from the controller count towards `max_screens` like the others; a wall counts as many
@@ -183,8 +189,30 @@ without root. Anything not shared is refused, whatever the controller asks.
 
 ## Screens at the site
 
-Screens already set up with the site's Home Assistant can't be given the controller's address by
-anyone but the people at the site. With `share_screens` on, the controller may move them itself,
+**Found for the controller** (`find_screens`, on by default). The controller lists the site's
+PleatView screens and adds them as it would on its own network: someone at the screen presses OK
+on it, or reads its PIN to whoever types it into the controller. It needs the PleatView
+integration (1.1.4 or later) in the site's Home Assistant, with or without screens added to it:
+
+1. The app can't see the site's network itself (it's on Home Assistant's own), so `site_screens`
+   asks Home Assistant: the screens its PleatView integration found and hasn't added (its
+   discoveries, each with the address it was found at, as `configuration_url`), and the ones it
+   has (`pleatview.list_screens`). The controller gets their ids and names, not their addresses.
+2. For a screen chosen, the controller makes a one-time token, as for any screen it pairs with
+   ([protocol v2](protocol-v2.md#enrolment)), and sends it with `site_add` and how it's allowed.
+3. The renderer pairs with the screen at the address it found it at: with the PIN, or by asking
+   the person in front of it, who sees the controller's host name as who asks. Then it hands the
+   screen the controller's address for screens with the token, and unpairs. The screen connects
+   out to the controller and enrols with the token.
+
+The renderer pairs only with screens it found, at the addresses it found them at: the call names
+a screen's id, never an address. A screen an administrator chose to ignore in Home Assistant
+isn't listed. A renderer elsewhere than in the app finds screens through the Home Assistant at
+`HA_URL`.
+
+**Moved by the controller** (`share_screens`, off by default). Screens already set up with the
+site's Home Assistant can't be given the controller's address by anyone but the people at the
+site. With `share_screens` on, the controller may move them itself, with nobody at them,
 through Home Assistant (the PleatView integration from 1.1.4, and screens with PleatView 1.0.19
 or later):
 
@@ -195,7 +223,7 @@ or later):
    to the controller and enrols with the token. Home Assistant keeps its own pairing, and shows a
    notification for each screen it moved.
 
-A screen goes only to this renderer's own controller: the renderer gives Home Assistant the
-controller's address for screens (`wss://<controller>/api/pleatview/v2`, and its pinned
-certificate when there is one), never an address the call names. Both services are for Home
-Assistant's administrators only.
+Either way, a screen goes only to this renderer's own controller: the renderer gives it, or Home
+Assistant, the controller's address for screens (`wss://<controller>/api/pleatview/v2`, and its
+pinned certificate when there is one), never an address the call names. Home Assistant's
+services and its discoveries are for its administrators only.

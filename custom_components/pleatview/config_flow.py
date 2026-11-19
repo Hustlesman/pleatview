@@ -179,6 +179,9 @@ class PleatViewConfigFlow(ConfigFlow, domain=DOMAIN):
             return self.async_abort(reason="cannot_connect")
         self._abort_if_unique_id_configured()
         self.context["title_placeholders"] = {"name": self._name}
+        # Its setup page, and where a PleatView Renderer at this site finds it for the controller
+        # it connects out to (docs/renderer-connect-out.md#screens-at-the-site).
+        self.context["configuration_url"] = self._client().base_url
         # Entering the PIN is the confirmation: no separate "Set up this TV?" step.
         return await self.async_step_pair()
 

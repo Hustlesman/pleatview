@@ -29,7 +29,8 @@ async def test_screens_are_listed(hass: HomeAssistant, fake_tv: FakeTV) -> None:
     result = await hass.services.async_call(DOMAIN, "list_screens", {}, blocking=True, return_response=True,
                                             context=await _admin(hass))
     assert result == {"screens": [{"id": "tv-1", "name": "Living Room TV", "manufacturer": "Google", "model": "Chromecast",
-                                   "app_version": "0.1.0", "online": True, "connects_out": True}]}
+                                   "app_version": "0.1.0", "online": True, "connects_out": True,
+                                   "host": "127.0.0.1", "port": fake_tv.port}]}
 
 
 async def test_a_screen_connects_out_to_a_controller_elsewhere(hass: HomeAssistant, fake_tv: FakeTV) -> None:

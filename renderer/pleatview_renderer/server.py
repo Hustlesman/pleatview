@@ -36,6 +36,7 @@ from .mdns import Responder, local_address
 from .pairing import Pairing
 from .session import Folders, Screen, Session, Tile, hls_args
 from .site_ha import RELAYS_MOST, HomeAssistant, Relay, Unavailable
+from .site_screens import SiteScreens
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -257,6 +258,7 @@ class Full(Exception):
 CONTROLLER = "c."
 RELAY = "h."  # a camera of the site's Home Assistant, streamed for the controller
 HA_CALLS = ("ha_config", "ha_entities", "ha_picture", "ha_stream", "ha_todo", "ha_calendar", "ha_screens", "ha_enrol")
+SITE_CALLS = ("site_screens", "site_add", "site_asked")  # the site's screens, found here (site_screens.py)
 CONTROLLER_KEY = re.compile(r"^[A-Za-z0-9_-]{1,48}$")
 LARGEST_SEGMENT = 4 * 1024 * 1024
 
@@ -408,11 +410,12 @@ class Renderer:
 
 
 def controller_calls(renderer: Renderer, info: Any, proxy: Any, ha: HomeAssistant | None = None,
-                     screens_to: tuple[str, str | None] | None = None) -> dict[str, Any]:
+                     screens_to: tuple[str, str | None] | None = None, site: SiteScreens | None = None) -> dict[str, Any]:
     """What a controller elsewhere may ask of this renderer, each call checked
     (docs/renderer-connect-out.md#calls). `proxy()` is the filter's port. With `ha`, what the
     site shares of its Home Assistant (site_ha.py); `screens_to` is where its screens may go:
-    the controller's own address for screens (protocol v2) and its certificate's pin."""
+    the controller's own address for screens (protocol v2) and its certificate's pin. With
+    `site`, the site's screens found here, to be added there (site_screens.py)."""
     from .connect import Refused
 
     def key_of(params: dict[str, Any]) -> str:
@@ -484,19 +487,38 @@ def controller_calls(renderer: Renderer, info: Any, proxy: Any, ha: HomeAssistan
         return info()
 
     calls = {"info": about, "show": show, "overlay": overlay, "stop": stop, "segment": segment}
-    if ha is None:  # the site shares nothing of its Home Assistant: said so, not "unknown method"
-        async def not_shared(params: dict[str, Any]) -> dict[str, Any]:
-            raise Refused("this site doesn't share its Home Assistant (the renderer's Share this Home Assistant option)")
-        return {**calls, **dict.fromkeys(HA_CALLS, not_shared)}
 
     def asked(what: Any) -> Any:
-        """What Home Assistant said, or what's wrong, in the renderer's own words."""
+        """What Home Assistant or a screen said, or what's wrong, in the renderer's own words."""
         async def call(params: dict[str, Any]) -> dict[str, Any]:
             try:
                 return await what(params)
             except Unavailable as err:
                 raise Refused(str(err)) from None
         return call
+
+    if site is None:  # said so, not "unknown method"
+        async def not_found(params: dict[str, Any]) -> dict[str, Any]:
+            raise Refused("this site doesn't let the controller find its screens (the renderer's Find screens option, "
+                          "with Home Assistant to find them)")
+        calls.update(dict.fromkeys(SITE_CALLS, not_found))
+    else:
+        async def site_screens(params: dict[str, Any]) -> dict[str, Any]:
+            return {"screens": [found.describe() for found in await site.found()]}
+
+        async def site_add(params: dict[str, Any]) -> dict[str, Any]:
+            return await site.add(params.get("screen"), params.get("how"), params.get("pin"), params.get("token"))
+
+        async def site_asked(params: dict[str, Any]) -> dict[str, Any]:
+            return site.asked(params.get("ticket"))
+
+        found_here = {"site_screens": site_screens, "site_add": site_add, "site_asked": site_asked}
+        calls.update({name: asked(found_here[name]) for name in SITE_CALLS})
+
+    if ha is None:  # the site shares nothing of its Home Assistant: said so, not "unknown method"
+        async def not_shared(params: dict[str, Any]) -> dict[str, Any]:
+            raise Refused("this site doesn't share its Home Assistant (the renderer's Share this Home Assistant option)")
+        return {**calls, **dict.fromkeys(HA_CALLS, not_shared)}
 
     async def ha_config(params: dict[str, Any]) -> dict[str, Any]:
         return {**await ha.config(), **ha.shared.describe()}
@@ -565,6 +587,9 @@ def describe_call(method: str, params: dict[str, Any]) -> str | None:
         return "list Home Assistant's PleatView screens"
     if method == "ha_enrol":
         return f"move the screen {printable(params.get('screen', ''), 80)} to this controller"
+    if method == "site_add":
+        how = "its PIN" if params.get("how") == "pin" else "OK on the screen"
+        return f"add the screen {printable(params.get('screen', ''), 80)} found here to this controller, with {how}"
     return None
 
 
@@ -854,22 +879,30 @@ def connect_out(app: web.Application, env: dict[str, str], renderer: Renderer, s
                 identity: dict[str, str], encoder: str, host: str) -> None:
     """A controller elsewhere (docs/renderer-connect-out.md): the connection out, the filter its
     pages go through, and the listener the site's screens fetch their streams from."""
-    from .connect import Link
+    from .connect import Link, address
     from .filter import Filter, Places
-    from .site_ha import Access, Shared
+    from .site_ha import TRUE, Access, Shared
 
     stream_port = int(env.get("STREAM_PORT", "8781"))
     ha: HomeAssistant | None = None
+    site: SiteScreens | None = None
+    finds = (env.get("FIND_SCREENS") or "true").strip().lower() in TRUE
     try:
         shared = Shared.parse(env)
-        access = Access.find(env) if shared.anything else None
+        access = Access.find(env) if shared.anything or finds else None
         if shared.anything and access is None:
             _LOGGER.error("Not sharing Home Assistant: this renderer has no way in. In the app it uses the "
                           "Supervisor's; elsewhere set HA_URL and HA_TOKEN")
         elif shared.anything and access is not None:
             ha = HomeAssistant(access, shared)
+        if finds and access is not None:
+            site = SiteScreens(ha or HomeAssistant(access, Shared()),
+                               screens_address(env["CONTROLLER"], env.get("CONTROLLER_FINGERPRINT")),
+                               urlsplit(address(env["CONTROLLER"])).hostname or "")
+        elif finds:
+            _LOGGER.info("Finding this site's screens for the controller takes Home Assistant: set HA_URL and HA_TOKEN")
     except ValueError as err:
-        _LOGGER.error("Not sharing Home Assistant: %s", err)
+        _LOGGER.error("Not using Home Assistant: %s", err)
     try:
         places = Places.parse(env.get("SITE_PAGES", ""))
         page_filter = Filter(places)
@@ -884,6 +917,7 @@ def connect_out(app: web.Application, env: dict[str, str], renderer: Renderer, s
         def about() -> dict[str, Any]:
             return {**identity, "version": VERSION, "encoder": encoder, "max_screens": renderer.max_sessions,
                     "load": load(), "streams": streams, **({"home_assistant": ha.shared.describe()} if ha else {}),
+                    **({"finds_screens": True} if site else {}),
                     "sessions": {key[len(CONTROLLER):]: {"url": s.screen.url, "width": s.screen.width, "height": s.screen.height,
                                            "running": s.running}
                                  for key, s in renderer.sessions.items() if key.startswith(CONTROLLER)}}
@@ -896,7 +930,7 @@ def connect_out(app: web.Application, env: dict[str, str], renderer: Renderer, s
 
         screens_to = screens_address(env["CONTROLLER"], env.get("CONTROLLER_FINGERPRINT")) if ha and ha.shared.screens else None
         link = Link(state, env["CONTROLLER"], env.get("CONTROLLER_FINGERPRINT"),
-                    calls=controller_calls(renderer, about, lambda: page_filter.port, ha, screens_to), info=about,
+                    calls=controller_calls(renderer, about, lambda: page_filter.port, ha, screens_to, site), info=about,
                     write=write_private, describe=describe_call, on_removed=removed)
     except ValueError as err:
         _LOGGER.error("Not connecting out: %s", err)
@@ -914,6 +948,9 @@ def connect_out(app: web.Application, env: dict[str, str], renderer: Renderer, s
             what = ", ".join(ha.shared.patterns) or "no entities"
             _LOGGER.info("Sharing this Home Assistant with the controller: %s%s", what,
                          "; and its PleatView screens move to it when it asks" if ha.shared.screens else "")
+        if site:
+            _LOGGER.info("Finding this site's PleatView screens for the controller, through Home Assistant: they're "
+                         "added there with OK pressed on the screen, or its PIN")
         if streams:
             _LOGGER.info("The site's screens fetch their streams at %s", streams[0])
         else:
@@ -922,6 +959,10 @@ def connect_out(app: web.Application, env: dict[str, str], renderer: Renderer, s
         link.start()
         yield
         await link.stop()
+        if site:
+            await site.close()
+            if site.ha is not ha:
+                await site.ha.close()
         if ha:
             await ha.close()
         await streams_runner.cleanup()

@@ -12,8 +12,8 @@ boot: auto
 # The GPU, where there is one, encodes the stream (Intel Quick Sync, AMD).
 video: true
 # The site's Home Assistant, shared with a controller elsewhere only when the options below say
-# so (docs/renderer-connect-out.md#home-assistant-at-the-site): the app reaches it through the
-# Supervisor, and its token never leaves the app.
+# so (docs/renderer-connect-out.md#home-assistant-at-the-site), and asked for the site's screens
+# (find_screens): the app reaches it through the Supervisor, and its token never leaves the app.
 homeassistant_api: true
 options:
   max_screens: 4
@@ -25,6 +25,7 @@ options:
   shared_entities:
     - camera.*
   share_screens: false
+  find_screens: true
 schema:
   max_screens: int(1,8)
   controller: str?
@@ -36,6 +37,7 @@ schema:
   shared_entities:
     - str
   share_screens: bool
+  find_screens: bool
 # Where the site's screens fetch their streams, when connecting out to a controller elsewhere
 # (docs/renderer-connect-out.md). Nothing listens there otherwise.
 ports:

@@ -36,9 +36,15 @@ configuration:
     description: >-
       The entities the controller may use, by id, with * for any letters: camera.* for every
       camera, camera.front_door for one.
+  find_screens:
+    name: Find screens for the controller
+    description: >-
+      Lists this site's PleatView screens in the controller elsewhere, found by Home Assistant's
+      PleatView integration, to be added there as on its own network: with OK pressed on the
+      screen, or its PIN. Off: screens are added there with the code they show.
   share_screens:
     name: Move screens to the controller
     description: >-
       Lets the controller list this Home Assistant's PleatView screens and have the ones it
-      chooses connect out to it (they need PleatView 1.0.19 or later). Home Assistant keeps
-      them too. Each move shows as a notification here.
+      chooses connect out to it, with nobody at them (they need PleatView 1.0.19 or later). Home
+      Assistant keeps them too. Each move shows as a notification here.

@@ -55,7 +55,8 @@ def _features(device: PleatViewDevice) -> list[str]:
 
 
 def describe(device: PleatViewDevice) -> dict[str, Any]:
-    """A screen as list_screens gives it: what a controller needs to choose it, nothing else."""
+    """A screen as list_screens gives it: what a controller needs to choose it, and where it is
+    for a renderer at the site (which doesn't pass that on)."""
     return {
         "id": device.device_id,
         "name": device.name,
@@ -64,6 +65,8 @@ def describe(device: PleatViewDevice) -> dict[str, Any]:
         "app_version": device.state.get("app_version") or device.info.get("app_version"),
         "online": device.available,
         "connects_out": CONNECTS_OUT in _features(device),
+        "host": device.client.host,
+        "port": device.client.port,
     }
 
 

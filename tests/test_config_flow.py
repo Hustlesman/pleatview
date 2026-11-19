@@ -105,6 +105,9 @@ async def test_zeroconf_flow(hass: HomeAssistant, fake_tv: FakeTV) -> None:
     )
     assert result["step_id"] == "pair"
     assert result["description_placeholders"]["name"] == "Living Room TV"
+    # Where it was found, for its setup page and for a renderer at the site.
+    (waiting,) = hass.config_entries.flow.async_progress_by_handler(DOMAIN)
+    assert waiting["context"]["configuration_url"] == f"http://127.0.0.1:{fake_tv.port}"
     with patch(SETUP, return_value=True):
         result = await _pair(hass, result["flow_id"], fake_tv)
     assert result["type"] is FlowResultType.CREATE_ENTRY
