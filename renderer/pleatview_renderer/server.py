@@ -51,7 +51,7 @@ class AccessLog(AccessLogger):
         super().log(request, response, time)
 
 
-VERSION = "1.1.3"
+VERSION = "1.1.4"
 KEY = re.compile(r"^[A-Za-z0-9_-]{1,64}$")
 FILE = re.compile(r"^(index\.m3u8|s\d{1,9}\.ts|t\d{1,2}\.m3u8|t\d{1,2}-\d{1,9}\.ts)$")
 # A wall's pieces' files: t<piece>.m3u8 and t<piece>-<n>.ts.
