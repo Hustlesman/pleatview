@@ -6,6 +6,7 @@ Only administrators may call them; each move shows as a notification."""
 
 from __future__ import annotations
 
+import inspect
 import logging
 import re
 from typing import Any
@@ -15,7 +16,7 @@ import voluptuous as vol
 from homeassistant.components import persistent_notification
 from homeassistant.config_entries import ConfigEntryState
 from homeassistant.core import HomeAssistant, ServiceCall, ServiceResponse, SupportsResponse
-from homeassistant.exceptions import HomeAssistantError, ServiceValidationError
+from homeassistant.exceptions import HomeAssistantError, ServiceValidationError, Unauthorized, UnknownUser
 from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.service import async_register_admin_service
 
@@ -98,6 +99,26 @@ async def async_enrol_with(hass: HomeAssistant, call: ServiceCall) -> ServiceRes
     return {"screen": device.device_id, "enrolled": True}
 
 
+def _register_admin(hass: HomeAssistant, service: str, handler: Any, schema: vol.Schema,
+                    supports_response: SupportsResponse) -> None:
+    """A service for administrators only, with a response. Home Assistant 2025.1's helper for
+    those can't give one: there the same check is made here."""
+    if "supports_response" in inspect.signature(async_register_admin_service).parameters:
+        async_register_admin_service(hass, DOMAIN, service, handler, schema, supports_response=supports_response)
+        return
+
+    async def admin_only(call: ServiceCall) -> ServiceResponse:
+        if call.context.user_id:
+            user = await hass.auth.async_get_user(call.context.user_id)
+            if user is None:
+                raise UnknownUser(context=call.context)
+            if not user.is_admin:
+                raise Unauthorized(context=call.context)
+        return await handler(call)
+
+    hass.services.async_register(DOMAIN, service, admin_only, schema, supports_response)
+
+
 def async_setup_services(hass: HomeAssistant) -> None:
     async def list_screens(call: ServiceCall) -> ServiceResponse:
         return await async_list_screens(hass, call)
@@ -105,9 +126,5 @@ def async_setup_services(hass: HomeAssistant) -> None:
     async def enrol_with(call: ServiceCall) -> ServiceResponse:
         return await async_enrol_with(hass, call)
 
-    async_register_admin_service(
-        hass, DOMAIN, LIST_SCREENS, list_screens, vol.Schema({}), supports_response=SupportsResponse.ONLY
-    )
-    async_register_admin_service(
-        hass, DOMAIN, ENROL_WITH, enrol_with, ENROL_SCHEMA, supports_response=SupportsResponse.OPTIONAL
-    )
+    _register_admin(hass, LIST_SCREENS, list_screens, vol.Schema({}), SupportsResponse.ONLY)
+    _register_admin(hass, ENROL_WITH, enrol_with, ENROL_SCHEMA, SupportsResponse.OPTIONAL)
