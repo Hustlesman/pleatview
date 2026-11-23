@@ -3,7 +3,9 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src https://forms.hustlesman.com; form-action 'none'; base-uri 'none'; object-src 'none'">
+<!-- Scripts, styles and connections from this site only, and the form's checking service. Inline is allowed only for
+     what Cloudflare adds to each page it delivers (its bot check's script, a hidden link): it changes every time. -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self' https://forms.hustlesman.com; form-action 'none'; base-uri 'none'; object-src 'none'">
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <title>PleatView Console for business: every screen at every site, from a browser</title>
 <meta name="description" content="The PleatView Console runs the screens at every site of a business, school or clinic from a browser, with no Home Assistant. See how it keeps data, how people sign in, the plans and prices, and ask for early access.">
@@ -49,7 +51,6 @@
           <a class="button primary when-live" href="#early-access">Start a 30-day trial</a>
           <a class="button quiet" href="#talk">Talk to us</a>
         </div>
-        <p class="signin-line when-live">Already a customer? <a href="https://console.hustlesman.com">Sign in</a></p>
       </div>
       <nav class="jump" aria-label="On this page">
         <a href="#what">What it does</a>
@@ -341,7 +342,7 @@
           </div>
           <div class="next" aria-live="polite">
             <strong>What happens next</strong>
-            <p class="for-early when-soon">We keep your details and email you when the Console opens.</p>
+            <p class="for-early when-soon">We email you when the Console opens. We keep your details for up to a year.</p>
             <p class="for-early when-live">We reply by email with how to start. Each new organisation gets 30 days of Pro on up to 5 screens.</p>
             <p class="for-talk">We read your message and reply by email. Use this for questions, Enterprise, and working with us as an installer or reseller.</p>
             <p class="for-self">Self-hosting is by request only. We read where you would run it and why, and reply by email.</p>

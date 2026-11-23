@@ -363,8 +363,6 @@ td small { display: block; color: var(--muted); font-size: 13.5px; margin-top: 3
 .hero.short::before { inset: -120px -20% auto; height: 520px; opacity: 0.7; }
 .hero.short h1 { font-size: clamp(36px, 5.2vw, 62px); }
 .hero.short .kicker .tag { vertical-align: 1px; }
-.signin-line { font-size: 14.5px; color: var(--muted); }
-.signin-line a { color: var(--text); }
 
 /* On this page: the platforms chips, as links. */
 .jump { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 36px; position: relative; }
