@@ -1,13 +1,13 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-console="soon">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>PleatView: Home Assistant dashboards on your TV</title>
-<meta name="description" content="PleatView turns a Google TV, Android TV, Fire TV, tablet or Raspberry Pi into an always-on Home Assistant display. Dashboards around the clock, with cameras, video, sign-ins and notifications on top. Free, open source, local.">
+<title>PleatView: always-on screens, controlled from one place</title>
+<meta name="description" content="PleatView turns TVs, tablets, Raspberry Pis and computers into always-on screens you control from one place. Free and open source with Home Assistant. A console for businesses is coming soon.">
 <meta name="theme-color" content="#0a0e11">
-<meta property="og:title" content="PleatView: Home Assistant dashboards on your TV">
-<meta property="og:description" content="An always-on Home Assistant display for Google TV, Android TV, Fire TV, Android tablets, Linux and the Raspberry Pi. Free, open source and local.">
+<meta property="og:title" content="PleatView: always-on screens, controlled from one place">
+<meta property="og:description" content="Always-on screens for businesses, schools, clinics and homes. Free and open source with Home Assistant, with a console for organisations coming soon.">
 <meta property="og:image" content="https://pleatview.hustlesman.com/img/play/feature-graphic.png">
 <meta property="og:url" content="https://pleatview.hustlesman.com/">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
@@ -36,14 +36,14 @@
   <div class="wrap">
     <a class="logo" href="/" aria-label="PleatView home"><img src="img/logo.svg" width="135" height="26" alt="PleatView"></a>
     <nav class="site-nav" aria-label="Main">
-      <a href="#features">Features</a>
-      <a href="#ideas">Ideas</a>
-      <a href="#install">Install</a>
+      <a href="#console">For business</a>
+      <a href="#pricing">Pricing</a>
+      <a href="#home-assistant">Home Assistant</a>
       <a href="#tested">Tested on</a>
       <a href="support.html">Support</a>
       <a href="https://github.com/Hustlesman/pleatview">GitHub</a>
       <a class="button primary small" href="#install">Get PleatView</a>
-      <span class="button quiet small locked" aria-disabled="true" title="Coming soon"><svg class="lock" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="10.5" width="14" height="10" rx="2.5"/><path d="M8.5 10.5V7.5a3.5 3.5 0 0 1 7 0v3"/></svg>Console</span>
+      <a class="button quiet small console-link" href="console.html">Console</a>
     </nav>
   </div>
 </header>
@@ -53,13 +53,13 @@
     <div class="wrap">
       <div class="hero-copy">
         <span class="eyebrow"><b data-release="version">v1.0.18</b><span>Released <time data-release="date" datetime="2026-11-12">12 November 2026</time></span></span>
-        <h1>Home Assistant, <em>always on</em> your TV.</h1>
-        <p class="lead">PleatView turns a Google TV, Android TV or Fire TV into a display for your home, and a tablet, a mini PC or a Raspberry Pi too. Your dashboards stay on screen around the clock, and Home Assistant can put cameras, video and notifications on top.</p>
+        <h1>Any screen, <em>always on</em>, from one place.</h1>
+        <p class="lead">PleatView turns TVs, tablets, Raspberry Pis and computers into screens that stay on and show what you choose. Run it free with Home Assistant, or manage the screens at every site from the PleatView Console<span class="when-soon">, coming soon</span>.</p>
         <div class="actions">
-          <a class="button primary" href="#install">Install on your TV</a>
-          <a class="button quiet" href="https://my.home-assistant.io/redirect/hacs_repository/?owner=Hustlesman&amp;repository=pleatview&amp;category=integration">Open in Home Assistant</a>
+          <a class="button primary" href="#install">Get PleatView free</a>
+          <a class="button quiet when-soon" href="#pricing">See Console plans</a>
         </div>
-        <p class="facts"><span>Made by Hustlesman</span><span>MIT licensed</span><span>Home Assistant 2025.1 to 2026.11</span></p>
+        <p class="facts"><span>Free with Home Assistant</span><span>Apps and integration open source under the MIT License</span><span>Made by Hustlesman</span></p>
       </div>
 
       <figure class="tv unfold">
@@ -70,7 +70,7 @@
           </div>
         </div>
         <div class="tv-stand" aria-hidden="true"></div>
-        <figcaption>A real screenshot: Home Assistant's demo home on PleatView, signed in by itself, with no sidebar or header.</figcaption>
+        <figcaption>A real screenshot: a Home Assistant dashboard, full screen on a TV running PleatView.</figcaption>
       </figure>
 
       <div class="platforms" aria-label="Runs on">
@@ -80,20 +80,327 @@
         <span><svg class="platform-icon" aria-hidden="true"><use href="#i-android"/></svg><strong>Android</strong> phones, tablets and Chromebooks</span>
         <span><svg class="platform-icon" aria-hidden="true"><use href="#i-linux"/></svg><strong>Linux</strong> mini PCs <em class="tag">Beta</em></span>
         <span><svg class="platform-icon" aria-hidden="true"><use href="#i-raspberrypi"/></svg><strong>Raspberry Pi</strong> 4 and 5 <em class="tag">Beta</em></span>
-        <span><svg class="platform-icon" aria-hidden="true"><use href="#i-homeassistant"/></svg><strong>Home Assistant</strong> 2025.1 and later</span>
-        <span><svg class="platform-icon" aria-hidden="true"><use href="#i-hacs"/></svg>From the <strong>Marketplace</strong> or <strong>HACS</strong></span>
       </div>
     </div>
   </section>
 
-  <section class="section" id="features">
+  <!-- 2. Where it goes -->
+  <section class="section" id="uses">
     <div class="wrap">
       <div class="section-head">
-        <span class="kicker">What it does</span>
-        <h2>Everything the big screen can do for your home</h2>
-        <p>The TV joins Home Assistant as a media player and a notifier, ready for your automations.</p>
+        <span class="kicker">Where it goes</span>
+        <h2>One screen at home, or hundreds across your sites</h2>
+        <p>The same apps run every screen. What changes is what you put on them.</p>
       </div>
-      <div class="features">
+      <div class="cards">
+        <article class="feature">
+          <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 21V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v16M16 9h2a2 2 0 0 1 2 2v10M2 21h20M8 7h4M8 11h4M8 15h4"/></svg></span>
+          <h3>Receptions and offices</h3>
+          <p>Welcome visitors, show today's meetings and keep the team's numbers on the wall.</p>
+        </article>
+        <article class="feature">
+          <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l1.5-5h15L21 9M4 9v11h16V9M3 9a3 3 0 0 0 6 0 3 3 0 0 0 6 0 3 3 0 0 0 6 0M9 20v-6h6v6"/></svg></span>
+          <h3>Shops and cafes</h3>
+          <p>Menus, prices and offers that change with the time of day, at one shop or all of them.</p>
+        </article>
+        <article class="feature">
+          <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 10l10-5 10 5-10 5zM6 12.5V17c2 2 10 2 12 0v-4.5M22 10v6"/></svg></span>
+          <h3>Schools</h3>
+          <p>Notices, timetables and events in every corridor, and one emergency message on every screen at once.</p>
+        </article>
+        <article class="feature">
+          <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="4"/><path d="M12 8v8M8 12h8"/></svg></span>
+          <h3>Clinics and waiting rooms</h3>
+          <p>Opening hours, health notices and directions, kept up to date from the front desk.</p>
+        </article>
+        <article class="feature">
+          <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 20h18M6 16v-5M11 16V6M16 16v-8M21 16v-3"/></svg></span>
+          <h3>Workshops and control rooms</h3>
+          <p>Dashboards, cameras and live figures that stay up for weeks and recover by themselves.</p>
+        </article>
+        <article class="feature">
+          <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-7 9 7M5 9.5V20h14V9.5M10 20v-6h4v6"/></svg></span>
+          <h3>Homes</h3>
+          <p>The family calendar in the kitchen, the door camera on the TV and energy use at a glance.</p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3. Two ways to run it -->
+  <section class="section" id="ways">
+    <div class="wrap">
+      <div class="section-head">
+        <span class="kicker">Two ways to run it</span>
+        <h2>Free with Home Assistant, or the Console for your organisation</h2>
+        <p>Both use the same PleatView apps on the screen. Choose by who runs the screens and how many places they are in.</p>
+      </div>
+      <div class="ways">
+        <article class="way free">
+          <em class="tag free">Free and open source</em>
+          <h3>With Home Assistant</h3>
+          <p>A free integration adds each screen to Home Assistant as a media player and a notifier. Your dashboards stay up, and your automations put cameras, video and messages on top.</p>
+          <ul class="ticks">
+            <li>Any number of screens, with no fee</li>
+            <li>Runs on your own network, with no account</li>
+            <li>Dashboards, cameras, video, notifications and announcements</li>
+            <li>Stays free and open source</li>
+          </ul>
+          <div class="actions">
+            <a class="button primary" href="#install">Install in three steps</a>
+            <a class="button quiet" href="#home-assistant">What it does</a>
+          </div>
+        </article>
+        <article class="way">
+          <em class="tag when-soon">Coming soon</em><em class="tag plan when-live">For organisations</em>
+          <h3>PleatView Console</h3>
+          <p>A web console for businesses, schools, clinics and anyone without Home Assistant. Upload content, build playlists and layouts, schedule them, and see every screen at every site.</p>
+          <ul class="ticks">
+            <li>No Home Assistant needed</li>
+            <li>Organisations, sites and roles</li>
+            <li>Emergency messages and proof of play</li>
+            <li>Single sign-on, passkeys and an activity log</li>
+          </ul>
+          <div class="actions when-soon">
+            <a class="button primary" href="#pricing">See plans</a>
+            <a class="button quiet" href="console.html#early-access">Ask for early access</a>
+          </div>
+          <div class="actions when-live">
+            <a class="button primary" href="console.html#early-access">Start a 30-day trial</a>
+            <a class="button quiet" href="#pricing">See plans</a>
+          </div>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- 4. PleatView Console -->
+  <section class="section" id="console">
+    <div class="wrap">
+      <div class="section-head">
+        <span class="kicker">PleatView Console <em class="tag when-soon">Coming soon</em></span>
+        <h2>Run every screen at every site from a browser</h2>
+        <p>The Console is a web app for a computer, tablet or phone. It needs no Home Assistant. Screens connect out to it, so each site's network needs nothing opened.</p>
+      </div>
+      <div class="cards">
+        <article class="feature"><h3>Content library and playlists</h3><p>Upload pictures, video, PDFs and presentations in the format you have. The Console converts them for each screen. Tag them and build playlists.</p></article>
+        <article class="feature"><h3>Layouts and a page builder</h3><p>Split a screen into zones, or build a page with a clock, notices and feeds. Add buttons to make a touch page for a kiosk.</p></article>
+        <article class="feature"><h3>Schedules</h3><p>Set what plays by hour, day and date, for one screen, a group or a whole site. Screens keep to it for weeks if the connection drops.</p></article>
+        <article class="feature"><h3>Emergency messages</h3><p>One message over every screen in the organisation, or at the sites you choose, with a sound, until someone clears it.</p></article>
+        <article class="feature"><h3>Proof of play</h3><p>A record of what each screen showed, when and for how long, for your reports or your advertisers.</p></article>
+        <article class="feature"><h3>Every screen at a glance</h3><p>See what each screen shows now and whether it is online, and get an alert when one goes quiet.</p></article>
+        <article class="feature"><h3>Organisations, sites and roles</h3><p>Each organisation's data is kept apart. Group screens by site, and give each person a role: owner, operator, editor, technician, safety officer or viewer.</p></article>
+        <article class="feature"><em class="tag plan">Pro</em><h3>Video walls and approval</h3><p>Join several screens into one picture. Have changes wait for an approver before they reach a screen.</p></article>
+        <article class="feature"><em class="tag plan">Pro</em><h3>API and Home Assistant</h3><p>Drive the Console from your own tools with API tokens. Connect Home Assistant, and its dashboards can go on Console screens too.</p></article>
+      </div>
+
+      <div class="band">
+        <div>
+          <h3>For your IT team</h3>
+          <p>Sign-in and records work with what you already run.</p>
+        </div>
+        <ul class="ticks">
+          <li>Single sign-on with OIDC or SAML</li>
+          <li>SCIM to add and remove people from your directory</li>
+          <li>Two-factor sign-in with passkeys or an authenticator app</li>
+          <li>A tamper-evident activity log of every sign-in, change and command</li>
+          <li>Streaming of that log to your SIEM</li>
+          <li>Each organisation's data stored apart, with its own encryption key</li>
+        </ul>
+      </div>
+
+      <div class="pair">
+        <article class="feature">
+          <h3>Partners and white label</h3>
+          <p>Installers and resellers look after many customers from one sign-in, under their own name, colours and domain.</p>
+          <div class="actions"><a class="button quiet small" href="console.html#talk">Talk to us</a></div>
+        </article>
+        <article class="feature">
+          <h3>Hosted, or on your own server</h3>
+          <p>We host the Console, so there is no server to look after. Running it on your own server is available on request.</p>
+          <div class="actions"><a class="button quiet small" href="console.html#self-hosting">Ask about self-hosting</a></div>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- 5. Pricing -->
+  <section class="section" id="pricing">
+    <div class="wrap">
+      <div class="section-head">
+        <span class="kicker">Pricing</span>
+        <h2>Free with Home Assistant. Per screen with the Console.</h2>
+        <p>Console prices are per screen, per month, in US dollars<span class="when-soon">, and apply when the Console opens</span>.</p>
+      </div>
+
+      <fieldset class="billing">
+        <legend class="vh">Billing</legend>
+        <input type="radio" name="bill" id="bill-yearly" checked><label for="bill-yearly">Billed yearly <small>save 15% or more</small></label>
+        <input type="radio" name="bill" id="bill-monthly"><label for="bill-monthly">Billed monthly</label>
+      </fieldset>
+
+      <div class="plans">
+        <article class="feature plan">
+          <header><em class="tag free">Free and open source</em><h3>With Home Assistant</h3></header>
+          <p class="price"><small>US$</small>0</p>
+          <p class="per">for every screen. Open source, on your own network. It stays free.</p>
+          <ul class="ticks">
+            <li>Dashboards that stay up</li>
+            <li>Cameras, video and picture-in-picture</li>
+            <li>Notifications and spoken announcements</li>
+            <li>Sign-ins for web dashboards</li>
+            <li>Everything your automations can do</li>
+          </ul>
+          <a class="button quiet" href="#install">Install free</a>
+        </article>
+
+        <article class="feature plan">
+          <header><h3>Standard</h3></header>
+          <p class="price"><small>US$</small><span class="yearly">7</span><span class="monthly">8.50</span></p>
+          <p class="per">per screen a month, <span class="yearly">billed yearly</span><span class="monthly">billed monthly</span>. Signage for one site or many.</p>
+          <ul class="ticks">
+            <li>Content library, playlists and schedules</li>
+            <li>Layouts, page builder and touch pages</li>
+            <li>Emergency messages</li>
+            <li>Proof of play</li>
+            <li>Organisations, sites and roles</li>
+            <li>Two-factor sign-in with passkeys</li>
+            <li>Activity log</li>
+            <li>Plays on for weeks offline</li>
+          </ul>
+          <a class="button quiet when-soon" href="console.html#early-access">Ask for early access</a>
+          <a class="button quiet when-live" href="console.html#early-access">Choose Standard</a>
+        </article>
+
+        <article class="feature plan pro">
+          <header><em class="tag plan">30-day trial</em><h3>Pro</h3></header>
+          <p class="price"><small>US$</small><span class="yearly">11</span><span class="monthly">13</span></p>
+          <p class="per">per screen a month, <span class="yearly">billed yearly</span><span class="monthly">billed monthly</span>. Everything in Standard, and:</p>
+          <ul class="ticks">
+            <li>Video walls</li>
+            <li>Content approval</li>
+            <li>Single sign-on (OIDC)</li>
+            <li>API tokens</li>
+            <li>Home Assistant connection</li>
+            <li>Cloud folders</li>
+            <li>Saved sign-ins for web dashboards</li>
+            <li>Content flows, trigger links and timelapses</li>
+          </ul>
+          <a class="button primary when-soon" href="console.html#early-access">Ask for early access</a>
+          <a class="button primary when-live" href="console.html#early-access">Start a 30-day trial</a>
+        </article>
+
+        <article class="feature plan">
+          <header><h3>Enterprise</h3></header>
+          <p class="price"><small>US$</small><span class="yearly">15</span><span class="monthly">18</span></p>
+          <p class="per">per screen a month, <span class="yearly">billed yearly</span><span class="monthly">billed monthly</span>. Everything in Pro, and:</p>
+          <ul class="ticks">
+            <li>SAML sign-in</li>
+            <li>SCIM</li>
+            <li>SIEM streaming</li>
+            <li>Roles at each site</li>
+            <li>Access only from the networks you list</li>
+          </ul>
+          <a class="button quiet" href="console.html#talk">Talk to us</a>
+        </article>
+      </div>
+
+      <ul class="plan-notes">
+        <li>Try the Console free on 2 screens.</li>
+        <li>Each new organisation gets 30 days of Pro on up to 5 screens.</li>
+        <li>If a payment is late, your screens keep playing.</li>
+        <li>Prices are in US dollars and exclude tax.</li>
+      </ul>
+
+      <div class="soon-strip when-soon" id="early-access">
+        <p><strong>The Console is not open yet.</strong> Ask for early access and we will tell you when it is.</p>
+        <a class="button primary small" href="console.html#early-access">Ask for early access</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- 6. Compare -->
+  <section class="section" id="compare">
+    <div class="wrap">
+      <div class="section-head">
+        <span class="kicker">Compare</span>
+        <h2>Free with Home Assistant, and the Console's plans</h2>
+        <p>A dash means it is not part of that plan. Words in a cell say how it is done there.</p>
+      </div>
+      <p class="swipe">Swipe to see every plan.</p>
+      <div class="table-card" tabindex="0" role="region" aria-label="Plan comparison">
+        <table class="compare">
+          <caption class="vh">What each way of running PleatView includes</caption>
+          <thead>
+            <tr><td></td><th scope="col"><small>Free</small>With Home Assistant</th><th scope="col"><small>Console</small>Standard</th><th scope="col"><small>Console</small>Pro</th><th scope="col"><small>Console</small>Enterprise</th></tr>
+          </thead>
+          <tbody>
+            <tr class="group"><th colspan="5" scope="colgroup">Price and screens</th></tr>
+            <tr><th scope="row">Price per screen, a month</th><td>Free</td><td>US$7 yearly, US$8.50 monthly</td><td>US$11 yearly, US$13 monthly</td><td>US$15 yearly, US$18 monthly</td></tr>
+            <tr><th scope="row">Screens</th><td>Any number</td><td>As many as you buy</td><td>As many as you buy</td><td>As many as you buy</td></tr>
+            <tr><th scope="row">Needs Home Assistant</th><td>Yes</td><td>No</td><td>No</td><td>No</td></tr>
+            <tr><th scope="row">Where it runs</th><td>Your Home Assistant, on your network</td><td>Hosted for you</td><td>Hosted for you</td><td>Hosted for you</td></tr>
+            <tr><th scope="row">Screens at several sites</th><td>Your own network</td><td class="y">Yes</td><td class="y">Yes</td><td class="y">Yes</td></tr>
+            <tr><th scope="row">Licence</th><td>Open source (MIT)</td><td>Commercial</td><td>Commercial</td><td>Commercial</td></tr>
+
+            <tr class="group"><th colspan="5" scope="colgroup">On the screen</th></tr>
+            <tr><th scope="row">Apps for Google TV, Android TV, Fire TV, Android, Linux and Raspberry Pi</th><td class="y">Yes</td><td class="y">Yes</td><td class="y">Yes</td><td class="y">Yes</td></tr>
+            <tr><th scope="row">Home Assistant dashboards</th><td class="y">Yes</td><td class="n">Not included</td><td>Connect yours</td><td>Connect yours</td></tr>
+            <tr><th scope="row">Web pages and dashboards</th><td class="y">Yes</td><td class="y">Yes</td><td class="y">Yes</td><td class="y">Yes</td></tr>
+            <tr><th scope="row">Saved sign-ins for web dashboards</th><td>Kept on the screen</td><td class="n">Not included</td><td class="y">Yes</td><td class="y">Yes</td></tr>
+            <tr><th scope="row">Pictures and video</th><td>From Home Assistant</td><td>Any format, converted</td><td>Any format, converted</td><td>Any format, converted</td></tr>
+            <tr><th scope="row">PDFs, presentations and documents</th><td class="n">Not included</td><td class="y">Yes</td><td class="y">Yes</td><td class="y">Yes</td></tr>
+            <tr><th scope="row">Camera pop-ups, notifications and spoken announcements</th><td class="y">Yes</td><td>If the screen is in Home Assistant too</td><td>If the screen is in Home Assistant too</td><td>If the screen is in Home Assistant too</td></tr>
+            <tr><th scope="row">Plays on for weeks offline</th><td>Recovers when the network returns</td><td class="y">Yes</td><td class="y">Yes</td><td class="y">Yes</td></tr>
+
+            <tr class="group"><th colspan="5" scope="colgroup">Content and scheduling</th></tr>
+            <tr><th scope="row">Content library and playlists</th><td class="n">Not included</td><td class="y">Yes</td><td class="y">Yes</td><td class="y">Yes</td></tr>
+            <tr><th scope="row">Schedules</th><td>With your automations</td><td class="y">Yes</td><td class="y">Yes</td><td class="y">Yes</td></tr>
+            <tr><th scope="row">Layouts with zones</th><td>With your dashboards</td><td class="y">Yes</td><td class="y">Yes</td><td class="y">Yes</td></tr>
+            <tr><th scope="row">Page builder and touch pages</th><td class="n">Not included</td><td class="y">Yes</td><td class="y">Yes</td><td class="y">Yes</td></tr>
+            <tr><th scope="row">Emergency messages on every screen</th><td>With your automations</td><td class="y">Yes</td><td class="y">Yes</td><td class="y">Yes</td></tr>
+            <tr><th scope="row">Proof of play</th><td class="n">Not included</td><td class="y">Yes</td><td class="y">Yes</td><td class="y">Yes</td></tr>
+            <tr><th scope="row">Video walls</th><td class="n">Not included</td><td class="n">Not included</td><td class="y">Yes</td><td class="y">Yes</td></tr>
+            <tr><th scope="row">Content approval</th><td class="n">Not included</td><td class="n">Not included</td><td class="y">Yes</td><td class="y">Yes</td></tr>
+            <tr><th scope="row">Cloud folders</th><td class="n">Not included</td><td class="n">Not included</td><td class="y">Yes</td><td class="y">Yes</td></tr>
+            <tr><th scope="row">Content flows across head office, regions and sites</th><td class="n">Not included</td><td class="n">Not included</td><td class="y">Yes</td><td class="y">Yes</td></tr>
+            <tr><th scope="row">Trigger links</th><td class="n">Not included</td><td class="n">Not included</td><td class="y">Yes</td><td class="y">Yes</td></tr>
+            <tr><th scope="row">Timelapses</th><td class="n">Not included</td><td class="n">Not included</td><td class="y">Yes</td><td class="y">Yes</td></tr>
+
+            <tr class="group"><th colspan="5" scope="colgroup">People and sign-in</th></tr>
+            <tr><th scope="row">Organisations and sites</th><td class="n">Not included</td><td class="y">Yes</td><td class="y">Yes</td><td class="y">Yes</td></tr>
+            <tr><th scope="row">Roles</th><td>Home Assistant's users</td><td class="y">Yes</td><td class="y">Yes</td><td class="y">Yes</td></tr>
+            <tr><th scope="row">Roles at each site</th><td class="n">Not included</td><td class="n">Not included</td><td class="n">Not included</td><td class="y">Yes</td></tr>
+            <tr><th scope="row">Two-factor sign-in, with passkeys or an authenticator app</th><td>Home Assistant's sign-in</td><td class="y">Yes</td><td class="y">Yes</td><td class="y">Yes</td></tr>
+            <tr><th scope="row">Single sign-on (OIDC)</th><td class="n">Not included</td><td class="n">Not included</td><td class="y">Yes</td><td class="y">Yes</td></tr>
+            <tr><th scope="row">SAML sign-in</th><td class="n">Not included</td><td class="n">Not included</td><td class="n">Not included</td><td class="y">Yes</td></tr>
+            <tr><th scope="row">SCIM</th><td class="n">Not included</td><td class="n">Not included</td><td class="n">Not included</td><td class="y">Yes</td></tr>
+            <tr><th scope="row">Access only from the networks you list</th><td class="n">Not included</td><td class="n">Not included</td><td class="n">Not included</td><td class="y">Yes</td></tr>
+
+            <tr class="group"><th colspan="5" scope="colgroup">Records and your own tools</th></tr>
+            <tr><th scope="row">Tamper-evident activity log</th><td class="n">Not included</td><td class="y">Yes</td><td class="y">Yes</td><td class="y">Yes</td></tr>
+            <tr><th scope="row">SIEM streaming</th><td class="n">Not included</td><td class="n">Not included</td><td class="n">Not included</td><td class="y">Yes</td></tr>
+            <tr><th scope="row">API tokens</th><td>Home Assistant's services</td><td class="n">Not included</td><td class="y">Yes</td><td class="y">Yes</td></tr>
+            <tr><th scope="row">Partners and white label</th><td class="n">Not included</td><td>Talk to us</td><td>Talk to us</td><td>Talk to us</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="matrix-foot">The Console also has a free plan for 2 screens. PleatView with Home Assistant stays free and open source, whatever the Console costs.</p>
+    </div>
+  </section>
+
+  <section class="section" id="home-assistant">
+    <div class="wrap">
+      <div class="section-head">
+        <span class="kicker">Free with Home Assistant</span>
+        <h2>Home Assistant, always on your TV</h2>
+        <p>PleatView began here, and this part stays free and open source. The screen joins Home Assistant as a media player and a notifier, ready for your automations.</p>
+      </div>
+      <div class="platforms after-head" aria-label="Works with">
+        <span><svg class="platform-icon" aria-hidden="true"><use href="#i-homeassistant"/></svg><strong>Home Assistant</strong> 2025.1 and later</span>
+        <span><svg class="platform-icon" aria-hidden="true"><use href="#i-hacs"/></svg>From the <strong>Marketplace</strong> or <strong>HACS</strong></span>
+      </div>
+      <div class="features" id="features">
         <article class="feature wide">
           <h3>Dashboards that stay up</h3>
           <p>Any dashboard, full screen, for weeks on end. PleatView signs in by itself, rotates between dashboards, and recovers from Wi‑Fi drops, Home Assistant restarts and browser crashes.</p>
@@ -136,7 +443,7 @@
   <section class="section" id="ideas">
     <div class="wrap">
       <div class="section-head">
-        <span class="kicker">Ideas</span>
+        <span class="kicker">Ideas with Home Assistant</span>
         <h2>What people put on the big screen</h2>
         <p>Things Home Assistant users ask for on the forums, and the automation that does each with PleatView. Copy one, then change the entity names to yours.</p>
       </div>
@@ -285,7 +592,7 @@ actions:
   <section class="section" id="install">
     <div class="wrap">
       <div class="section-head">
-        <span class="kicker">Set up</span>
+        <span class="kicker">Set up with Home Assistant</span>
         <h2>On your TV in three steps</h2>
         <p>No computer needed. It takes about five minutes.</p>
       </div>
@@ -328,6 +635,7 @@ actions:
 sudo apt install /tmp/pleatview.deb</code></pre>
         <p>To open PleatView whenever the computer starts, run <code>pleatview-kiosk autostart</code> on a desktop and restart, or <code>sudo pleatview-kiosk enable</code> without one (Raspberry Pi OS Lite, Ubuntu Server). Then add the integration and pair as above. The same two lines update it. The <a href="https://github.com/Hustlesman/pleatview/tree/main/linux#readme">Linux guide</a> has the details.</p>
       </div>
+      <p class="matrix-foot">No Home Assistant? The PleatView Console <span class="when-soon">is coming soon</span><span class="when-live">runs screens without it</span>. <a href="#pricing">See plans</a></p>
     </div>
   </section>
 
@@ -395,17 +703,17 @@ sudo apt install /tmp/pleatview.deb</code></pre>
         <article class="feature">
           <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m8 7-5 5 5 5M16 7l5 5-5 5M13.5 4l-3 16"/></svg></span>
           <h3>Open source</h3>
-          <p>The app and the integration are on <a href="https://github.com/Hustlesman/pleatview">GitHub</a> under the MIT license. GitHub Actions builds, signs and attests each release from its tagged code, so anyone can check where an APK came from.</p>
+          <p>The app and the integration are on <a href="https://github.com/Hustlesman/pleatview">GitHub</a> under the MIT License. GitHub Actions builds, signs and attests each release from its tagged code, so anyone can check where an APK came from.</p>
         </article>
         <article class="feature">
           <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/></svg></span>
-          <h3>Local only</h3>
-          <p>No cloud service, no account and no tracking. The TV talks to your Home Assistant on your network, and to other sites only when your dashboards show them.</p>
+          <h3>Local with Home Assistant</h3>
+          <p>With Home Assistant there is no cloud service, no account and no tracking. The screen talks to your Home Assistant on your network, and to other sites only when your dashboards show them.</p>
         </article>
         <article class="feature">
           <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10.5" width="16" height="10.5" rx="2"/><path d="M8 10.5V7a4 4 0 0 1 8 0v3.5"/></svg></span>
           <h3>Sign-ins stay on the TV</h3>
-          <p>Passwords for web dashboards are encrypted with the TV's keystore, offered only to their own site, and never sent to Home Assistant. Read the <a href="privacy.html">privacy policy</a>.</p>
+          <p>With Home Assistant, passwords for web dashboards are encrypted with the TV's keystore, offered only to their own site, and never sent to Home Assistant. Read the <a href="privacy.html">privacy policy</a>.</p>
         </article>
       </div>
     </div>
@@ -416,7 +724,7 @@ sudo apt install /tmp/pleatview.deb</code></pre>
       <div class="support">
         <div>
           <h2>Support PleatView</h2>
-          <p>PleatView is free, and every feature stays free for everyone. If it's useful to you, chip in towards test devices and app-store fees. Bug reports and ideas help just as much. Donations go through Stripe and show as Hustlesman on your statement.</p>
+          <p>PleatView with Home Assistant is free, and it stays free and open source. If it's useful to you, chip in towards test devices and app-store fees. Bug reports and ideas help just as much. Donations go through Stripe and show as Hustlesman on your statement.</p>
         </div>
         <div class="actions">
           <a class="button primary" href="https://donate.stripe.com/cNifZg4Wudug46O4X38Ra00">Donate</a>
@@ -431,12 +739,15 @@ sudo apt install /tmp/pleatview.deb</code></pre>
   <div class="wrap">
     <div>
       <p class="made">PleatView is made by Hustlesman.</p>
-      <p>Free and open source under the MIT License.</p>
+      <p>PleatView with Home Assistant is free and open source under the MIT License.</p>
       <p>Latest release <span data-release="version">v1.0.18</span>, <time data-release="date" datetime="2026-11-12">12 November 2026</time>.</p>
       <p class="legal">Google Play and the Google Play logo are trademarks of Google LLC. Amazon, Amazon Appstore and their logos are trademarks of Amazon.com, Inc. or its affiliates.</p>
     </div>
     <nav aria-label="Footer">
       <a href="#install">Install</a>
+      <a href="#ideas">Ideas</a>
+      <a href="#pricing">Pricing</a>
+      <a href="#compare">Compare</a>
       <a href="support.html">Support</a>
       <a href="privacy.html">Privacy</a>
       <a href="terms.html">Terms</a>
