@@ -70,7 +70,9 @@
       if (data.ok) return;
       if (data.code !== "quick") ticket = null;  // (used, or no good: a new one for the next try)
       if (!again && (data.code === "quick" || data.code === "ticket")) return send(true);
-      throw new Error(["field", "wait", "busy", "later"].indexOf(data.code) >= 0 ? data.error : "");
+      var failure = new Error(data.error || "");
+      failure.said = ["field", "wait", "busy", "later"].indexOf(data.code) >= 0;  // (the service's own words, for the person)
+      throw failure;
     }, function (problem) {
       ticket = null;
       throw problem;
@@ -92,7 +94,7 @@
     e.preventDefault();
     state("sending");
     send(false).then(function () { state("sent"); }, function (problem) {
-      state("failed", problem && problem.message);
+      state("failed", problem && problem.said ? problem.message : "");  // (never the browser's own, such as "Failed to fetch")
       getTicket().catch(function () {});  // (ready for the next try)
     });
   });
