@@ -23,7 +23,7 @@
       <a href="support.html">Support</a>
       <a href="https://github.com/Hustlesman/pleatview">GitHub</a>
       <a class="button primary small" href="/#install">Get PleatView</a>
-      <span class="button quiet small locked" aria-disabled="true" title="Coming soon"><svg class="lock" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="10.5" width="14" height="10" rx="2.5"/><path d="M8.5 10.5V7.5a3.5 3.5 0 0 1 7 0v3"/></svg>Console<span class="vh">, coming soon</span></span>
+      <a class="button quiet small console-link" href="console.html">Console</a>
     </nav>
   </div>
 </header>
@@ -31,10 +31,10 @@
 <!-- Keep the contact address readable without JavaScript (Cloudflare email obfuscation). -->
 <!--email_off-->
   <h1>Privacy policy</h1>
-  <p class="muted">Effective 28 October 2026, updated 10 November 2026. Applies to the PleatView TV app, the PleatView Home Assistant integration and this website, developed and published by Hustlesman.</p>
+  <p class="muted">Effective 28 October 2026, updated 23 November 2026. Applies to the PleatView TV app, the PleatView Home Assistant integration and this website, including its enquiry form, developed and published by Hustlesman.</p>
 
   <h2>Summary</h2>
-  <p>PleatView does not collect, sell or share personal data. It has no accounts, analytics, advertising, crash reporting or tracking. The TV app talks only to your own Home Assistant server, and to the media, image and web addresses your Home Assistant sends it.</p>
+  <p>The PleatView TV app and Home Assistant integration do not collect, sell or share personal data. They have no accounts, analytics, advertising, crash reporting or tracking. The TV app talks only to your own Home Assistant server, and to the media, image and web addresses your Home Assistant sends it. This website keeps only what you send us through its enquiry form, to answer you.</p>
 
   <h2>Who we are</h2>
   <p>PleatView is developed and published by Hustlesman. For anything about privacy, email <a href="mailto:privacy@hustlesman.com">privacy@hustlesman.com</a>.</p>
@@ -56,7 +56,12 @@
   <p>The integration runs inside your own Home Assistant. By default it creates a local-only Home Assistant user for the TV and gives the TV an access token for that user. Removing the integration deletes that user and resets the TV.</p>
 
   <h2>This website</h2>
-  <p>pleatview.hustlesman.com uses no cookies, analytics or trackers. Its demo wall page shows the YouTube videos named in its address, in YouTube's privacy-enhanced player; YouTube's privacy policy covers those players. The site is hosted on GitHub Pages and delivered through Cloudflare. Like any website host, they process technical data such as IP addresses to deliver pages and protect against abuse, under their own privacy policies.</p>
+  <p>pleatview.hustlesman.com uses no cookies, analytics or trackers. Its demo wall page shows the YouTube videos named in its address, in YouTube's privacy-enhanced player; YouTube's privacy policy covers those players. The site is hosted on GitHub Pages and delivered through Cloudflare. Like any website host, they process technical data such as IP addresses to deliver pages and protect against abuse, under their own privacy policies. The form on the <a href="console.html">Console page</a> is covered under <a href="#enquiries">Enquiries</a>.</p>
+
+  <h2 id="enquiries">Enquiries</h2>
+  <p>The form on the Console page sends us what you type: what you are asking about, your name, work email, organisation, roughly how many screens you have, and your message. We use it only to answer you, and, if you ask for early access, to tell you when the Console opens. We do not share it, sell it or use it for marketing.</p>
+  <p>Your browser sends it to a small checking service of ours, which passes it on to our own server. There it is kept encrypted, and only the people who answer enquiries can read it. To keep out spam, the checking service counts the messages from each network address for up to a day, in memory only. Your network address is not kept with your enquiry. Cloudflare delivers the form's requests, as it delivers this site's pages.</p>
+  <p>We keep an enquiry for up to a year after it arrives, then it is deleted. To see yours or have it deleted sooner, email <a href="mailto:privacy@hustlesman.com">privacy@hustlesman.com</a>.</p>
 
   <h2>Donations</h2>
   <p>Donations are optional and are processed by Stripe. We receive what Stripe shares with us: your email address, the amount, and your name or message if you give them. We use this only to send receipts, reply to you and keep the records the law requires. We never see your full card details. Stripe's own privacy policy covers the payment itself.</p>
@@ -65,6 +70,7 @@
   <ul>
     <li><strong>TV app:</strong> uninstall it, or clear its data in Android's app settings.</li>
     <li><strong>Integration:</strong> remove it in Home Assistant, which also deletes the user it created.</li>
+    <li><strong>Enquiries:</strong> email <a href="mailto:privacy@hustlesman.com">privacy@hustlesman.com</a> and we'll delete yours. Otherwise each is deleted a year after it arrives.</li>
     <li><strong>Donation records:</strong> email <a href="mailto:privacy@hustlesman.com">privacy@hustlesman.com</a> and we'll delete anything we're not required to keep.</li>
   </ul>
 
@@ -72,7 +78,7 @@
   <p>Control of the TV stays on your local network, pairing needs a PIN shown on the TV, and only hashes of pairing tokens are stored. Please report security problems privately to <a href="mailto:privacy@hustlesman.com">privacy@hustlesman.com</a>.</p>
 
   <h2>Children</h2>
-  <p>PleatView is not directed at children under 13, and it collects no personal data from anyone.</p>
+  <p>PleatView is not directed at children under 13. The TV app and integration collect no personal data from anyone, and the enquiry form is meant for organisations.</p>
 
   <h2>App stores</h2>
   <p>If you install PleatView from an app store, the store's own privacy policy covers the data it collects, such as download and crash statistics.</p>

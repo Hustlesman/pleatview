@@ -50,10 +50,7 @@ p { margin: 0; }
 .button.quiet:hover { border-color: rgba(24, 188, 242, 0.55); }
 .button.small { padding: 9px 15px; font-size: 14px; }
 /* Not open yet: a lock, no link, and no lift on hover. */
-.button.locked { color: var(--muted); cursor: not-allowed; user-select: none; }
-.button.locked:hover { transform: none; border-color: var(--line); }
-.button .lock { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex: none; }
-.site-nav .button.locked { margin-left: -12px; }
+.site-nav .console-link { margin-left: -12px; }
 .site-header .logo { flex: none; }
 .site-nav a { white-space: nowrap; }
 @media (max-width: 980px) {
@@ -64,14 +61,14 @@ p { margin: 0; }
   .site-header .wrap { gap: 12px; }
   .site-nav { gap: 8px; }
   .site-nav .button.small { padding: 8px 12px; font-size: 13px; }
-  .site-nav .button.locked { margin-left: 0; }
+  .site-nav .console-link { margin-left: 0; }
   .logo img { width: 112px; height: auto; }
 }
 @media (max-width: 400px) {
   .wrap { width: calc(100% - 24px); }
   .logo img { width: 100px; }
 }
-@media (max-width: 349px) { .site-nav .button.locked { display: none; } }
+@media (max-width: 349px) { .site-nav .console-link { display: none; } }
 @media (max-width: 760px) { .site-nav a:not(.button) { display: none; } }
 
 /* Hero */
@@ -295,7 +292,6 @@ td small { display: block; color: var(--muted); font-size: 13.5px; margin-top: 3
 .band { margin-top: 16px; display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 3fr); gap: 20px 40px; padding: 30px; border-radius: 24px; border: 1px solid var(--line); background: var(--panel); }
 .band h3 { font-size: 24px; margin-bottom: 10px; }
 .band p { color: var(--muted); }
-.band .claim { margin-top: 14px; font-size: 15px; color: var(--text); }
 .band .ticks { grid-template-columns: 1fr 1fr; gap: 12px 28px; align-content: start; }
 .pair { margin-top: 16px; display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
 .pair .feature { grid-column: auto; }
@@ -356,3 +352,106 @@ td small { display: block; color: var(--muted); font-size: 13.5px; margin-top: 3
 
 .after-head { margin: -16px 0 28px; }
 @media (max-width: 760px) { .button { min-height: 44px; } .button.small { min-height: 0; } }
+
+/* ---- console.html: the Console's page for businesses ---- */
+
+/* Header: the Console button is a link here, marked as the page you are on. */
+.site-nav .button[aria-current="page"] { color: var(--text); border-color: rgba(24, 188, 242, 0.55); }
+
+/* Hero without the TV: shorter, a smaller headline, and the glow lifted behind the words. */
+.hero.short { padding: 64px 0 8px; overflow: visible; overflow-x: clip; }
+.hero.short::before { inset: -120px -20% auto; height: 520px; opacity: 0.7; }
+.hero.short h1 { font-size: clamp(36px, 5.2vw, 62px); }
+.hero.short .kicker .tag { vertical-align: 1px; }
+.signin-line { font-size: 14.5px; color: var(--muted); }
+.signin-line a { color: var(--text); }
+
+/* On this page: the platforms chips, as links. */
+.jump { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 36px; position: relative; }
+.jump a { padding: 8px 14px; border: 1px solid var(--line); border-radius: 999px; font-size: 14px; color: var(--muted); background: rgba(255, 255, 255, 0.02); text-decoration: none; }
+.jump a:hover { color: var(--text); border-color: rgba(24, 188, 242, 0.4); }
+
+/* A plan tag at the end of a tick-list line. */
+.ticks .tag { margin-left: 6px; white-space: nowrap; vertical-align: 1px; }
+.section-foot { margin-top: 20px; display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px; color: var(--muted); font-size: 15px; }
+
+/* Plans summary: three cards, both prices in words (no switch on this page). */
+.plan .alt { color: var(--text); white-space: nowrap; }
+
+/* FAQ: one panel of questions that open in place. */
+.faq { border: 1px solid var(--line); border-radius: var(--radius); background: var(--panel); max-width: 860px; }
+.faq details:not(:last-child) { border-bottom: 1px solid var(--line); }
+.faq summary { cursor: pointer; list-style: none; display: flex; justify-content: space-between; align-items: center; gap: 16px; padding: 18px 22px; font: 600 17px/1.35 var(--body); color: var(--text); }
+.faq summary::-webkit-details-marker { display: none; }
+.faq summary::after { content: ""; flex: none; width: 9px; height: 9px; border: solid var(--cyan); border-width: 0 2px 2px 0; transform: rotate(45deg) translate(-2px, -2px); transition: transform 0.15s ease; }
+.faq details[open] summary::after { transform: rotate(-135deg) translate(-2px, -2px); }
+.faq details p { padding: 0 22px 20px; color: var(--muted); font-size: 15.5px; max-width: 70ch; }
+
+/* The enquiry: words on the left, the form on the right; one column on small screens. */
+.enquiry { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 3fr); gap: 28px 48px; align-items: start; }
+.enquiry .section-head { margin-bottom: 0; }
+.enquiry .next { margin-top: 26px; padding-top: 22px; border-top: 1px solid var(--line); display: grid; gap: 10px; color: var(--muted); font-size: 15.5px; }
+.enquiry .next strong { color: var(--text); font: 600 13px/1 var(--mono); letter-spacing: 0.08em; text-transform: uppercase; }
+.form-card { padding: 28px; border-radius: 24px; border: 1px solid var(--line); background: radial-gradient(120% 90% at 100% 0%, rgba(24, 188, 242, 0.12), transparent 55%), var(--panel); }
+.form-card form { display: grid; gap: 18px; }
+/* Arriving by #early-access, #talk or #self-hosting lands on the section's top. */
+.anchor { position: absolute; }
+
+/* The three purposes: radio cards. */
+.choice { border: 0; margin: 0; padding: 0; min-width: 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.choice legend { padding: 0; margin-bottom: 10px; font: 600 15px/1.3 var(--body); color: var(--text); }
+.choice input { position: absolute; opacity: 0; pointer-events: none; }
+.choice label { display: grid; gap: 6px; align-content: start; height: 100%; padding: 14px 14px 14px 40px; position: relative; border: 1px solid var(--line); border-radius: 14px; background: rgba(255, 255, 255, 0.02); cursor: pointer; font: 600 15.5px/1.25 var(--body); color: var(--text); }
+.choice label small { font: 400 13.5px/1.4 var(--body); color: var(--muted); }
+.choice label::before { content: ""; position: absolute; left: 14px; top: 15px; width: 16px; height: 16px; border-radius: 50%; border: 2px solid var(--muted); }
+.choice input:checked + label { border-color: var(--cyan); background: rgba(24, 188, 242, 0.08); }
+.choice input:checked + label::before { border-color: var(--cyan); background: radial-gradient(circle, var(--cyan) 0 4px, transparent 5px); }
+.choice input:focus-visible + label { outline: 2px solid var(--cyan); outline-offset: 3px; }
+
+/* Fields */
+.fields { display: grid; grid-template-columns: 1fr 1fr; gap: 18px 16px; }
+.field { display: grid; gap: 7px; align-content: start; min-width: 0; }
+.field.full { grid-column: 1 / -1; }
+.field label { font: 600 14.5px/1.3 var(--body); color: var(--text); }
+.field label .opt { font-weight: 400; color: var(--muted); }
+.field .help { font-size: 13.5px; color: var(--muted); }
+.field input, .field select, .field textarea { width: 100%; padding: 12px 14px; border-radius: 12px; border: 1px solid rgba(206, 232, 244, 0.22); background: #070a0c; color: var(--text); font: 400 16px/1.4 var(--body); }
+.field textarea { min-height: 132px; resize: vertical; }
+.field input:focus-visible, .field select:focus-visible, .field textarea:focus-visible { outline: 2px solid var(--cyan); outline-offset: 1px; border-color: var(--cyan); }
+/* The trap field: off the page for people, there for scripts that fill everything in. */
+.trap { position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden; }
+
+/* What changes with the purpose. Without :has(), the early-access wording shows. */
+.for-talk, .for-self { display: none; }
+.enquiry:has(#kind-talk:checked) .for-early, .enquiry:has(#kind-self:checked) .for-early { display: none; }
+.enquiry:has(#kind-talk:checked) .for-talk, .enquiry:has(#kind-self:checked) .for-self { display: revert; }
+
+/* Send, the privacy notice and the states: idle, sending, sent, failed. */
+.send { display: flex; flex-wrap: wrap; align-items: center; gap: 14px 20px; }
+.send button { border: 0; cursor: pointer; }
+.send button[disabled] { opacity: 0.6; cursor: progress; transform: none; }
+.privacy-note { flex: 1 1 260px; font-size: 13.5px; line-height: 1.5; color: var(--muted); }
+.form-error { padding: 14px 16px; border-radius: 12px; border: 1px solid rgba(245, 184, 75, 0.55); background: rgba(245, 184, 75, 0.08); color: var(--text); font-size: 15px; }
+.form-error[hidden], .sent[hidden] { display: none; }
+.label-sending { display: none; }
+[data-state="sending"] .label-idle { display: none; }
+[data-state="sending"] .label-sending { display: inline; }
+[data-state="sent"] form, [data-state="sent"] .next { display: none; }
+.sent { display: grid; gap: 12px; justify-items: start; }
+.sent:focus { outline: none; }
+.sent .icon { width: 44px; height: 44px; display: grid; place-items: center; border-radius: 50%; background: rgba(61, 220, 151, 0.14); color: var(--good); }
+.sent .icon svg { width: 22px; height: 22px; }
+.sent h3 { font-size: 24px; }
+.sent p { color: var(--muted); }
+.sent .actions { margin-top: 8px; }
+
+@media (max-width: 960px) { .enquiry { grid-template-columns: 1fr; } }
+@media (max-width: 620px) {
+  .choice, .fields { grid-template-columns: 1fr; }
+  .form-card { padding: 20px 16px; }
+  .send .button { width: 100%; justify-content: center; }
+  .faq summary { padding: 16px; font-size: 16px; }
+  .faq details p { padding: 0 16px 18px; }
+}
+@media (prefers-reduced-motion: reduce) { .faq summary::after { transition: none; } }
+.push-down { margin-top: auto; padding-top: 6px; }

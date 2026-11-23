@@ -1,0 +1,464 @@
+<!doctype html>
+<html lang="en" data-console="soon">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src https://forms.hustlesman.com; form-action 'none'; base-uri 'none'; object-src 'none'">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<title>PleatView Console for business: every screen at every site, from a browser</title>
+<meta name="description" content="The PleatView Console runs the screens at every site of a business, school or clinic from a browser, with no Home Assistant. See how it keeps data, how people sign in, the plans and prices, and ask for early access.">
+<meta name="theme-color" content="#0a0e11">
+<meta property="og:title" content="PleatView Console for business">
+<meta property="og:description" content="Every screen at every site, from a browser. How the Console keeps data, how people sign in, plans and prices.">
+<meta property="og:image" content="https://pleatview.hustlesman.com/img/play/feature-graphic.png">
+<meta property="og:url" content="https://pleatview.hustlesman.com/console.html">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/img/apple-touch-icon.png">
+<link rel="preload" href="fonts/sora-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="fonts/geist-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="style.css">
+<script src="enquiry.js" defer></script>
+</head>
+<body>
+<header class="site-header">
+  <div class="wrap">
+    <a class="logo" href="/" aria-label="PleatView home"><img src="img/logo.svg" width="135" height="26" alt="PleatView"></a>
+    <nav class="site-nav" aria-label="Main">
+      <a href="/#console">For business</a>
+      <a href="/#pricing">Pricing</a>
+      <a href="/#home-assistant">Home Assistant</a>
+      <a href="/#tested">Tested on</a>
+      <a href="support.html">Support</a>
+      <a href="https://github.com/Hustlesman/pleatview">GitHub</a>
+      <a class="button primary small" href="/#install">Get PleatView</a>
+      <a class="button quiet small console-link" href="console.html" aria-current="page">Console</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <!-- 1. Hero -->
+  <section class="hero short">
+    <div class="wrap">
+      <div class="hero-copy">
+        <span class="kicker">PleatView Console <em class="tag when-soon">Coming soon</em></span>
+        <h1>Every screen at every site, <em>from a browser</em>.</h1>
+        <p class="lead">The PleatView Console is a web app for businesses, schools and clinics. Upload content, schedule it, and see every screen at every site. It needs no Home Assistant, and screens connect out to it, so nothing is opened on a site's network.</p>
+        <div class="actions">
+          <a class="button primary when-soon" href="#early-access">Ask for early access</a>
+          <a class="button primary when-live" href="#early-access">Start a 30-day trial</a>
+          <a class="button quiet" href="#talk">Talk to us</a>
+        </div>
+        <p class="signin-line when-live">Already a customer? <a href="https://console.hustlesman.com">Sign in</a></p>
+      </div>
+      <nav class="jump" aria-label="On this page">
+        <a href="#what">What it does</a>
+        <a href="#security">Security and data</a>
+        <a href="#access">Sign-in and access</a>
+        <a href="#who">Who it suits</a>
+        <a href="#hosting">Hosting</a>
+        <a href="#plans">Plans and prices</a>
+        <a href="#faq">Questions</a>
+        <a href="#enquiry">Get in touch</a>
+      </nav>
+    </div>
+  </section>
+
+  <!-- 2. What it does -->
+  <section class="section" id="what">
+    <div class="wrap">
+      <div class="section-head">
+        <span class="kicker">What it does</span>
+        <h2>One place for content, schedules and every screen</h2>
+        <p>The short version. The <a href="/#console">home page has the full list</a>.</p>
+      </div>
+      <div class="cards">
+        <article class="feature"><h3>Content and playlists</h3><p>Upload pictures, video, PDFs and presentations in the format you have. The Console converts them for each screen.</p></article>
+        <article class="feature"><h3>Layouts and schedules</h3><p>Split a screen into zones, and set what plays by hour, day and date, for one screen, a group or a whole site.</p></article>
+        <article class="feature"><h3>Plays on offline</h3><p>Screens keep to their schedule for weeks if the connection drops.</p></article>
+        <article class="feature"><h3>Emergency messages</h3><p>One message over every screen in the organisation, or at the sites you choose, until someone clears it.</p></article>
+        <article class="feature"><h3>Proof of play</h3><p>A record of what each screen showed, when and for how long.</p></article>
+        <article class="feature"><em class="tag plan">Pro</em><h3>Approval, video walls and your own tools</h3><p>Have changes wait for an approver, join screens into one picture, drive the Console with API tokens, and connect Home Assistant.</p></article>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3. Security and data -->
+  <section class="section" id="security">
+    <div class="wrap">
+      <div class="section-head">
+        <span class="kicker">Security and your data</span>
+        <h2>How the Console keeps what you give it</h2>
+        <p>What your IT team will ask first, in plain words.</p>
+      </div>
+      <div class="cards">
+        <article class="feature">
+          <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+          <h3>Screens connect out</h3>
+          <p>Each screen connects out to the Console on port 443 and signs in with its own key. No port is opened at a site.</p>
+        </article>
+        <article class="feature">
+          <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="7" height="16" rx="1.5"/><rect x="14" y="4" width="7" height="16" rx="1.5"/></svg></span>
+          <h3>Each organisation kept apart</h3>
+          <p>Each organisation's data is stored apart, with its own encryption key. Nothing is shared between organisations.</p>
+        </article>
+        <article class="feature">
+          <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10.5" width="16" height="10.5" rx="2"/><path d="M8 10.5V7a4 4 0 0 1 8 0v3.5"/></svg></span>
+          <h3>Secrets and passwords</h3>
+          <p>Secrets you give the Console, such as a single sign-on client secret or a saved sign-in, are encrypted with your organisation's key. Passwords are kept only as hashes. The Console keeps no card details.</p>
+        </article>
+        <article class="feature">
+          <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 7h11M9 12h11M9 17h11M4 7h.01M4 12h.01M4 17h.01"/></svg></span>
+          <h3>A tamper-evident activity log</h3>
+          <p>Every sign-in, change and command is in your activity log. Each entry is chained to the one before, so an entry edited or removed shows. You choose how long it is kept, from 30 days to 10 years.</p>
+        </article>
+        <article class="feature">
+          <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg></span>
+          <h3>Records you can take and check</h3>
+          <p>Owners can export the organisation's setup and its activity log. Proof of play is chained too, and anyone with an export can check it. On Enterprise, the activity log streams to your SIEM as it is written.</p>
+        </article>
+        <article class="feature">
+          <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg></span>
+          <h3>Support access is yours to open</h3>
+          <p>Our support staff sign in to your organisation only while one of your owners has opened support access, for a set time, as a viewer or an operator. It closes by itself, and it is in your activity log.</p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- 4. Sign-in and access control -->
+  <section class="section" id="access">
+    <div class="wrap">
+      <div class="section-head">
+        <span class="kicker">Sign-in and access control</span>
+        <h2>Your sign-in, your roles, your rules</h2>
+        <p>Use the Console's own sign-in with two-factor, or the identity provider you already run.</p>
+      </div>
+      <div class="band">
+        <div>
+          <h3>Signing in</h3>
+          <p>Owners set the rules for their organisation. Where a line names a plan, it starts at that plan.</p>
+        </div>
+        <ul class="ticks">
+          <li>Two-factor sign-in with a passkey, an authenticator app, or both</li>
+          <li>Owners can require two-factor sign-in for every member</li>
+          <li>Password rules your owners set: length, age and no reuse</li>
+          <li>Sessions that end by themselves, with limits your owners can shorten</li>
+          <li>Single sign-on with OpenID Connect <em class="tag plan">Pro</em></li>
+          <li>Single sign-on with SAML 2.0 <em class="tag plan">Enterprise</em></li>
+          <li>SCIM, so your directory adds and removes people <em class="tag plan">Enterprise</em></li>
+          <li>Access only from the networks you list <em class="tag plan">Enterprise</em></li>
+        </ul>
+      </div>
+      <div class="band">
+        <div>
+          <h3>Who may do what</h3>
+          <p>Each person has a role in the organisation. The roles are made for common jobs, so nobody gets more than their work needs.</p>
+        </div>
+        <ul class="ticks">
+          <li><strong>Owner:</strong> members, sites and everything below</li>
+          <li><strong>Operator:</strong> screens, schedules, emergency messages and content</li>
+          <li><strong>Content manager:</strong> content and schedules, and approves others' changes</li>
+          <li><strong>Editor:</strong> content only</li>
+          <li><strong>Technician:</strong> pairs and looks after screens</li>
+          <li><strong>Safety officer:</strong> starts and clears emergency messages</li>
+          <li><strong>Viewer:</strong> sees screens and logs</li>
+          <li>API tokens carry a role, never owner <em class="tag plan">Pro</em></li>
+          <li>Roles at one site only, for the people who work there <em class="tag plan">Enterprise</em></li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- 5. Who it suits -->
+  <section class="section" id="who">
+    <div class="wrap">
+      <div class="section-head">
+        <span class="kicker">Who it suits</span>
+        <h2>One organisation, many sites, or many customers</h2>
+      </div>
+      <div class="cards">
+        <article class="feature">
+          <h3>Organisations</h3>
+          <p>A business, school or clinic with its own screens and no Home Assistant. Group screens by site, give each person a role, and keep a record of what was shown and who changed it.</p>
+        </article>
+        <article class="feature">
+          <h3>Many sites</h3>
+          <p>Sites can sit inside sites, as regions and branches do. Settings apply to one screen, a group, a site or the whole organisation. On Enterprise, people can hold a role at their own site only.</p>
+        </article>
+        <article class="feature">
+          <h3>Partners, resellers and white label</h3>
+          <p>Installers and resellers look after many customers from one sign-in, under their own name, colours, logo and domain, with their own help contact. Each customer decides whether its partner may reach its sites and screens.</p>
+          <div class="actions push-down"><a class="button quiet small" href="#talk">Talk to us</a></div>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- 6. Hosting -->
+  <section class="section" id="hosting">
+    <div class="wrap">
+      <div class="section-head">
+        <span class="kicker">Hosting</span>
+        <h2>We host it</h2>
+        <p>There is no server to buy or look after.</p>
+      </div>
+      <div class="pair">
+        <article class="feature">
+          <h3>Hosted by us</h3>
+          <p>We run the Console. Your people need a browser on a computer, tablet or phone. Each screen needs the PleatView app and a way out to the internet on port 443.</p>
+          <ul class="ticks">
+            <li>Nothing to install but the app on each screen</li>
+            <li>No port opened at any site</li>
+            <li>The same plans and prices for one site or many</li>
+          </ul>
+        </article>
+        <article class="feature">
+          <em class="tag">On request</em>
+          <h3>Self-hosting</h3>
+          <p>Some organisations have to run the Console on their own server. We offer that on request only. Tell us where you would run it and why, and we will reply.</p>
+          <div class="actions"><a class="button quiet small" href="#self-hosting">Ask about self-hosting</a></div>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- 7. Plans and prices -->
+  <section class="section" id="plans">
+    <div class="wrap">
+      <div class="section-head">
+        <span class="kicker">Plans and prices</span>
+        <h2>Per screen, per month</h2>
+        <p>Three plans, priced in US dollars<span class="when-soon">. The prices apply when the Console opens</span>.</p>
+      </div>
+      <div class="cards">
+        <article class="feature plan">
+          <header><h3>Standard</h3></header>
+          <p class="price"><small>US$</small>7</p>
+          <p class="per">per screen a month, billed yearly. <span class="alt">US$8.50</span> billed monthly.</p>
+          <ul class="ticks">
+            <li>Content, playlists, layouts and schedules</li>
+            <li>Emergency messages and proof of play</li>
+            <li>Organisations, sites and roles</li>
+            <li>Two-factor sign-in and the activity log</li>
+          </ul>
+        </article>
+        <article class="feature plan pro">
+          <header><em class="tag plan">30-day trial</em><h3>Pro</h3></header>
+          <p class="price"><small>US$</small>11</p>
+          <p class="per">per screen a month, billed yearly. <span class="alt">US$13</span> billed monthly.</p>
+          <ul class="ticks">
+            <li>Everything in Standard</li>
+            <li>Video walls and content approval</li>
+            <li>Single sign-on (OIDC)</li>
+            <li>API tokens and the Home Assistant connection</li>
+          </ul>
+        </article>
+        <article class="feature plan">
+          <header><h3>Enterprise</h3></header>
+          <p class="price"><small>US$</small>15</p>
+          <p class="per">per screen a month, billed yearly. <span class="alt">US$18</span> billed monthly.</p>
+          <ul class="ticks">
+            <li>Everything in Pro</li>
+            <li>SAML sign-in and SCIM</li>
+            <li>SIEM streaming</li>
+            <li>Roles at each site, and access only from the networks you list</li>
+          </ul>
+        </article>
+      </div>
+      <ul class="plan-notes">
+        <li>Try the Console free on 2 screens.</li>
+        <li>Each new organisation gets 30 days of Pro on up to 5 screens.</li>
+        <li>If a payment is late, your screens keep playing.</li>
+        <li>Prices are in US dollars and exclude tax.</li>
+      </ul>
+      <div class="section-foot">
+        <a class="button quiet small" href="/#pricing">See what each plan includes</a>
+        <a class="button quiet small" href="/#compare">Compare the plans line by line</a>
+        <span>PleatView with Home Assistant stays US$0 and open source.</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- 8. Questions -->
+  <section class="section" id="faq">
+    <div class="wrap">
+      <div class="section-head">
+        <span class="kicker">Questions</span>
+        <h2>Before you ask</h2>
+      </div>
+      <div class="faq">
+        <details class="when-soon">
+          <summary>When does the Console open?</summary>
+          <p>We have not set a date. Ask for early access and we will tell you when it opens.</p>
+        </details>
+        <details>
+          <summary>Do we need Home Assistant?</summary>
+          <p>No. The Console runs screens by itself. If you have Home Assistant, Pro and Enterprise can connect to it, and its dashboards can go on Console screens too.</p>
+        </details>
+        <details>
+          <summary>What do the screens need?</summary>
+          <p>The PleatView app, on Google TV, Android TV, Fire TV, Android phones and tablets, or on Linux mini PCs and Raspberry Pi, which are in beta. Each screen connects out to the Console on port 443. No port is opened at the site.</p>
+        </details>
+        <details>
+          <summary>What happens when a site loses its connection?</summary>
+          <p>Screens play on, and keep to their schedule for weeks. Proof of play waits on the screen and is sent when the connection returns.</p>
+        </details>
+        <details>
+          <summary>Can we try it before we pay?</summary>
+          <p>Yes. <span class="when-soon">When the Console opens, each</span><span class="when-live">Each</span> new organisation gets 30 days of Pro on up to 5 screens. You can also try the Console free on 2 screens.</p>
+        </details>
+        <details>
+          <summary>What happens if a payment is late?</summary>
+          <p>Your screens keep playing.</p>
+        </details>
+        <details>
+          <summary>Can someone else look after our screens for us?</summary>
+          <p>Yes. An installer or reseller can manage your organisation as your partner. Your owners decide whether the partner may reach your sites and screens, for the whole organisation or site by site, and every change is in your activity log.</p>
+        </details>
+        <details>
+          <summary>Can we run the Console on our own server?</summary>
+          <p>On request only. Choose <a href="#self-hosting">Self-hosting</a> in the form below and tell us where you would run it and why.</p>
+        </details>
+        <details>
+          <summary>How is this different from PleatView with Home Assistant?</summary>
+          <p>PleatView with Home Assistant is free and open source, runs on your own network and is driven by your automations. It stays free. The Console is a paid web app for organisations without Home Assistant. The <a href="/#compare">comparison</a> shows both, line by line.</p>
+        </details>
+      </div>
+    </div>
+  </section>
+
+  <!-- 9. Enquiry -->
+  <section class="section" id="enquiry">
+    <span class="anchor" id="early-access"></span><span class="anchor" id="talk"></span><span class="anchor" id="self-hosting"></span>
+    <div class="wrap">
+      <div class="enquiry" data-state="idle">
+        <div>
+          <div class="section-head">
+            <span class="kicker">Get in touch</span>
+            <h2>Tell us what you need</h2>
+            <p>One short form. Choose what it is about, and it goes to the people who can answer.</p>
+          </div>
+          <div class="next" aria-live="polite">
+            <strong>What happens next</strong>
+            <p class="for-early when-soon">We keep your details and email you when the Console opens.</p>
+            <p class="for-early when-live">We reply by email with how to start. Each new organisation gets 30 days of Pro on up to 5 screens.</p>
+            <p class="for-talk">We read your message and reply by email. Use this for questions, Enterprise, and working with us as an installer or reseller.</p>
+            <p class="for-self">Self-hosting is by request only. We read where you would run it and why, and reply by email.</p>
+          </div>
+        </div>
+
+        <div class="form-card">
+          <form id="enquiry-form" data-gate="https://forms.hustlesman.com">
+            <fieldset class="choice">
+              <legend>What is this about?</legend>
+              <div><input type="radio" name="kind" id="kind-early" value="early_access" checked><label for="kind-early"><span class="when-soon">Early access</span><span class="when-live">Start a trial</span><small class="when-soon">Be told when the Console opens.</small><small class="when-live">30 days of Pro on up to 5 screens.</small></label></div>
+              <div><input type="radio" name="kind" id="kind-talk" value="talk"><label for="kind-talk">Talk to us<small>Questions, Enterprise and partners.</small></label></div>
+              <div><input type="radio" name="kind" id="kind-self" value="self_host"><label for="kind-self">Self-hosting<small>The Console on your own server.</small></label></div>
+            </fieldset>
+
+            <div class="fields">
+              <div class="field">
+                <label for="f-name">Your name</label>
+                <input id="f-name" name="name" type="text" required maxlength="120" autocomplete="name">
+              </div>
+              <div class="field">
+                <label for="f-email">Work email</label>
+                <input id="f-email" name="email" type="email" required maxlength="200" autocomplete="email" inputmode="email">
+              </div>
+              <div class="field">
+                <label for="f-org">Organisation</label>
+                <input id="f-org" name="organisation" type="text" required maxlength="160" autocomplete="organization">
+              </div>
+              <div class="field">
+                <label for="f-screens">How many screens</label>
+                <select id="f-screens" name="screens">
+                  <option value="1–10">1–10</option>
+                  <option value="11–50">11–50</option>
+                  <option value="51–250">51–250</option>
+                  <option value="251+">251+</option>
+                  <option value="Not sure" selected>Not sure</option>
+                </select>
+              </div>
+              <div class="field full">
+                <label for="f-message">
+                  <span class="for-early">Anything we should know <span class="opt">(optional)</span></span>
+                  <span class="for-talk">Your question</span>
+                  <span class="for-self">Where you would run it, and why</span>
+                </label>
+                <textarea id="f-message" name="message" maxlength="4000" aria-describedby="f-message-help"></textarea>
+                <span class="help" id="f-message-help">
+                  <span class="for-early">For example, what the screens are for and how many sites you have.</span>
+                  <span class="for-talk">Tell us what you want to know, or what you need from Enterprise or as a partner.</span>
+                  <span class="for-self">For example, your own data centre or a cloud account you run, and what makes hosting it yourself necessary.</span>
+                </span>
+              </div>
+            </div>
+
+            <div class="trap" aria-hidden="true">
+              <label for="f-website">Website</label>
+              <input id="f-website" name="website" type="text" tabindex="-1" autocomplete="off">
+            </div>
+            <input type="hidden" name="ticket" value="">
+            <noscript><p class="form-error">This form needs JavaScript. It sends only to our own server.</p></noscript>
+
+            <p class="form-error" role="alert" hidden>We could not send that. Everything you typed is still here. Please try again later.</p>
+
+            <div class="send">
+              <button class="button primary" type="submit">
+                <span class="label-idle">
+                  <span class="for-early when-soon">Ask for early access</span>
+                  <span class="for-early when-live">Ask for a trial</span>
+                  <span class="for-talk">Send message</span>
+                  <span class="for-self">Ask about self-hosting</span>
+                </span>
+                <span class="label-sending">Sending…</span>
+              </button>
+              <p class="privacy-note">We keep what you type here so that we can answer you. We do not share it or use it for marketing. <a href="privacy.html#enquiries">How we handle enquiries</a>.</p>
+            </div>
+          </form>
+
+          <div class="sent" role="status" tabindex="-1" hidden>
+            <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span>
+            <h3 class="for-early when-soon">Thank you. You are on the list.</h3>
+            <h3 class="for-early when-live">Thank you. We have your request.</h3>
+            <h3 class="for-talk">Thank you. We have your message.</h3>
+            <h3 class="for-self">Thank you. We have your request.</h3>
+            <p class="for-early when-soon">We will email you at the address you gave when the Console opens.</p>
+            <p class="for-early when-live">We will reply by email with how to start your trial.</p>
+            <p class="for-talk">We will reply by email at the address you gave.</p>
+            <p class="for-self">We will reply by email about running the Console on your own server.</p>
+            <div class="actions"><a class="button quiet small" href="/#pricing">See the plans</a><a class="button quiet small" href="/">Back to the home page</a></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <div>
+      <p class="made">PleatView is made by Hustlesman.</p>
+      <p>PleatView with Home Assistant is free and open source under the MIT License.</p>
+      <p>Latest release <span data-release="version">v1.0.18</span>, <time data-release="date" datetime="2026-11-12">12 November 2026</time>.</p>
+      <p class="legal">Google Play and the Google Play logo are trademarks of Google LLC. Amazon, Amazon Appstore and their logos are trademarks of Amazon.com, Inc. or its affiliates.</p>
+    </div>
+    <nav aria-label="Footer">
+      <a href="/#install">Install</a>
+      <a href="/#ideas">Ideas</a>
+      <a href="/#pricing">Pricing</a>
+      <a href="/#compare">Compare</a>
+      <a href="support.html">Support</a>
+      <a href="privacy.html">Privacy</a>
+      <a href="terms.html">Terms</a>
+      <a href="https://github.com/Hustlesman/pleatview/blob/main/ROADMAP.md">Roadmap</a>
+      <a href="https://github.com/Hustlesman/pleatview">GitHub</a>
+      <a href="https://donate.stripe.com/cNifZg4Wudug46O4X38Ra00">Donate</a>
+    </nav>
+    <p class="fine">© 2026 Hustlesman. PleatView is not affiliated with Home Assistant, Nabu Casa, Google, Amazon, Raspberry Pi, Canonical, LG or Samsung. Their names and logos are trademarks of their owners, shown only to say what PleatView runs on. Linux® is the registered trademark of Linus Torvalds. The Android robot is reproduced or modified from work created and shared by Google and used according to terms described in the Creative Commons 3.0 Attribution License. The videos in the screenshots are Blender Foundation open movies: <a href="https://caminandes.com">Caminandes: Gran Dillama</a> (© 2013), Big Buck Bunny (© 2008) and Sintel (© 2010), CC BY 3.0, and Spring (© 2019), CC BY 4.0.</p>
+  </div>
+</footer>
+
+</body>
+</html>
