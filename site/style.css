@@ -58,7 +58,7 @@ p { margin: 0; }
 .site-nav a { white-space: nowrap; }
 @media (max-width: 980px) {
   .site-nav { gap: 20px; }
-  .site-nav a[href$="#ideas"], .site-nav a[href$="#tested"] { display: none; }
+  .site-nav a[href$="#tested"], .site-nav a[href*="github.com"] { display: none; }
 }
 @media (max-width: 480px) {
   .site-header .wrap { gap: 12px; }
@@ -252,3 +252,107 @@ td small { display: block; color: var(--muted); font-size: 13.5px; margin-top: 3
 .with-logo { display: flex; align-items: center; gap: 10px; }
 .state.beta { color: var(--waiting); }
 .state.beta::before { background: var(--waiting); }
+
+/* ---- The home page: business first, Home Assistant free (the redesign of 23 Nov 2026) ---- */
+.vh { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+
+/* Before and after the Console opens: <html data-console="soon|live">. */
+[data-console="soon"] .when-live, [data-console="live"] .when-soon { display: none !important; }
+
+/* Header: at 980px Tested on and GitHub go (replaces the #ideas / #tested rule). */
+
+/* Hero: the headline sits on two lines on desktop, and "always on" never splits. */
+.hero-copy { max-width: 900px; }
+.hero h1 em { white-space: nowrap; }
+
+/* Tags */
+.tag.free { color: var(--good); border-color: rgba(61, 220, 151, 0.45); }
+.tag.plan { color: var(--cyan); border-color: rgba(24, 188, 242, 0.45); }
+.kicker .tag { margin-left: 8px; letter-spacing: 0.06em; }
+.feature .tag, .way .tag { width: fit-content; }
+
+/* Tick lists */
+.ticks { list-style: none; margin: 0; padding: 0; display: grid; gap: 9px; font-size: 15.5px; color: var(--text); }
+.ticks li { position: relative; padding-left: 26px; }
+.ticks li::before { content: ""; position: absolute; left: 3px; top: 0.42em; width: 11px; height: 6px; border: solid var(--good); border-width: 0 0 2px 2px; transform: rotate(-45deg); }
+
+/* Uses and Console cards: three across */
+.cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+.cards .feature { grid-column: auto; }
+@media (max-width: 960px) { .cards { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 620px) { .cards { grid-template-columns: 1fr; } }
+
+/* Two ways */
+.ways { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.way { display: flex; flex-direction: column; gap: 16px; padding: 30px; border-radius: 24px; border: 1px solid var(--line); background: radial-gradient(120% 140% at 100% 0%, rgba(24, 188, 242, 0.16), transparent 55%), var(--panel); }
+.way.free { background: radial-gradient(120% 140% at 100% 0%, rgba(61, 220, 151, 0.10), transparent 55%), var(--panel); }
+.way h3 { font-size: 26px; }
+.way p { color: var(--muted); }
+.way .actions { margin-top: auto; padding-top: 8px; }
+@media (max-width: 960px) { .ways { grid-template-columns: 1fr; } }
+
+/* For your IT team */
+.band { margin-top: 16px; display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 3fr); gap: 20px 40px; padding: 30px; border-radius: 24px; border: 1px solid var(--line); background: var(--panel); }
+.band h3 { font-size: 24px; margin-bottom: 10px; }
+.band p { color: var(--muted); }
+.band .claim { margin-top: 14px; font-size: 15px; color: var(--text); }
+.band .ticks { grid-template-columns: 1fr 1fr; gap: 12px 28px; align-content: start; }
+.pair { margin-top: 16px; display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.pair .feature { grid-column: auto; }
+.pair .actions { margin-top: auto; padding-top: 6px; }
+@media (max-width: 960px) { .band, .pair { grid-template-columns: 1fr; } }
+@media (max-width: 620px) { .band .ticks { grid-template-columns: 1fr; } }
+
+/* Pricing: the switch */
+.billing { border: 0; margin: 0 0 24px; padding: 4px; display: inline-flex; border-radius: 999px; background: var(--panel); box-shadow: inset 0 0 0 1px var(--line); }
+.billing input { position: absolute; opacity: 0; pointer-events: none; }
+.billing label { padding: 10px 18px; border-radius: 999px; font: 600 14.5px/1.2 var(--body); color: var(--muted); cursor: pointer; white-space: nowrap; }
+.billing label small { font-weight: 500; font-size: 13px; opacity: 0.85; margin-left: 4px; }
+.billing input:checked + label { background: var(--cyan); color: #04212c; }
+.billing input:focus-visible + label { outline: 2px solid var(--cyan); outline-offset: 3px; }
+/* Yearly shows unless Monthly is chosen. Without :has(), yearly stays: a safe fallback. */
+.monthly { display: none; }
+#pricing:has(#bill-monthly:checked) .yearly { display: none; }
+#pricing:has(#bill-monthly:checked) .monthly { display: revert; }
+
+/* Pricing: the cards */
+.plans { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; align-items: stretch; }
+.plan { grid-column: auto; gap: 14px; }
+.plan:hover { transform: none; }
+.plan.pro { border-color: rgba(24, 188, 242, 0.55); background: radial-gradient(120% 90% at 100% 0%, rgba(24, 188, 242, 0.16), transparent 60%), var(--panel); }
+.plan header { display: grid; gap: 10px; min-height: 58px; align-content: start; }
+.plan h3 { font-size: 21px; }
+.plan .price { color: var(--text); font: 700 44px/1 var(--display); letter-spacing: -0.03em; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.plan .price small { font: 500 20px/1 var(--body); color: var(--muted); letter-spacing: 0; margin-right: 3px; }
+.plan .per { font-size: 14px; color: var(--muted); min-height: 2.9em; }
+.plan .ticks { font-size: 14.5px; gap: 8px; }
+.plan .button { margin-top: auto; justify-content: center; }
+.plan .ticks + .button, .plan .button { margin-top: auto; }
+.plan-notes { margin: 20px 0 0; padding: 0; list-style: none; display: flex; flex-wrap: wrap; gap: 8px 26px; font-size: 14.5px; color: var(--muted); }
+.plan-notes li::before { content: ""; display: inline-block; width: 6px; height: 6px; margin-right: 9px; border-radius: 50%; background: var(--cyan); vertical-align: 2px; }
+.soon-strip { margin-top: 20px; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 14px 24px; padding: 18px 22px; border-radius: 14px; border: 1px dashed rgba(245, 184, 75, 0.45); color: var(--muted); font-size: 15.5px; }
+.soon-strip strong { color: var(--text); }
+@media (max-width: 1040px) { .plans { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 620px) { .plans { grid-template-columns: 1fr; } .billing { display: flex; } .billing label { flex: 1; text-align: center; padding-inline: 8px; } }
+
+/* Compare */
+.compare { min-width: 760px; }
+.compare thead th { position: sticky; top: 64px; z-index: 1; background: var(--panel); padding: 16px 18px; font: 600 15px/1.25 var(--display); letter-spacing: 0; text-transform: none; color: var(--text); vertical-align: bottom; }
+.compare thead th small { display: block; margin-bottom: 4px; font: 600 11px/1 var(--mono); letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+.compare tbody th[scope="row"] { font: 400 15px/1.45 var(--body); letter-spacing: 0; text-transform: none; color: var(--text); width: 30%; border-top: 1px solid var(--line); position: sticky; left: 0; background: var(--panel); }
+.compare .group th { padding-top: 26px; color: var(--cyan); font-size: 12.5px; border-top: 1px solid var(--line); }
+.compare td { font-size: 14.5px; color: var(--muted); }
+.compare td:nth-child(2), .compare thead th:nth-child(2) { background: rgba(61, 220, 151, 0.05); }
+.compare thead th:nth-child(2) { background: linear-gradient(rgba(61, 220, 151, 0.05), rgba(61, 220, 151, 0.05)), var(--panel); }
+/* Yes and Not included are real words in the cell; the glyph is drawn over them. */
+.compare .y, .compare .n { font-size: 0; }
+.compare .y::before { content: ""; display: inline-block; width: 13px; height: 7px; border: solid var(--good); border-width: 0 0 2.5px 2.5px; transform: rotate(-45deg) translate(2px, -2px); }
+.compare .n::before { content: "–"; font-size: 16px; color: var(--muted); opacity: 0.6; }
+/* The card scrolls sideways only on small screens; above that it must not clip, or the sticky header sticks to the card. */
+@media (min-width: 861px) { #compare .table-card { overflow: visible; } .compare thead th:first-child { border-top-left-radius: var(--radius); } }
+.compare thead td { position: sticky; top: 64px; z-index: 1; background: var(--panel); border-top: 0; }
+.swipe { display: none; font-size: 13.5px; color: var(--muted); margin-bottom: 10px; }
+@media (max-width: 860px) { .swipe { display: block; } .compare thead th, .compare thead td { position: static; } .compare tbody th[scope="row"] { width: 150px; min-width: 150px; } }
+
+.after-head { margin: -16px 0 28px; }
+@media (max-width: 760px) { .button { min-height: 44px; } .button.small { min-height: 0; } }
