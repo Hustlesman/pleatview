@@ -19,6 +19,7 @@
   /* The hero screen's three pleats show thirds of the same screenshot. */
   .tv .pleat { background-image: url("img/screens/dashboard.webp"); }
 </style>
+<script src="prices.js" defer></script>
 </head>
 <body>
 <svg class="sprite" aria-hidden="true" focusable="false">
@@ -230,7 +231,7 @@
       <div class="section-head">
         <span class="kicker">Pricing</span>
         <h2>Free with Home Assistant. Per screen with the Console.</h2>
-        <p>Console prices are per screen, per month, in US dollars<span class="when-soon">, and apply when the Console opens</span>.</p>
+        <p>Console prices are per screen, per month, in <span data-currency-name>US dollars</span>, excluding GST and VAT<span class="when-soon">, and apply when the Console opens</span>.</p>
       </div>
 
       <fieldset class="billing">
@@ -238,11 +239,12 @@
         <input type="radio" name="bill" id="bill-yearly" checked><label for="bill-yearly">Billed yearly <small>save 15% or more</small></label>
         <input type="radio" name="bill" id="bill-monthly"><label for="bill-monthly">Billed monthly</label>
       </fieldset>
+      <label class="currency-pick" hidden>Prices in <select data-currency-pick aria-label="Currency"><option value="usd">US dollars (USD)</option><option value="nzd">New Zealand dollars (NZD)</option><option value="aud">Australian dollars (AUD)</option><option value="gbp">Pounds (GBP)</option><option value="eur">Euros (EUR)</option></select></label>
 
       <div class="plans">
         <article class="feature plan">
           <header><em class="tag free">Free and open source</em><h3>With Home Assistant</h3></header>
-          <p class="price"><small>US$</small>0</p>
+          <p class="price"><small data-sign>US$</small>0</p>
           <p class="per">for every screen. Open source, on your own network. It stays free.</p>
           <ul class="ticks">
             <li>Dashboards that stay up</li>
@@ -256,7 +258,7 @@
 
         <article class="feature plan">
           <header><h3>Standard</h3></header>
-          <p class="price"><small>US$</small><span class="yearly">7</span><span class="monthly">8.50</span></p>
+          <p class="price"><small data-sign>US$</small><span class="yearly" data-price="standard:yearly">7</span><span class="monthly" data-price="standard:monthly">8.50</span></p>
           <p class="per">per screen a month, <span class="yearly">billed yearly</span><span class="monthly">billed monthly</span>. Signage for one site or many.</p>
           <ul class="ticks">
             <li>Content library, playlists and schedules</li>
@@ -274,7 +276,7 @@
 
         <article class="feature plan pro">
           <header><em class="tag plan">30-day trial</em><h3>Pro</h3></header>
-          <p class="price"><small>US$</small><span class="yearly">11</span><span class="monthly">13</span></p>
+          <p class="price"><small data-sign>US$</small><span class="yearly" data-price="pro:yearly">11</span><span class="monthly" data-price="pro:monthly">13</span></p>
           <p class="per">per screen a month, <span class="yearly">billed yearly</span><span class="monthly">billed monthly</span>. Everything in Standard, and:</p>
           <ul class="ticks">
             <li>Video walls</li>
@@ -292,7 +294,7 @@
 
         <article class="feature plan">
           <header><h3>Enterprise</h3></header>
-          <p class="price"><small>US$</small><span class="yearly">15</span><span class="monthly">18</span></p>
+          <p class="price"><small data-sign>US$</small><span class="yearly" data-price="enterprise:yearly">15</span><span class="monthly" data-price="enterprise:monthly">18</span></p>
           <p class="per">per screen a month, <span class="yearly">billed yearly</span><span class="monthly">billed monthly</span>. Everything in Pro, and:</p>
           <ul class="ticks">
             <li>SAML sign-in</li>
@@ -309,7 +311,7 @@
         <li>Try the Console free on 2 screens.</li>
         <li>Each new organisation gets 30 days of Pro on up to 5 screens.</li>
         <li>If a payment is late, your screens keep playing.</li>
-        <li>Prices are in US dollars and exclude tax.</li>
+        <li>Prices are in <span data-currency-name>US dollars</span> and exclude GST and VAT, added where they apply.</li>
       </ul>
 
       <div class="soon-strip when-soon" id="early-access">
@@ -336,7 +338,7 @@
           </thead>
           <tbody>
             <tr class="group"><th colspan="5" scope="colgroup">Price and screens</th></tr>
-            <tr><th scope="row">Price per screen, a month</th><td>Free</td><td>US$7 yearly, US$8.50 monthly</td><td>US$11 yearly, US$13 monthly</td><td>US$15 yearly, US$18 monthly</td></tr>
+            <tr><th scope="row">Price per screen, a month</th><td>Free</td><td data-price-line="standard">US$7 yearly, US$8.50 monthly</td><td data-price-line="pro">US$11 yearly, US$13 monthly</td><td data-price-line="enterprise">US$15 yearly, US$18 monthly</td></tr>
             <tr><th scope="row">Screens</th><td>Any number</td><td>As many as you buy</td><td>As many as you buy</td><td>As many as you buy</td></tr>
             <tr><th scope="row">Needs Home Assistant</th><td>Yes</td><td>No</td><td>No</td><td>No</td></tr>
             <tr><th scope="row">Where it runs</th><td>Your Home Assistant, on your network</td><td>Hosted for you</td><td>Hosted for you</td><td>Hosted for you</td></tr>

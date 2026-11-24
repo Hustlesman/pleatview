@@ -20,6 +20,7 @@
 <link rel="preload" href="fonts/geist-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="style.css">
 <script src="enquiry.js" defer></script>
+<script src="prices.js" defer></script>
 </head>
 <body>
 <header class="site-header">
@@ -230,13 +231,14 @@
       <div class="section-head">
         <span class="kicker">Plans and prices</span>
         <h2>Per screen, per month</h2>
-        <p>Three plans, priced in US dollars<span class="when-soon">. The prices apply when the Console opens</span>.</p>
+        <p>Three plans, priced in <span data-currency-name>US dollars</span>, excluding GST and VAT<span class="when-soon">. The prices apply when the Console opens</span>.</p>
+        <label class="currency-pick" hidden>Prices in <select data-currency-pick aria-label="Currency"><option value="usd">US dollars (USD)</option><option value="nzd">New Zealand dollars (NZD)</option><option value="aud">Australian dollars (AUD)</option><option value="gbp">Pounds (GBP)</option><option value="eur">Euros (EUR)</option></select></label>
       </div>
       <div class="cards">
         <article class="feature plan">
           <header><h3>Standard</h3></header>
-          <p class="price"><small>US$</small>7</p>
-          <p class="per">per screen a month, billed yearly. <span class="alt">US$8.50</span> billed monthly.</p>
+          <p class="price"><small data-sign>US$</small><span data-price="standard:yearly">7</span></p>
+          <p class="per">per screen a month, billed yearly. <span class="alt" data-price="standard:monthly" data-with-sign>US$8.50</span> billed monthly.</p>
           <ul class="ticks">
             <li>Content, playlists, layouts and schedules</li>
             <li>Emergency messages and proof of play</li>
@@ -246,8 +248,8 @@
         </article>
         <article class="feature plan pro">
           <header><em class="tag plan">30-day trial</em><h3>Pro</h3></header>
-          <p class="price"><small>US$</small>11</p>
-          <p class="per">per screen a month, billed yearly. <span class="alt">US$13</span> billed monthly.</p>
+          <p class="price"><small data-sign>US$</small><span data-price="pro:yearly">11</span></p>
+          <p class="per">per screen a month, billed yearly. <span class="alt" data-price="pro:monthly" data-with-sign>US$13</span> billed monthly.</p>
           <ul class="ticks">
             <li>Everything in Standard</li>
             <li>Video walls and content approval</li>
@@ -257,8 +259,8 @@
         </article>
         <article class="feature plan">
           <header><h3>Enterprise</h3></header>
-          <p class="price"><small>US$</small>15</p>
-          <p class="per">per screen a month, billed yearly. <span class="alt">US$18</span> billed monthly.</p>
+          <p class="price"><small data-sign>US$</small><span data-price="enterprise:yearly">15</span></p>
+          <p class="per">per screen a month, billed yearly. <span class="alt" data-price="enterprise:monthly" data-with-sign>US$18</span> billed monthly.</p>
           <ul class="ticks">
             <li>Everything in Pro</li>
             <li>SAML sign-in and SCIM</li>
@@ -271,12 +273,12 @@
         <li>Try the Console free on 2 screens.</li>
         <li>Each new organisation gets 30 days of Pro on up to 5 screens.</li>
         <li>If a payment is late, your screens keep playing.</li>
-        <li>Prices are in US dollars and exclude tax.</li>
+        <li>Prices are in <span data-currency-name>US dollars</span> and exclude GST and VAT, added where they apply.</li>
       </ul>
       <div class="section-foot">
         <a class="button quiet small" href="/#pricing">See what each plan includes</a>
         <a class="button quiet small" href="/#compare">Compare the plans line by line</a>
-        <span>PleatView with Home Assistant stays US$0 and open source.</span>
+        <span>PleatView with Home Assistant stays free and open source.</span>
       </div>
     </div>
   </section>

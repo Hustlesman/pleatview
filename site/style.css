@@ -453,3 +453,10 @@ td small { display: block; color: var(--muted); font-size: 13.5px; margin-top: 3
 }
 @media (prefers-reduced-motion: reduce) { .faq summary::after { transition: none; } }
 .push-down { margin-top: auto; padding-top: 6px; }
+/* Prices in the visitor's currency (prices.js): its switch beside the billing toggle, shown when the script runs. */
+.currency-pick { display: inline-flex; align-items: center; gap: 8px; margin: 0 0 24px 12px; font: 600 14.5px/1.2 var(--body); color: var(--muted); vertical-align: top; }
+.currency-pick[hidden] { display: none; }
+.currency-pick select { font: inherit; color: var(--text); background: var(--panel); border: 0; box-shadow: inset 0 0 0 1px var(--line); border-radius: 999px; padding: 10px 14px; cursor: pointer; }
+.currency-pick select:focus-visible { outline: 2px solid var(--cyan); outline-offset: 3px; }
+.section-head .currency-pick { margin: 16px 0 0; }
+@media (max-width: 620px) { .currency-pick { display: flex; margin: 0 0 20px; } .currency-pick[hidden] { display: none; } }
