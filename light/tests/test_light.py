@@ -253,7 +253,8 @@ class Announcing(unittest.TestCase):
     def test_says_what_the_screen_is(self) -> None:
         """Its maker and model, as /api/info says them: for a mark beside it where it's found."""
         responder = mdns.Responder(lambda: {"id": "zero-two", "name": "Zero", "api": "1", "version": "1.1.5",
-                                            "manufacturer": "Raspberry Pi", "model": "Raspberry Pi Zero 2 W Rev 1.0"}, 8765)
+                                            "manufacturer": "Raspberry Pi", "model": "Raspberry Pi Zero 2 W Rev 1.0"}, 8765,
+                                   keys=("id", "name", "api", "version", "manufacturer", "model"))
         txt = responder.records()["txt"]
         self.assertIn(b"manufacturer=Raspberry Pi", txt)
         self.assertIn(b"model=Raspberry Pi Zero 2 W Rev 1.0", txt)
