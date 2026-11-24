@@ -150,8 +150,9 @@ async def main() -> bool:
                             show_code=screen.show_code, write=write_private,
                             ask_allow=screen.ask_allow, not_added=screen.not_added)
     api.connection = connection
-    responder = Responder(lambda: {"id": device["id"], "name": name(), "api": str(API_VERSION), "version": VERSION},
-                          PORT)
+    responder = Responder(lambda: {"id": device["id"], "name": name(), "api": str(API_VERSION), "version": VERSION,
+                                   "manufacturer": info()["manufacturer"], "model": str(info()["model"])[:60]},
+                          PORT, keys=("id", "name", "api", "version", "manufacturer", "model"))  # (what it is, for a mark where it's found)
 
     server = await asyncio.start_server(api.handle, "0.0.0.0", PORT)
     player.start()

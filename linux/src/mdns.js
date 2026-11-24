@@ -1,5 +1,6 @@
 // Announces the control API as `_pleatview._tcp`, as the Android app does, so Home
-// Assistant discovers the screen. TXT records: id, name, api, version.
+// Assistant discovers the screen. TXT records: id, name, api, version, and the maker and model
+// (as /api/info says them), for a mark beside it where it's found.
 import ciao from "@homebridge/ciao";
 
 export class Advertiser {
@@ -9,8 +10,8 @@ export class Advertiser {
   }
 
   /** Starts announcing, or updates the announcement after the name changed. */
-  async announce({ id, name, port, api, version }) {
-    const txt = { id, name, api: String(api), version };
+  async announce({ id, name, port, api, version, manufacturer = "", model = "" }) {
+    const txt = { id, name, api: String(api), version, manufacturer: String(manufacturer).slice(0, 60), model: String(model).slice(0, 60) };
     if (this.service && this.name === name) return this.service.updateTxt(txt);
     await this.stop();
     this.name = name;
