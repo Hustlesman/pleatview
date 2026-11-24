@@ -91,7 +91,7 @@ function updateConfig(update) {
 function announce() {
   // Tests run beside a real Home Assistant, which shouldn't discover them.
   if (process.env.PLEATVIEW_MDNS === "0") return;
-  advertiser.announce({ id, name: name(), port: PORT, api: API_VERSION, version }).catch((e) => console.warn("PleatView: mDNS:", e.message));
+  advertiser.announce({ id, name: name(), port: PORT, api: API_VERSION, version, manufacturer, model }).catch((e) => console.warn("PleatView: mDNS:", e.message));
 }
 
 const info = () => ({ id, name: name(), manufacturer, model, app_version: version, api_version: API_VERSION });

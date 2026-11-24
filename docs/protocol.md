@@ -1,8 +1,9 @@
 # PleatView control protocol (v1)
 
 The TV app runs a small HTTP server (default port **8765**) and advertises it over
-mDNS as `_pleatview._tcp` with TXT records `id`, `name`, `api` and `version`. The
-Home Assistant integration (or any other client) talks to it with JSON over HTTP.
+mDNS as `_pleatview._tcp` with TXT records `id`, `name`, `api`, `version`, `manufacturer` and
+`model` (the last two as `/api/info` gives them, at most 60 characters; from 1.1.5). The Home
+Assistant integration (or any other client) talks to it with JSON over HTTP.
 
 All responses are JSON unless noted. Errors look like `{"error": "message"}`.
 Requests name the screen by its address: a `Host` that is an IP address, `localhost`, a name

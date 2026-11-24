@@ -82,6 +82,9 @@ class ControlService : Service() {
                     "name" to app.settings.deviceName,
                     "api" to Api.API_VERSION.toString(),
                     "version" to BuildConfig.VERSION_NAME,
+                    // What it is, as /api/info says: for a mark beside it where it's found.
+                    "manufacturer" to Build.MANUFACTURER.take(60),
+                    "model" to Build.MODEL.take(60),
                 ),
             )
         }

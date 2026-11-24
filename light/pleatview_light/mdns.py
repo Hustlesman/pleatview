@@ -72,7 +72,7 @@ def record(name: str, rtype: int, ttl: int, data: bytes, flush: bool = True) -> 
 
 class Responder(asyncio.DatagramProtocol):
     def __init__(self, info: Callable[[], dict[str, str]], port: int, service: str = SERVICE,
-                 keys: tuple[str, ...] = ("id", "name", "api", "version")) -> None:
+                 keys: tuple[str, ...] = ("id", "name", "api", "version", "manufacturer", "model")) -> None:
         self.info = info  # the TXT record's values: id, name, ...
         self.port = port
         self.service = service
